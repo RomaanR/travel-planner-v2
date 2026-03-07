@@ -1,10 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type MotionProps } from "framer-motion";
 import Image from "next/image";
 import { Zap, UtensilsCrossed, Compass } from "lucide-react";
 
-const fadeUp = (delay = 0) => ({
+const fadeUp = (delay = 0): MotionProps => ({
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true },
