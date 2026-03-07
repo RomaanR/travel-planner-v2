@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
-import SearchBar from "@/components/SearchBar";
+import CurationForm from "@/components/CurationForm";
 import BentoGrid from "@/components/BentoGrid";
 import { useRouter } from "next/navigation";
 import type { ItineraryRequest } from "@/types/itinerary";
@@ -29,15 +29,15 @@ export default function HomePage() {
             alt="Cinematic mountain forest — luxury travel"
             fill
             priority
-            className="object-cover img-grayscale"
+            className="object-cover"
             sizes="100vw"
           />
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-ink/30 via-ink/10 to-ink/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/60" />
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 px-8 md:px-16 pb-24 md:pb-32">
+        <div className="relative z-10 px-8 md:px-16 pt-40 pb-24 md:pb-32">
           {/* Pre-title */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -86,8 +86,8 @@ export default function HomePage() {
             Your private AI concierge crafts ultra-curated itineraries — hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
 
-          {/* Search Bar */}
-          <SearchBar onGenerate={handleGenerate} />
+          {/* Curation Form */}
+          <CurationForm onGenerate={handleGenerate} />
         </div>
 
         {/* Scroll indicator */}

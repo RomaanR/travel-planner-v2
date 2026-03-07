@@ -109,9 +109,9 @@ export default function BentoGrid() {
               className="text-ink-light mb-6"
             />
             <blockquote className="font-serif italic text-4xl text-ink leading-tight">
-              "Travel is not about destinations.
+              &quot;Travel is not about destinations.
               <span className="block mt-2 border-b-2 border-burnt-orange pb-1 inline-block">
-                It is about becoming."
+                It is about becoming.&quot;
               </span>
             </blockquote>
             <p className="mt-6 micro-copy text-ink-light">
