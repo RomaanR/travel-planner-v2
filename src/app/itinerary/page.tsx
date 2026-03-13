@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -16,6 +16,9 @@ import {
   ImageOff,
   Car,
   PersonStanding,
+  Clock,
+  CalendarCheck,
+  Ticket,
 } from "lucide-react";
 import { useItinerary } from "@/hooks/useItinerary";
 import type {
@@ -58,18 +61,28 @@ function formatRatingCount(n: number): string {
   return String(n);
 }
 
-// ─── Transit header ───────────────────────────────────────────────────────────
+// ─── Transit connector ────────────────────────────────────────────────────────
 
 function TransitHeader({ transit }: { transit: TransitInfo }) {
-  if (!transit.walkingMinutes && !transit.drivingMinutes) return null;
+  if (!transit?.walkingMinutes && !transit?.drivingMinutes) return null;
   return (
-    <div className="flex items-center gap-4 py-2 px-1">
-      <div className="flex-1 h-px bg-ink/5" />
-      <div className="flex items-center gap-3 shrink-0">
+    <div className="flex items-stretch gap-3 pl-3 py-0.5">
+      {/* Vertical dashed connector line */}
+      <div className="flex items-center justify-center w-4 shrink-0">
+        <div
+          className="h-full min-h-[2rem]"
+          style={{
+            borderLeft: "1px dashed rgba(10,10,10,0.15)",
+            width: 1,
+          }}
+        />
+      </div>
+      {/* Labels */}
+      <div className="flex items-center gap-3 py-2.5">
         {transit.walkingMinutes !== undefined && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
-            <PersonStanding size={11} strokeWidth={1.5} />
-            {transit.walkingMinutes} MIN WALK
+            <PersonStanding size={10} strokeWidth={1.5} />
+            {transit.walkingMinutes}m Walk
           </span>
         )}
         {transit.walkingMinutes !== undefined && transit.drivingMinutes !== undefined && (
@@ -77,12 +90,11 @@ function TransitHeader({ transit }: { transit: TransitInfo }) {
         )}
         {transit.drivingMinutes !== undefined && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
-            <Car size={11} strokeWidth={1.5} />
-            {transit.drivingMinutes} MIN DRIVE
+            <Car size={10} strokeWidth={1.5} />
+            {transit.drivingMinutes}m Drive
           </span>
         )}
       </div>
-      <div className="flex-1 h-px bg-ink/5" />
     </div>
   );
 }
@@ -101,6 +113,9 @@ type LocationCardItem = {
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
+  hoursOpen?: string;
+  priceLevel?: number;
+  pricePoint?: string;
   reservation?: boolean;
   dietaryNote?: string;
 };
@@ -114,9 +129,26 @@ function LocationCard({
   type: "activity" | "dining";
   delay: number;
 }) {
-  const displayName = item.title || item.name || "";
-  const displayDesc = item.description || item.cuisine || "";
+  const displayName = item.title ?? item.name ?? "";
+  const displayDesc = item.description ?? item.cuisine ?? "";
   const endTime = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
+
+  // Cost & Access badge
+  let costBadge: { label: string; className: string; icon?: React.ReactNode } | null = null;
+  if (type === "activity") {
+    if (item.priceLevel === 0) {
+      costBadge = { label: "FREE ENTRY", className: "text-emerald-accent border-emerald-accent/30", icon: <Ticket size={9} strokeWidth={1.5} /> };
+    } else if (item.priceLevel !== undefined && item.priceLevel >= 3) {
+      costBadge = { label: "$$$ EXPERIENCE", className: "text-ink border-ink/20" };
+    }
+  } else {
+    // Dining: always show pricePoint; reservation overrides label
+    if (item.reservation) {
+      costBadge = { label: "RES. REQUIRED", className: "text-ink-light border-ink/15", icon: <CalendarCheck size={9} strokeWidth={1.5} /> };
+    } else if (item.pricePoint) {
+      costBadge = { label: item.pricePoint, className: "text-ink-light border-ink/15" };
+    }
+  }
 
   return (
     <motion.div
@@ -132,7 +164,7 @@ function LocationCard({
             src={item.photoUrl}
             alt={displayName}
             fill
-            unoptimized  // Google Places photo URLs are pre-sized redirect URLs
+            unoptimized
             className="object-cover img-grayscale"
             sizes="192px"
           />
@@ -153,30 +185,40 @@ function LocationCard({
             {endTime ? ` — ${endTime}` : ""}
           </span>
           <span className="micro-copy border border-ink/12 px-2 py-0.5 shrink-0 text-ink-light">
-            {type === "dining" ? "DINING" : (item.category || "EXPERIENCE")}
+            {type === "dining" ? "DINING" : (item.category ?? "EXPERIENCE")}
           </span>
         </div>
 
         {/* Title */}
-        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-2">
+        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5">
           {displayName}
         </h4>
+
+        {/* Hours — monospace precision aesthetic */}
+        {item.hoursOpen && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <Clock size={10} strokeWidth={1.5} className="text-ink-light shrink-0" />
+            <span className="font-mono text-xs text-ink-light">{item.hoursOpen}</span>
+          </div>
+        )}
 
         {/* Description */}
         <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3">
           {displayDesc}
         </p>
 
-        {/* Dietary note (if present) */}
+        {/* Dietary note */}
         {item.dietaryNote && (
           <p className="font-sans text-xs text-emerald-accent leading-relaxed mb-2 border-l-2 border-emerald-accent/30 pl-2">
             {item.dietaryNote}
           </p>
         )}
 
-        {/* Bottom bar: duration · rating · open status */}
+        {/* Bottom bar: duration · rating · open status · cost badge */}
         <div className="flex flex-wrap items-center gap-3 border-t border-ink/5 pt-2.5">
-          <span className="micro-copy text-ink-light">{item.duration}</span>
+          {item.duration && (
+            <span className="micro-copy text-ink-light">{item.duration}</span>
+          )}
 
           {item.rating !== undefined && (
             <span className="flex items-center gap-1 micro-copy text-ink">
@@ -200,8 +242,11 @@ function LocationCard({
             </span>
           )}
 
-          {type === "dining" && item.reservation && (
-            <span className="micro-copy text-ink-light">Res. Required</span>
+          {costBadge && (
+            <span className={`flex items-center gap-1 micro-copy border px-1.5 py-0.5 ${costBadge.className}`}>
+              {costBadge.icon}
+              {costBadge.label}
+            </span>
           )}
         </div>
       </div>
@@ -223,15 +268,11 @@ const PACE_COLORS: Record<string, string> = {
   packed:   "text-ink border-ink",
 };
 
-function DaySection({ day, baseDelay }: { day: DayPlan; baseDelay: number }) {
-  const activities = [day.morning, day.afternoon, day.evening];
+function DaySection({ day }: { day: DayPlan }) {
+  const activities = [day.morning, day.afternoon, day.evening].filter(Boolean);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut", delay: baseDelay }}
-    >
+    <div>
       {/* Day header */}
       <div className="flex items-start justify-between mb-4 pb-4 border-b border-ink/8">
         <div>
@@ -242,10 +283,10 @@ function DaySection({ day, baseDelay }: { day: DayPlan; baseDelay: number }) {
         </div>
         <span
           className={`micro-copy border px-3 py-1.5 mt-1 shrink-0 ml-4 ${
-            PACE_COLORS[day.pace] || "text-ink border-ink"
+            PACE_COLORS[day.pace] ?? "text-ink border-ink"
           }`}
         >
-          {PACE_LABELS[day.pace] || day.pace}
+          {PACE_LABELS[day.pace] ?? day.pace}
         </span>
       </div>
 
@@ -253,53 +294,55 @@ function DaySection({ day, baseDelay }: { day: DayPlan; baseDelay: number }) {
       <div className="flex flex-col gap-1">
         {activities.map((act: Activity, i) => (
           <div key={`act-${i}`}>
-            {act.transitFromPrevious && i > 0 && (
+            {act?.transitFromPrevious && i > 0 && (
               <TransitHeader transit={act.transitFromPrevious} />
             )}
             <LocationCard
               item={act}
               type="activity"
-              delay={baseDelay + 0.06 * (i + 1)}
+              delay={0.06 * (i + 1)}
             />
           </div>
         ))}
 
         {/* Hidden gem */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: baseDelay + 0.28 }}
-          className="flex items-start gap-3 border border-emerald-accent/20 bg-emerald-accent/3 px-4 py-3 mt-1"
-        >
-          <Gem
-            size={13}
-            strokeWidth={1.5}
-            className="text-emerald-accent shrink-0 mt-0.5"
-          />
-          <div>
-            <span className="micro-copy text-emerald-accent block mb-1">
-              Hidden Gem
-            </span>
-            <p className="font-sans text-sm text-ink leading-relaxed">
-              {day.hiddenGem}
-            </p>
-          </div>
-        </motion.div>
+        {day.hiddenGem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.28 }}
+            className="flex items-start gap-3 border border-emerald-accent/20 bg-emerald-accent/3 px-4 py-3 mt-1"
+          >
+            <Gem
+              size={13}
+              strokeWidth={1.5}
+              className="text-emerald-accent shrink-0 mt-0.5"
+            />
+            <div>
+              <span className="micro-copy text-emerald-accent block mb-1">
+                Hidden Gem
+              </span>
+              <p className="font-sans text-sm text-ink leading-relaxed">
+                {day.hiddenGem}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Dining */}
-        {day.dining.length > 0 && (
+        {day.dining?.length > 0 && (
           <div className="mt-1">
             <p className="micro-copy text-ink-light py-2 px-1">Dining</p>
             <div className="flex flex-col gap-1">
               {day.dining.map((d: DiningRec, i) => (
                 <div key={`dining-${i}`}>
-                  {d.transitFromPrevious && (
+                  {d?.transitFromPrevious && (
                     <TransitHeader transit={d.transitFromPrevious} />
                   )}
                   <LocationCard
                     item={{ ...d, title: d.name, duration: "", startTime: undefined }}
                     type="dining"
-                    delay={baseDelay + 0.32 + i * 0.06}
+                    delay={0.32 + i * 0.06}
                   />
                 </div>
               ))}
@@ -307,7 +350,7 @@ function DaySection({ day, baseDelay }: { day: DayPlan; baseDelay: number }) {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -318,6 +361,7 @@ export default function ItineraryPage() {
   const { itinerary, loading, error, generateItinerary } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
+  const [activeDay, setActiveDay] = useState(0);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("itineraryRequest");
@@ -333,20 +377,22 @@ export default function ItineraryPage() {
     if (!itinerary) return [];
     return itinerary.days.flatMap((day) => {
       const pts: MapPoint[] = [
-        { type: "morning",   label: day.morning.title,   day: day.day, ...day.morning.coordinates },
-        { type: "afternoon", label: day.afternoon.title, day: day.day, ...day.afternoon.coordinates },
-        { type: "evening",   label: day.evening.title,   day: day.day, ...day.evening.coordinates },
-        { type: "gem",       label: day.hiddenGem.split("—")[0].trim(), day: day.day, ...day.hiddenGemCoordinates },
-        ...day.dining.map((d) => ({
+        { type: "morning",   label: day.morning?.title ?? "",   day: day.day, ...(day.morning?.coordinates ?? { lat: 0, lng: 0 }) },
+        { type: "afternoon", label: day.afternoon?.title ?? "", day: day.day, ...(day.afternoon?.coordinates ?? { lat: 0, lng: 0 }) },
+        { type: "evening",   label: day.evening?.title ?? "",   day: day.day, ...(day.evening?.coordinates ?? { lat: 0, lng: 0 }) },
+        { type: "gem",       label: day.hiddenGem?.split("—")?.[0]?.trim() ?? "", day: day.day, ...(day.hiddenGemCoordinates ?? { lat: 0, lng: 0 }) },
+        ...(day.dining ?? []).map((d) => ({
           type: "dining" as const,
           label: d.name,
           day: day.day,
-          ...d.coordinates,
+          ...(d.coordinates ?? { lat: 0, lng: 0 }),
         })),
       ];
       return pts.filter((p) => p.lat && p.lng);
     });
   }, [itinerary]);
+
+  const currentDay = itinerary?.days?.[activeDay];
 
   return (
     <div className="h-screen flex flex-col bg-paper overflow-hidden">
@@ -370,7 +416,7 @@ export default function ItineraryPage() {
           <div>
             <p className="micro-copy text-ink-light mb-1">Bespoke Itinerary</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
-              {destination || "Loading…"}
+              {destination || "Loading\u2026"}
             </h1>
           </div>
           {itinerary && (
@@ -404,7 +450,7 @@ export default function ItineraryPage() {
               >
                 <Loader2 size={28} className="animate-spin text-burnt-orange" strokeWidth={1} />
                 <p className="font-serif italic text-3xl text-ink">
-                  Curating your journey…
+                  Curating your journey&hellip;
                 </p>
                 <p className="micro-copy text-ink-light">
                   Sourcing locations, photos, ratings and transit times
@@ -445,7 +491,7 @@ export default function ItineraryPage() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
-                  className="mb-10"
+                  className="mb-8"
                 >
                   <div className="w-8 h-px bg-burnt-orange mb-4" />
                   <blockquote className="font-serif italic text-xl md:text-2xl text-ink leading-relaxed">
@@ -453,12 +499,51 @@ export default function ItineraryPage() {
                   </blockquote>
                 </motion.div>
 
-                {/* Day sections */}
-                <div className="flex flex-col gap-10">
+                {/* Day tab bar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.15 }}
+                  className="flex overflow-x-auto border-b border-ink/8 mb-8 -mx-6 md:-mx-10 px-6 md:px-10 scrollbar-none"
+                >
                   {itinerary.days.map((day, i) => (
-                    <DaySection key={day.day} day={day} baseDelay={i * 0.1} />
+                    <button
+                      key={day.day}
+                      onClick={() => setActiveDay(i)}
+                      className={`shrink-0 flex flex-col items-start pr-8 pb-3 pt-1 transition-all ${
+                        activeDay === i
+                          ? "border-b-2 border-burnt-orange"
+                          : "border-b-2 border-transparent hover:border-ink/20"
+                      }`}
+                    >
+                      <span className={`micro-copy ${activeDay === i ? "text-burnt-orange" : "text-ink-light"}`}>
+                        DAY {day.day}
+                      </span>
+                      <span
+                        className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[140px] truncate ${
+                          activeDay === i ? "text-ink" : "text-ink-light"
+                        }`}
+                      >
+                        {day.theme}
+                      </span>
+                    </button>
                   ))}
-                </div>
+                </motion.div>
+
+                {/* Active day — animated on tab switch */}
+                <AnimatePresence mode="wait">
+                  {currentDay && (
+                    <motion.div
+                      key={activeDay}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                    >
+                      <DaySection day={currentDay} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Bottom CTA */}
                 <motion.div

@@ -164,6 +164,8 @@ type PlacesEnrichment = {
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
+  hoursOpen?: string;
+  priceLevel?: number;
 };
 
 async function enrichPlace(
@@ -183,6 +185,19 @@ async function enrichPlace(
     if (!place) return null;
 
     const photoRef = place.photos?.[0]?.photo_reference;
+
+    // Extract today's opening hours from weekday_text
+    // weekday_text[0] = Monday ... [6] = Sunday; JS getDay() 0=Sun ... 6=Sat
+    const weekdayText: string[] | undefined = place.opening_hours?.weekday_text;
+    let hoursOpen: string | undefined;
+    if (weekdayText?.length) {
+      const todayIdx = (new Date().getDay() + 6) % 7;
+      const raw = weekdayText[todayIdx] ?? "";
+      // Strip "Monday: " prefix, leaving e.g. "9:00 AM – 9:00 PM"
+      const stripped = raw.replace(/^[^:]+:\s*/, "").trim();
+      if (stripped) hoursOpen = stripped;
+    }
+
     return {
       photoUrl: photoRef
         ? `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
@@ -190,6 +205,8 @@ async function enrichPlace(
       rating: place.rating,
       userRatingsTotal: place.user_ratings_total,
       openNow: place.opening_hours?.open_now,
+      hoursOpen,
+      priceLevel: place.price_level,
     };
   } catch {
     return null; // silently fail — graceful degradation

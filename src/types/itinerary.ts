@@ -59,6 +59,8 @@ export type Activity = {
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
+  hoursOpen?: string;   // e.g. "9:00 AM – 9:00 PM" (today's hours)
+  priceLevel?: number;  // Google price_level 0–4
   transitFromPrevious?: TransitInfo;
 };
 
@@ -74,6 +76,7 @@ export type DiningRec = {
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
+  hoursOpen?: string;   // e.g. "9:00 AM – 9:00 PM" (today's hours)
   transitFromPrevious?: TransitInfo;
 };
 

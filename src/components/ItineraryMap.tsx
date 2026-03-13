@@ -8,30 +8,26 @@ import {
   Polyline,
   useJsApiLoader,
 } from "@react-google-maps/api";
-import type { MapPoint, MapPointType } from "@/types/itinerary";
+import type { MapPoint } from "@/types/itinerary";
 
-// ─── Marker colors by activity type ─────────────────────────────────────────
+// ─── Day-centric color palette ────────────────────────────────────────────────
 
-const MARKER_COLORS: Record<MapPointType, string> = {
-  morning: "#F59E0B",    // amber
-  afternoon: "#C2410C",  // burnt-orange
-  evening: "#6366F1",    // indigo
-  dining: "#059669",     // emerald
-  gem: "#F5F0E8",        // paper (white-ish, with ink border)
+const DAY_PALETTE: Record<number, { fill: string; stroke: string; label: string }> = {
+  1: { fill: "#D4AF7A", stroke: "#B8924A", label: "Day 1" },  // Champagne
+  2: { fill: "#64748B", stroke: "#475569", label: "Day 2" },  // Slate
+  3: { fill: "#1E293B", stroke: "#0F172A", label: "Day 3" },  // Midnight
+  4: { fill: "#059669", stroke: "#047857", label: "Day 4" },  // Emerald
+  5: { fill: "#E11D48", stroke: "#BE123C", label: "Day 5" },  // Rose
 };
+const FALLBACK = { fill: "#6B6B6B", stroke: "#4a4a4a", label: "Day ?" };
 
-const MARKER_BORDER: Record<MapPointType, string> = {
-  morning: "#B45309",
-  afternoon: "#9A3412",
-  evening: "#4338CA",
-  dining: "#047857",
-  gem: "#0A0A0A",
-};
+function getDayColor(day: number) {
+  return DAY_PALETTE[day] ?? FALLBACK;
+}
 
-// Build an inline SVG dot marker for each type
-function buildSvgMarker(type: MapPointType): string {
-  const fill = MARKER_COLORS[type];
-  const stroke = MARKER_BORDER[type];
+// Build an inline SVG dot marker colored by day
+function buildSvgMarker(day: number): string {
+  const { fill, stroke } = getDayColor(day);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="9" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
   </svg>`;
@@ -52,16 +48,6 @@ const MAP_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: "poi", stylers: [{ visibility: "simplified" }] },
   { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#c0b8a8" }] },
 ];
-
-// ─── Type labels ─────────────────────────────────────────────────────────────
-
-const TYPE_LABELS: Record<MapPointType, string> = {
-  morning: "Morning",
-  afternoon: "Afternoon",
-  evening: "Evening",
-  dining: "Dining",
-  gem: "Hidden Gem",
-};
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -85,7 +71,6 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
 
   const onLoad = useCallback((m: google.maps.Map) => {
     setMap(m);
-    // Fit bounds to all markers if we have points
     if (points.length > 0) {
       const bounds = new window.google.maps.LatLngBounds();
       points.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
@@ -94,6 +79,9 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
   }, [points]);
 
   const onUnmount = useCallback(() => setMap(null), []);
+
+  // Derive unique day numbers present in the current points array
+  const visibleDays = Array.from(new Set(points.map((p) => p.day))).sort((a, b) => a - b);
 
   if (loadError) {
     return (
@@ -106,7 +94,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
   if (!isLoaded) {
     return (
       <div className="w-full h-full bg-paper-dark flex items-center justify-center">
-        <p className="micro-copy text-ink-light animate-pulse">Loading map…</p>
+        <p className="micro-copy text-ink-light animate-pulse">Loading map&hellip;</p>
       </div>
     );
   }
@@ -143,13 +131,13 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           />
         )}
 
-        {/* Markers */}
+        {/* Markers — colored by day */}
         {points.map((point, i) => (
           <Marker
-            key={`${point.type}-${i}`}
+            key={`day${point.day}-${point.type}-${i}`}
             position={{ lat: point.lat, lng: point.lng }}
             icon={{
-              url: buildSvgMarker(point.type),
+              url: buildSvgMarker(point.day),
               scaledSize: new window.google.maps.Size(24, 24),
               anchor: new window.google.maps.Point(12, 12),
             }}
@@ -181,7 +169,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
                       marginBottom: "3px",
                     }}
                   >
-                    Day {point.day} · {TYPE_LABELS[point.type]}
+                    Day {point.day} &middot; {point.type.charAt(0).toUpperCase() + point.type.slice(1)}
                   </div>
                   <div style={{ fontWeight: 600, lineHeight: 1.3 }}>
                     {point.label}
@@ -193,33 +181,36 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
         ))}
       </GoogleMap>
 
-      {/* Legend overlay */}
-      <div className="absolute bottom-4 left-4 bg-paper/90 backdrop-blur-sm border border-ink/8 px-4 py-3 flex flex-col gap-1.5">
-        {(Object.entries(TYPE_LABELS) as [MapPointType, string][]).map(
-          ([type, label]) => (
-            <div key={type} className="flex items-center gap-2">
-              <div
-                className="w-2.5 h-2.5 shrink-0"
-                style={{
-                  backgroundColor: MARKER_COLORS[type],
-                  border: `1.5px solid ${MARKER_BORDER[type]}`,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "DM Sans, system-ui",
-                  fontSize: "9px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.15em",
-                  color: "#6B6B6B",
-                }}
-              >
-                {label}
-              </span>
-            </div>
-          )
-        )}
-      </div>
+      {/* Legend overlay — day-centric */}
+      {visibleDays.length > 0 && (
+        <div className="absolute bottom-4 left-4 bg-paper/90 backdrop-blur-sm border border-ink/8 px-4 py-3 flex flex-col gap-1.5">
+          {visibleDays.map((day) => {
+            const { fill, stroke, label } = getDayColor(day);
+            return (
+              <div key={day} className="flex items-center gap-2">
+                <div
+                  className="w-2.5 h-2.5 shrink-0"
+                  style={{
+                    backgroundColor: fill,
+                    border: `1.5px solid ${stroke}`,
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "DM Sans, system-ui",
+                    fontSize: "9px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.15em",
+                    color: "#6B6B6B",
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
