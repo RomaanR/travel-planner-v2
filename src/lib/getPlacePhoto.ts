@@ -34,7 +34,7 @@ export async function getDestinationPhotoUrl(
     return (
       `https://maps.googleapis.com/maps/api/place/photo` +
       `?maxwidth=800` +
-      `&photo_reference=${ref}` +
+      `&photoreference=${ref}` +
       `&key=${API_KEY}`
     );
   } catch {
