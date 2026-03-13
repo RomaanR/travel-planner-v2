@@ -2,6 +2,10 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Load Clerk auth components client-side only — prevents SSR throws when no key is configured
+const NavbarAuth = dynamic(() => import("./NavbarAuth"), { ssr: false });
 
 export default function Navbar() {
   return (
@@ -20,21 +24,16 @@ export default function Navbar() {
 
       {/* Nav links */}
       <div className="hidden md:flex items-center gap-8">
-        <span className="micro-copy text-ink-light hover:text-ink transition-colors cursor-pointer">
-          Journal
-        </span>
-        <span className="micro-copy text-ink-light hover:text-ink transition-colors cursor-pointer">
-          Philosophy
-        </span>
-        <span className="micro-copy text-ink-light hover:text-ink transition-colors cursor-pointer">
-          Destinations
-        </span>
+        <Link
+          href="/trips"
+          className="micro-copy text-ink-light hover:text-ink transition-colors"
+        >
+          MY TRIPS
+        </Link>
       </div>
 
-      {/* Placeholder Sign In (auth deferred to Phase 2) */}
-      <button className="micro-copy border border-ink/20 px-5 py-2.5 text-ink hover:bg-ink hover:text-paper transition-all duration-300">
-        Sign In
-      </button>
+      {/* Auth — dynamically loaded to skip SSR (Clerk requires a key during SSR) */}
+      <NavbarAuth />
     </motion.nav>
   );
 }
