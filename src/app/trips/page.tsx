@@ -25,10 +25,18 @@ export default async function TripsPage() {
   const { userId } = await auth();
   if (!userId) redirect("/");
 
-  const trips = await prisma.trip.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  let trips: Awaited<ReturnType<typeof prisma.trip.findMany>> = [];
+  try {
+    trips = await prisma.trip.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (err) {
+    console.error("[/trips] Prisma error:", err);
+    throw new Error(
+      "Unable to load your trips. Please check that DATABASE_URL and DIRECT_URL are set in your Vercel environment variables."
+    );
+  }
 
   // Fetch all destination photos in parallel — failures silently return null
   const photos = await Promise.all(
