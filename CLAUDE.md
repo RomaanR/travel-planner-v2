@@ -236,8 +236,10 @@ In the live itinerary page (`itinerary/page.tsx`), `mapPoints` is computed clien
 ### Prisma — Trip Model
 ```prisma
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]  // "native" = local dev, "rhel-openssl-1.0.x" = Vercel (Linux)
+  provider = "prisma-client-js"
+  // No explicit binaryTargets — Prisma 5 auto-detects the correct platform binary
+  // via the postinstall script. Pinning targets (e.g. rhel-openssl-1.0.x) breaks
+  // Vercel which now runs Amazon Linux 2023 (OpenSSL 3.x), not AL2 (OpenSSL 1.0.x).
 }
 
 model Trip {
@@ -250,9 +252,9 @@ model Trip {
 }
 ```
 
-> **Vercel Deployment:** `binaryTargets` must include both `"native"` (local Windows/Mac dev) and `"rhel-openssl-1.0.x"` (Vercel Linux runtime). Without this, Prisma throws `PrismaClientInitializationError` during the Next.js build on Vercel because the Windows binary can&apos;t run on Linux.
+> **Vercel Deployment:** Do NOT set `binaryTargets` explicitly — Vercel&apos;s serverless runtime uses Amazon Linux 2023 (OpenSSL 3.x) and pinning to `rhel-openssl-1.0.x` causes runtime crashes. Instead, Prisma 5 auto-detects the correct binary when `prisma generate` runs.
 >
-> `package.json` includes `"postinstall": "prisma generate"` so Vercel automatically regenerates the client with the correct binary after `npm install`. Without this, Vercel uses the locally committed binary which is the wrong platform.
+> `package.json` includes `"postinstall": "prisma generate"` so Vercel regenerates the Prisma client with the correct Linux binary after `npm install`. This is the only Vercel-specific Prisma config needed.
 
 ### ItineraryRequest (POST body)
 ```ts
