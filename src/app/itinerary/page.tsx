@@ -194,11 +194,20 @@ function LocationCard({
           {displayName}
         </h4>
 
-        {/* Hours — monospace precision aesthetic */}
-        {item.hoursOpen && (
-          <div className="flex items-center gap-1.5 mb-2">
+        {/* Hours + Open/Closed status — unified row */}
+        {(item.hoursOpen || item.openNow !== undefined) && (
+          <div className="flex items-center gap-2 mb-2">
             <Clock size={10} strokeWidth={1.5} className="text-ink-light shrink-0" />
-            <span className="font-mono text-xs text-ink-light">{item.hoursOpen}</span>
+            {item.hoursOpen ? (
+              <span className="font-mono text-xs text-ink-light flex-1">{item.hoursOpen}</span>
+            ) : (
+              <span className="flex-1" />
+            )}
+            {item.openNow !== undefined && (
+              <span className={`micro-copy shrink-0 ${item.openNow ? "text-emerald-accent" : "text-burnt-orange"}`}>
+                {item.openNow ? "OPEN" : "CLOSED"}
+              </span>
+            )}
           </div>
         )}
 
@@ -229,16 +238,6 @@ function LocationCard({
                   ({formatRatingCount(item.userRatingsTotal)})
                 </span>
               )}
-            </span>
-          )}
-
-          {item.openNow !== undefined && (
-            <span
-              className={`micro-copy ${
-                item.openNow ? "text-emerald-accent" : "text-burnt-orange"
-              }`}
-            >
-              {item.openNow ? "OPEN NOW" : "CLOSED"}
             </span>
           )}
 

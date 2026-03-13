@@ -186,16 +186,26 @@ async function enrichPlace(
 
     const photoRef = place.photos?.[0]?.photo_reference;
 
-    // Extract today's opening hours from weekday_text
-    // weekday_text[0] = Monday ... [6] = Sunday; JS getDay() 0=Sun ... 6=Sat
-    const weekdayText: string[] | undefined = place.opening_hours?.weekday_text;
+    // weekday_text is NOT in Text Search results — requires Place Details API
     let hoursOpen: string | undefined;
-    if (weekdayText?.length) {
-      const todayIdx = (new Date().getDay() + 6) % 7;
-      const raw = weekdayText[todayIdx] ?? "";
-      // Strip "Monday: " prefix, leaving e.g. "9:00 AM – 9:00 PM"
-      const stripped = raw.replace(/^[^:]+:\s*/, "").trim();
-      if (stripped) hoursOpen = stripped;
+    if (place.place_id) {
+      try {
+        const det = await fetch(
+          `${PLACES_BASE}/details/json?place_id=${place.place_id}&fields=opening_hours&key=${apiKey}`,
+          { signal: AbortSignal.timeout(4000) }
+        );
+        if (det.ok) {
+          const dj = await det.json();
+          // weekday_text[0] = Monday ... [6] = Sunday; JS getDay() 0=Sun ... 6=Sat
+          const wt: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
+          if (wt?.length) {
+            const todayIdx = (new Date().getDay() + 6) % 7;
+            // Strip "Monday: " prefix → "9:00 AM – 9:00 PM"
+            const stripped = (wt[todayIdx] ?? "").replace(/^[^:]+:\s*/, "").trim();
+            if (stripped) hoursOpen = stripped;
+          }
+        }
+      } catch { /* silently skip — hours are optional enrichment */ }
     }
 
     return {
@@ -213,6 +223,28 @@ async function enrichPlace(
   }
 }
 
+// ─── Haversine distance helpers ───────────────────────────────────────────────
+
+function haversineKm(a: Coordinate, b: Coordinate): number {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * (Math.PI / 180);
+  const dLon = (b.lng - a.lng) * (Math.PI / 180);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * (Math.PI / 180)) *
+    Math.cos(b.lat * (Math.PI / 180)) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(h));
+}
+
+function haversineTransit(a: Coordinate, b: Coordinate): TransitInfo {
+  const km = haversineKm(a, b);
+  return {
+    walkingMinutes: Math.max(1, Math.round((km / 5) * 60)),   // 5 km/h walking
+    drivingMinutes: Math.max(1, Math.round((km / 25) * 60)),  // 25 km/h city driving
+  };
+}
+
 // ─── Distance Matrix ──────────────────────────────────────────────────────────
 
 async function getDayTransits(
@@ -221,10 +253,18 @@ async function getDayTransits(
 ): Promise<TransitInfo[]> {
   if (stops.length < 2) return stops.map(() => ({}));
 
-  const origins      = stops.slice(0, -1).map((s) => `${s.lat},${s.lng}`).join("|");
-  const destinations = stops.slice(1).map((s) => `${s.lat},${s.lng}`).join("|");
+  // Baseline: Haversine estimates for every consecutive pair
+  // These always render — Distance Matrix will override where available
+  const transits: TransitInfo[] = [{}]; // first stop has no predecessor
+  for (let i = 0; i < stops.length - 1; i++) {
+    transits.push(haversineTransit(stops[i], stops[i + 1]));
+  }
 
+  // Try Distance Matrix for more accurate road-based durations
   try {
+    const origins      = stops.slice(0, -1).map((s) => `${s.lat},${s.lng}`).join("|");
+    const destinations = stops.slice(1).map((s) => `${s.lat},${s.lng}`).join("|");
+
     const [walkRes, driveRes] = await Promise.all([
       fetch(
         `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=walking&key=${apiKey}`,
@@ -239,24 +279,16 @@ async function getDayTransits(
     const walkData  = walkRes.ok  ? await walkRes.json()  : null;
     const driveData = driveRes.ok ? await driveRes.json() : null;
 
-    // Build transit info for each consecutive pair (indices 1..n)
-    // stops[0] has no "from previous" so we pad with empty at index 0
-    const transits: TransitInfo[] = [{}]; // first stop has no predecessor
-
+    // Override Haversine estimates only when Distance Matrix returns valid values
     for (let i = 0; i < stops.length - 1; i++) {
       const walkSecs  = walkData?.rows?.[i]?.elements?.[i]?.duration?.value;
       const driveSecs = driveData?.rows?.[i]?.elements?.[i]?.duration?.value;
-      transits.push({
-        walkingMinutes:  walkSecs  ? Math.round(walkSecs  / 60) : undefined,
-        drivingMinutes:  driveSecs ? Math.round(driveSecs / 60) : undefined,
-      });
+      if (walkSecs)  transits[i + 1].walkingMinutes  = Math.max(1, Math.round(walkSecs  / 60));
+      if (driveSecs) transits[i + 1].drivingMinutes  = Math.max(1, Math.round(driveSecs / 60));
     }
+  } catch { /* keep Haversine estimates */ }
 
-    return transits;
-  } catch {
-    // Return empty transits on failure — UI hides transit headers gracefully
-    return stops.map(() => ({}));
-  }
+  return transits;
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
