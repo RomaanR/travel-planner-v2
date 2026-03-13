@@ -1,0 +1,165 @@
+export const dynamic = "force-dynamic";
+
+import { auth } from "@clerk/nextjs/server";
+import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { prisma } from "@/lib/db";
+import Navbar from "@/components/Navbar";
+import ItineraryMap from "@/components/ItineraryMap";
+import ItineraryViewer from "@/components/ItineraryViewer";
+import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(date: Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default async function TripViewPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  const { userId } = await auth();
+  if (!userId) redirect("/");
+
+  // ── DB fetch (ownership-checked) ────────────────────────────────────────────
+  const trip = await prisma.trip.findUnique({
+    where: { id: params.id },
+  });
+
+  // Return 404 for missing trips AND trips owned by another user (same surface)
+  if (!trip || trip.userId !== userId) notFound();
+
+  // ── Data preparation ────────────────────────────────────────────────────────
+  const itinerary = trip.itineraryData as unknown as ItineraryResponse;
+
+  // Compute map points server-side — mirrors the useMemo in itinerary/page.tsx
+  const mapPoints: MapPoint[] = (itinerary.days ?? []).flatMap((day) => {
+    const pts: MapPoint[] = [
+      {
+        type: "morning",
+        label: day.morning?.title ?? "",
+        day: day.day,
+        ...(day.morning?.coordinates ?? { lat: 0, lng: 0 }),
+      },
+      {
+        type: "afternoon",
+        label: day.afternoon?.title ?? "",
+        day: day.day,
+        ...(day.afternoon?.coordinates ?? { lat: 0, lng: 0 }),
+      },
+      {
+        type: "evening",
+        label: day.evening?.title ?? "",
+        day: day.day,
+        ...(day.evening?.coordinates ?? { lat: 0, lng: 0 }),
+      },
+      {
+        type: "gem",
+        label: day.hiddenGem?.split("—")?.[0]?.trim() ?? "",
+        day: day.day,
+        ...(day.hiddenGemCoordinates ?? { lat: 0, lng: 0 }),
+      },
+      ...(day.dining ?? []).map((d) => ({
+        type: "dining" as const,
+        label: d.name,
+        day: day.day,
+        ...(d.coordinates ?? { lat: 0, lng: 0 }),
+      })),
+    ];
+    return pts.filter((p) => p.lat && p.lng);
+  });
+
+  // Derive map center: first valid point → first morning activity → Tokyo fallback
+  const mapCenter =
+    mapPoints.length > 0
+      ? { lat: mapPoints[0].lat, lng: mapPoints[0].lng }
+      : (itinerary.days?.[0]?.morning?.coordinates ?? {
+          lat: 35.6762,
+          lng: 139.6503,
+        });
+
+  // ── Bottom CTA (no save button — already archived) ──────────────────────────
+  const bottomCta = (
+    <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-10">
+      <p className="font-serif italic text-3xl text-ink mb-6">
+        Exploring elsewhere?
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <Link
+          href="/trips"
+          className="micro-copy border border-ink/20 px-8 py-4 text-ink hover:bg-ink hover:text-paper transition-all duration-300"
+        >
+          &larr;&ensp;Back to Archive
+        </Link>
+        <Link
+          href="/"
+          className="micro-copy bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
+        >
+          Curate a New Journey
+        </Link>
+      </div>
+    </div>
+  );
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  return (
+    <div className="h-screen flex flex-col bg-paper overflow-hidden">
+      <Navbar />
+
+      {/* Header strip — mirrors itinerary/page.tsx structure, different content */}
+      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
+        <Link
+          href="/trips"
+          className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
+        >
+          <ArrowLeft size={13} />
+          Back to Archive
+        </Link>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="micro-copy text-ink-light mb-1">
+              Saved Journey&ensp;&middot;&ensp;{formatDate(trip.createdAt)}
+            </p>
+            <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
+              {trip.destination}
+            </h1>
+          </div>
+          {/* No save button — this trip is already in the archive */}
+        </div>
+      </div>
+
+      {/* Split-screen — identical 55/45 proportions to itinerary/page.tsx */}
+      <div className="flex flex-1 min-h-0">
+
+        {/* LEFT: Scrollable timeline */}
+        <div className="w-full md:w-[55%] overflow-y-auto">
+
+          {/* Mobile map banner */}
+          <div className="md:hidden h-52 w-full border-b border-ink/5">
+            <ItineraryMap center={mapCenter} points={mapPoints} />
+          </div>
+
+          <div className="px-6 md:px-10 py-8">
+            <ItineraryViewer itinerary={itinerary} bottomSection={bottomCta} />
+          </div>
+        </div>
+
+        {/* RIGHT: Sticky map */}
+        <div className="hidden md:block w-[45%] border-l border-ink/5 h-full">
+          <ItineraryMap center={mapCenter} points={mapPoints} />
+        </div>
+
+      </div>
+    </div>
+  );
+}

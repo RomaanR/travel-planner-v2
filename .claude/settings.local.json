@@ -13,7 +13,20 @@
       "Bash(npm info @clerk/nextjs@5 version)",
       "Bash(npm info @clerk/nextjs@6.39.0 peerDependencies)",
       "Bash(npm install @clerk/nextjs@6)",
-      "Bash(ls D:/travel-plannner-v2/.env*)"
+      "Bash(ls D:/travel-plannner-v2/.env*)",
+      "Bash(npm install prisma --save-dev)",
+      "Bash(npm install @prisma/client)",
+      "Bash(npx prisma init --datasource-provider postgresql)",
+      "Bash(node -e \"require\\(''dotenv''\\)\")",
+      "Bash(npx prisma generate)",
+      "Bash(npm uninstall prisma @prisma/client)",
+      "Bash(npm install prisma@5 --save-dev)",
+      "Bash(npm install @prisma/client@5)",
+      "Bash(npx prisma --version)",
+      "Bash(node -e \"const fs=require\\(''fs''\\);const raw=fs.readFileSync\\(''.env.local'',''utf8''\\);const has_db=raw.includes\\(''DATABASE_URL=''\\);const has_direct=raw.includes\\(''DIRECT_URL=''\\);console.log\\(''DB:'',has_db,''DIRECT:'',has_direct\\);\")",
+      "Bash(ls -la \"D:\\\\travel-plannner-v2\\\\src\\\\app\\\\trips\"\" 2>/dev/null || echo \"trips directory does not exist \")",
+      "Bash(node -e \"const p = require\\(''./node_modules/@clerk/nextjs/package.json''\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const m = require\\(''''./node_modules/@clerk/nextjs/server''''\\); console.log\\(typeof m.auth\\); const a = m.auth\\(\\); console.log\\(''''auth\\(\\) returns Promise?'''', a instanceof Promise\\);\")"
     ]
   }
 }
