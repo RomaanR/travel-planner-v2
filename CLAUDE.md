@@ -235,6 +235,11 @@ In the live itinerary page (`itinerary/page.tsx`), `mapPoints` is computed clien
 
 ### Prisma — Trip Model
 ```prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]  // "native" = local dev, "rhel-openssl-1.0.x" = Vercel (Linux)
+}
+
 model Trip {
   id            String   @id @default(uuid())
   userId        String                          // Clerk userId — no FK constraint
@@ -244,6 +249,10 @@ model Trip {
   createdAt     DateTime @default(now())
 }
 ```
+
+> **Vercel Deployment:** `binaryTargets` must include both `"native"` (local Windows/Mac dev) and `"rhel-openssl-1.0.x"` (Vercel Linux runtime). Without this, Prisma throws `PrismaClientInitializationError` during the Next.js build on Vercel because the Windows binary can&apos;t run on Linux.
+>
+> `package.json` includes `"postinstall": "prisma generate"` so Vercel automatically regenerates the client with the correct binary after `npm install`. Without this, Vercel uses the locally committed binary which is the wrong platform.
 
 ### ItineraryRequest (POST body)
 ```ts
