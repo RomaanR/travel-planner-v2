@@ -144,7 +144,8 @@ src/
 ├── hooks/
 │   └── useItinerary.ts         # Client-side fetch + state for live itinerary generation
 ├── lib/
-│   └── db.ts                   # Prisma singleton — prevents multiple clients in dev hot-reload
+│   ├── db.ts                   # Prisma singleton — prevents multiple clients in dev hot-reload
+│   └── getPlacePhoto.ts        # getDestinationPhotoUrl() — Google Places photo for /trips cards
 ├── app/actions/
 │   └── saveTrip.ts             # Server action — auth-gated Prisma trip.create
 └── types/
@@ -351,6 +352,23 @@ Distance Matrix override (best-effort, replaces Haversine if API succeeds):
   Promise.allSettled — partial success accepted
 ```
 Transit connector between cards always renders because Haversine ensures `walkingMinutes` and `drivingMinutes` are always defined.
+
+### `getDestinationPhotoUrl()` — `/trips` Dashboard Photos (`src/lib/getPlacePhoto.ts`)
+
+Fetches a representative destination photo for the `/trips` archive cards. Called server-side in `trips/page.tsx` via `Promise.all`.
+
+```
+Step 1: findplacefromtext (fields=photos)
+  → Extracts: candidates[0].photos[0].photo_reference
+
+Step 2: Constructs Places Photo URL
+  → https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=REF&key=KEY
+```
+
+> **Critical:** The query parameter is `photoreference` (no underscore). Using `photo_reference` (with underscore) silently returns a broken redirect. Both `enrichPlace()` in `route.ts` and `getDestinationPhotoUrl()` in `getPlacePhoto.ts` must use `photoreference`.
+
+Caching: `next: { revalidate: 86400 }` — 24-hour cache per destination (photos rarely change).
+Timeout: `AbortSignal.timeout(4000)`. Returns `null` on any error — falls back to typographic placeholder.
 
 ---
 
