@@ -142,6 +142,7 @@ src/
 │   ├── Navbar.tsx              # Fixed nav — wordmark + logo, MY TRIPS link, dynamic NavbarAuth
 │   ├── NavbarAuth.tsx          # Clerk auth (ssr:false) — SignInButton modal + UserButton
 │   ├── ShareButton.tsx         # Client component — navigator.share() + clipboard fallback + toast
+│   ├── ExportPdfButton.tsx     # Client component — window.print() trigger, print:hidden in output
 │   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion)
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   ├── BentoGrid.tsx           # 12-col editorial grid
@@ -469,4 +470,5 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive dashboard, /trips/[id] viewer, ItineraryViewer composition pattern, IDOR ownership enforcement |
 | 6 — PWA & Brand | **Complete** | @serwist/next service worker, web app manifest, Apple PWA metadata, logo in navbar |
 | 7 — Public Sharing | **Complete** | /shared/[id] public read-only route, generateMetadata OG tags, ShareButton (navigator.share + clipboard), mobile sticky CTA |
-| 8 — Monetization & Growth | **Next** | PDF export, booking integrations, email notifications |
+| 8 — PDF Export | **Complete** | Zero-dependency print export — window.print(), Tailwind print: modifiers, branded dossier header, all-days print section, @media print CSS resets |
+| 9 — Monetization & Growth | **Next** | Booking integrations, email notifications, subscription paywall |

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -113,11 +114,35 @@ export default async function TripViewPage({
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-paper overflow-hidden">
-      <Navbar />
+    <div className="h-screen flex flex-col bg-paper overflow-hidden print:h-auto print:overflow-visible print:block">
 
-      {/* Header strip — mirrors itinerary/page.tsx structure, different content */}
-      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
+      {/* ── PRINT ONLY: Branded dossier header ──────────────────────────────── */}
+      <div className="hidden print:block mb-10">
+        <div className="flex items-center justify-between pb-4 border-b-2 border-black mb-6">
+          <span className="font-sans font-bold text-[11px] tracking-[0.3em] uppercase text-black">
+            Seek Wander
+          </span>
+          <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/40">
+            Luxury Travel Dossier
+          </span>
+        </div>
+        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/50 mb-2">
+          {trip.days}&nbsp;{trip.days === 1 ? "Day" : "Days"}
+          &ensp;&middot;&ensp;Saved&ensp;{formatDate(trip.createdAt)}
+        </p>
+        <h1 className="font-serif italic text-6xl text-black leading-none">
+          {trip.destination}
+        </h1>
+        <div className="mt-6 h-px bg-black/10" />
+      </div>
+
+      {/* Navbar — hidden in print */}
+      <div className="print:hidden">
+        <Navbar />
+      </div>
+
+      {/* ── Screen header strip — hidden in print (replaced by dossier header) ── */}
+      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
         <Link
           href="/trips"
           className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
@@ -134,28 +159,29 @@ export default async function TripViewPage({
               {trip.destination}
             </h1>
           </div>
-          {/* No save button — this trip is already in the archive */}
+          {/* Export button — print:hidden is handled inside the component */}
+          <ExportPdfButton />
         </div>
       </div>
 
-      {/* Split-screen — identical 55/45 proportions to itinerary/page.tsx */}
-      <div className="flex flex-1 min-h-0">
+      {/* ── Split-screen ── */}
+      <div className="flex flex-1 min-h-0 print:block print:overflow-visible">
 
-        {/* LEFT: Scrollable timeline */}
-        <div className="w-full md:w-[55%] overflow-y-auto">
+        {/* LEFT: Scrollable timeline — full width in print */}
+        <div className="w-full md:w-[55%] overflow-y-auto print:w-full print:overflow-visible">
 
-          {/* Mobile map banner */}
-          <div className="md:hidden h-52 w-full border-b border-ink/5">
+          {/* Mobile map banner — hidden in print */}
+          <div className="md:hidden h-52 w-full border-b border-ink/5 print:hidden">
             <ItineraryMap center={mapCenter} points={mapPoints} />
           </div>
 
-          <div className="px-6 md:px-10 py-8">
+          <div className="px-6 md:px-10 py-8 print:px-0 print:py-6">
             <ItineraryViewer itinerary={itinerary} bottomSection={bottomCta} />
           </div>
         </div>
 
-        {/* RIGHT: Sticky map */}
-        <div className="hidden md:block w-[45%] border-l border-ink/5 h-full">
+        {/* RIGHT: Sticky map — hidden in print (interactive maps don't print) */}
+        <div className="hidden md:block w-[45%] border-l border-ink/5 h-full print:hidden">
           <ItineraryMap center={mapCenter} points={mapPoints} />
         </div>
 
