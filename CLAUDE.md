@@ -22,6 +22,7 @@ This is not a travel app — it is a digital concierge.
 | AI | @anthropic-ai/sdk — model: `claude-sonnet-4-6`, max_tokens: `8192` |
 | Auth | **@clerk/nextjs v6** — **ACTIVE** (v6 is required; v7 breaks Next.js 14) |
 | ORM | **Prisma 7 + Supabase (PostgreSQL)** — **ACTIVE** |
+| PWA | **@serwist/next + serwist** — service worker, offline caching, installable |
 
 > **Clerk version lock:** Always install `@clerk/nextjs@6`, never `@clerk/nextjs@7+`. Clerk v7 requires Next.js 15. The v6 API uses `<SignedIn>/<SignedOut>` — `<Show>` is v7-only and must NOT be used.
 
@@ -119,10 +120,12 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL  ← not used
 ```
 src/
 ├── app/
-│   ├── layout.tsx              # Root layout — fonts, conditional ClerkProvider, body bg-paper
+│   ├── layout.tsx              # Root layout — fonts, conditional ClerkProvider, body bg-paper, appleWebApp metadata
 │   ├── page.tsx                # Landing page (CurationForm) — force-dynamic
 │   ├── not-found.tsx           # Custom 404 — Seek Wander aesthetic — force-dynamic
 │   ├── globals.css             # Base styles, CSS custom properties
+│   ├── manifest.ts             # Next.js PWA manifest — name, icons, standalone display, brand colors
+│   ├── sw.ts                   # Serwist service worker — precache + Google Places photo CacheFirst (30d)
 │   ├── api/
 │   │   └── itinerary/
 │   │       └── route.ts        # POST — AI generation + Google enrichment pipeline
@@ -460,4 +463,5 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 3 — Ultra-Luxury UI | **Complete** | Tabbed day nav, hoursOpen, cost badges, dashed transit connectors, day-centric map |
 | 4 — Auth | **Complete** | Clerk v6 integration, conditional ClerkProvider, NavbarAuth, custom 404 |
 | 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive dashboard, /trips/[id] viewer, ItineraryViewer composition pattern, IDOR ownership enforcement |
-| 6 — Monetization & Growth | **Next** | PDF export, itinerary sharing (public links), booking integrations, email notifications |
+| 6 — PWA & Brand | **Complete** | @serwist/next service worker, web app manifest, Apple PWA metadata, logo in navbar |
+| 7 — Monetization & Growth | **Next** | PDF export, itinerary sharing (public links), booking integrations, email notifications |
