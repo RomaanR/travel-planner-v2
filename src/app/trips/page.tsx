@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
 import Navbar from "@/components/Navbar";
+import ShareButton from "@/components/ShareButton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -151,14 +152,18 @@ export default async function TripsPage() {
                       </span>
                     </div>
 
-                    {/* View link */}
-                    <Link
-                      href={`/trips/${trip.id}`}
-                      className="micro-copy inline-flex items-center gap-2 text-ink group-hover:text-burnt-orange transition-colors self-start"
-                    >
-                      View Itinerary
-                      <ArrowRight size={12} strokeWidth={1.5} />
-                    </Link>
+                    {/* Actions */}
+                    <div className="flex items-center gap-5">
+                      <Link
+                        href={`/trips/${trip.id}`}
+                        className="micro-copy inline-flex items-center gap-2 text-ink group-hover:text-burnt-orange transition-colors"
+                      >
+                        View Itinerary
+                        <ArrowRight size={12} strokeWidth={1.5} />
+                      </Link>
+                      <span className="text-ink/20 select-none leading-none">&middot;</span>
+                      <ShareButton tripId={trip.id} destination={trip.destination} />
+                    </div>
                   </div>
 
                   {/* ── Right: Destination photo ── */}
