@@ -131,13 +131,17 @@ src/
 │   │       └── route.ts        # POST — AI generation + Google enrichment pipeline
 │   ├── itinerary/
 │   │   └── page.tsx            # Client component — split-screen live results (55% timeline + 45% map)
+│   ├── shared/
+│   │   └── [id]/
+│   │       └── page.tsx        # Server component — public read-only shared itinerary (/shared/[id])
 │   └── trips/
 │       ├── page.tsx            # Server component — user archive dashboard (/trips)
 │       └── [id]/
 │           └── page.tsx        # Server component — dynamic saved trip viewer (/trips/[id])
 ├── components/
-│   ├── Navbar.tsx              # Fixed nav — wordmark, MY TRIPS link, dynamic NavbarAuth
+│   ├── Navbar.tsx              # Fixed nav — wordmark + logo, MY TRIPS link, dynamic NavbarAuth
 │   ├── NavbarAuth.tsx          # Clerk auth (ssr:false) — SignInButton modal + UserButton
+│   ├── ShareButton.tsx         # Client component — navigator.share() + clipboard fallback + toast
 │   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion)
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   ├── BentoGrid.tsx           # 12-col editorial grid
@@ -464,4 +468,5 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 4 — Auth | **Complete** | Clerk v6 integration, conditional ClerkProvider, NavbarAuth, custom 404 |
 | 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive dashboard, /trips/[id] viewer, ItineraryViewer composition pattern, IDOR ownership enforcement |
 | 6 — PWA & Brand | **Complete** | @serwist/next service worker, web app manifest, Apple PWA metadata, logo in navbar |
-| 7 — Monetization & Growth | **Next** | PDF export, itinerary sharing (public links), booking integrations, email notifications |
+| 7 — Public Sharing | **Complete** | /shared/[id] public read-only route, generateMetadata OG tags, ShareButton (navigator.share + clipboard), mobile sticky CTA |
+| 8 — Monetization & Growth | **Next** | PDF export, booking integrations, email notifications |
