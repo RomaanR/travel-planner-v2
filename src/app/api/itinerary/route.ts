@@ -53,42 +53,23 @@ const SCHEMA = `{
       "day": 1,
       "theme": "string (poetic day title)",
       "pace": "relaxed | moderate | packed",
-      "morning": {
-        "title": "string",
-        "description": "string (exactly 2 sentences)",
-        "duration": "string (e.g. '2 hours')",
-        "startTime": "string (e.g. '09:00')",
-        "category": "string (e.g. 'SIGHTSEEING', 'MUSEUM', 'CULTURE', 'NATURE', 'WELLNESS', 'ADVENTURE', 'SHOPPING')",
-        "coordinates": { "lat": number, "lng": number }
-      },
-      "afternoon": {
-        "title": "string",
-        "description": "string (exactly 2 sentences)",
-        "duration": "string",
-        "startTime": "string",
-        "category": "string",
-        "coordinates": { "lat": number, "lng": number }
-      },
-      "evening": {
-        "title": "string",
-        "description": "string (exactly 2 sentences)",
-        "duration": "string",
-        "startTime": "string",
-        "category": "string",
-        "coordinates": { "lat": number, "lng": number }
-      },
-      "hiddenGem": "string (exact place name + 1 sentence why it matters)",
-      "hiddenGemCoordinates": { "lat": number, "lng": number },
-      "dining": [
+      "timeline": [
         {
-          "name": "string (real restaurant name)",
-          "cuisine": "string",
-          "pricePoint": "$$ | $$$ | $$$$",
-          "reservation": true | false,
+          "type": "activity | breakfast | lunch | dinner | snack | drinks",
+          "title": "string (place or activity name — real names only)",
+          "description": "string (exactly 2 sentences)",
+          "duration": "string (e.g. '2 hours' for activities; '1 hour' for meals)",
+          "startTime": "string (HH:MM — must be strictly sequential through the day)",
+          "category": "string (SIGHTSEEING | MUSEUM | CULTURE | NATURE | WELLNESS | ADVENTURE | SHOPPING — activities only, omit for meals)",
           "coordinates": { "lat": number, "lng": number },
-          "dietaryNote": "string | undefined"
+          "cuisine": "string (meals only — omit for activities)",
+          "pricePoint": "$$ | $$$ | $$$$ (meals only — omit for activities)",
+          "reservation": true | false,
+          "dietaryNote": "string | undefined (meals only)"
         }
-      ]
+      ],
+      "hiddenGem": "string (exact place name + 1 sentence why it matters)",
+      "hiddenGemCoordinates": { "lat": number, "lng": number }
     }
   ]
 }`;
@@ -142,15 +123,15 @@ Travel dates: ${departureDate} to ${returnDate}
 
 ━━━ MANDATORY RULES ━━━
 1. Generate EXACTLY ${duration} day objects in the "days" array.
-2. Pace "${pace}" must be reflected authentically in every day's activity count and rhythm.
+2. Pace "${pace}" must be reflected authentically in every day's timeline item count and rhythm.
 3. All dining aligns with ${budgetTier} price tier.
-4. COORDINATES: Every activity, dining spot, and hiddenGem MUST include real, accurate GPS coordinates as numbers. These plot on a live map — incorrect coordinates are unacceptable.
+4. COORDINATES: Every timeline item and hiddenGem MUST include real, accurate GPS coordinates as numbers. These plot on a live map — incorrect coordinates are unacceptable.
 5. Interests (${interestStr}): Every venue must serve at least one interest.
-6. startTime: Provide a realistic clock start time ("09:00", "14:30") for every activity. Times must be sequential through the day.
-7. category: Assign an uppercase category to every activity.
-8. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
-9. Dining: 1–2 real restaurants per day, real names, cultural significance preferred.
-10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per activity description.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
+6. startTime: Provide a realistic HH:MM for every timeline item. Times MUST be strictly sequential through the day (e.g. "08:00", "09:30", "12:30", "14:00", "19:30").
+7. category: Assign an uppercase category to every activity-type item (SIGHTSEEING, MUSEUM, CULTURE, NATURE, WELLNESS, ADVENTURE, SHOPPING). Omit for meals.
+8. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
+9. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
+10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
@@ -334,15 +315,12 @@ export async function POST(req: Request) {
       name: string;
     };
 
-    const workItems: WorkItem[] = itinerary.days.flatMap((day) => [
-      { obj: day.morning   as unknown as Record<string, unknown>, name: day.morning.title },
-      { obj: day.afternoon as unknown as Record<string, unknown>, name: day.afternoon.title },
-      { obj: day.evening   as unknown as Record<string, unknown>, name: day.evening.title },
-      ...day.dining.map((d) => ({
-        obj: d as unknown as Record<string, unknown>,
-        name: d.name,
-      })),
-    ]);
+    const workItems: WorkItem[] = itinerary.days.flatMap((day) =>
+      (day.timeline ?? []).map((item) => ({
+        obj: item as unknown as Record<string, unknown>,
+        name: item.title,
+      }))
+    );
 
     // ── Step 3: Parallel Places enrichment (allSettled = no crash on failure) ─
     const enrichResults = await Promise.allSettled(
@@ -358,18 +336,14 @@ export async function POST(req: Request) {
     // ── Step 4: Distance Matrix — one batch per day ───────────────────────────
     await Promise.allSettled(
       itinerary.days.map(async (day) => {
-        const stops: Coordinate[] = [
-          day.morning.coordinates,
-          day.afternoon.coordinates,
-          day.evening.coordinates,
-          ...day.dining.map((d) => d.coordinates),
-        ].filter((c) => c?.lat && c?.lng);
+        const stops: Coordinate[] = (day.timeline ?? [])
+          .map((item) => item.coordinates)
+          .filter((c) => c?.lat && c?.lng);
 
         const transits = await getDayTransits(stops, apiKey);
 
-        // Assign transitFromPrevious to each stop (index 1 onward)
-        const items = [day.morning, day.afternoon, day.evening, ...day.dining];
-        items.forEach((item, idx) => {
+        // Assign transitFromPrevious to each timeline item (index 1 onward)
+        (day.timeline ?? []).forEach((item, idx) => {
           if (transits[idx]) {
             (item as unknown as Record<string, unknown>).transitFromPrevious = transits[idx];
           }

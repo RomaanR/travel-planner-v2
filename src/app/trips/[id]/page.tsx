@@ -10,6 +10,7 @@ import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
+import { computeMapPoints, normalizeDayPlan } from "@/lib/itineraryUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,47 +45,13 @@ export default async function TripViewPage({
   const itinerary = trip.itineraryData as unknown as ItineraryResponse;
 
   // Compute map points server-side — mirrors the useMemo in itinerary/page.tsx
-  const mapPoints: MapPoint[] = (itinerary.days ?? []).flatMap((day) => {
-    const pts: MapPoint[] = [
-      {
-        type: "morning",
-        label: day.morning?.title ?? "",
-        day: day.day,
-        ...(day.morning?.coordinates ?? { lat: 0, lng: 0 }),
-      },
-      {
-        type: "afternoon",
-        label: day.afternoon?.title ?? "",
-        day: day.day,
-        ...(day.afternoon?.coordinates ?? { lat: 0, lng: 0 }),
-      },
-      {
-        type: "evening",
-        label: day.evening?.title ?? "",
-        day: day.day,
-        ...(day.evening?.coordinates ?? { lat: 0, lng: 0 }),
-      },
-      {
-        type: "gem",
-        label: day.hiddenGem?.split("—")?.[0]?.trim() ?? "",
-        day: day.day,
-        ...(day.hiddenGemCoordinates ?? { lat: 0, lng: 0 }),
-      },
-      ...(day.dining ?? []).map((d) => ({
-        type: "dining" as const,
-        label: d.name,
-        day: day.day,
-        ...(d.coordinates ?? { lat: 0, lng: 0 }),
-      })),
-    ];
-    return pts.filter((p) => p.lat && p.lng);
-  });
+  const mapPoints: MapPoint[] = computeMapPoints(itinerary.days ?? []);
 
-  // Derive map center: first valid point → first morning activity → Tokyo fallback
+  // Derive map center: first valid point → first timeline item → Tokyo fallback
   const mapCenter =
     mapPoints.length > 0
       ? { lat: mapPoints[0].lat, lng: mapPoints[0].lng }
-      : (itinerary.days?.[0]?.morning?.coordinates ?? {
+      : (normalizeDayPlan(itinerary.days?.[0])?.timeline?.[0]?.coordinates ?? {
           lat: 35.6762,
           lng: 139.6503,
         });
