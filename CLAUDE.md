@@ -1,12 +1,15 @@
-# CLAUDE.md — Luxury AI Travel Curation Platform
+# CLAUDE.md — Seek Wander
 
 > **Permanent project memory. Update this file whenever architecture decisions change.**
 
 ## Project Identity
 
-**Vogue meets National Geographic.** Expensive, minimalist, editorial.
+**Seek Wander — Curated Luxury Journeys.**
+Vogue meets National Geographic. Expensive, minimalist, editorial.
 Every component must feel like it belongs in a high-end print magazine or luxury brand lookbook.
 This is not a travel app — it is a digital concierge.
+
+> **Brand note:** The word "AI" is intentionally absent from all user-facing copy, manifests, metadata, and UI text. The product is positioned around the luxury outcome ("Curated Luxury Journeys"), not the technology. Claude is the invisible engine — never the headline.
 
 ---
 
@@ -123,41 +126,42 @@ src/
 │   ├── layout.tsx              # Root layout — fonts, conditional ClerkProvider, body bg-paper, appleWebApp metadata
 │   ├── page.tsx                # Landing page (CurationForm) — force-dynamic
 │   ├── not-found.tsx           # Custom 404 — Seek Wander aesthetic — force-dynamic
-│   ├── globals.css             # Base styles, CSS custom properties
-│   ├── manifest.ts             # Next.js PWA manifest — name, icons, standalone display, brand colors
+│   ├── globals.css             # Base styles, CSS custom properties, @media print resets
+│   ├── manifest.ts             # Next.js PWA manifest — "Seek Wander", standalone display, brand colors (no "AI" in name)
 │   ├── sw.ts                   # Serwist service worker — precache + Google Places photo CacheFirst (30d)
 │   ├── api/
 │   │   └── itinerary/
-│   │       └── route.ts        # POST — AI generation + Google enrichment pipeline
+│   │       └── route.ts        # POST — AI generation + Google enrichment pipeline (timeline schema)
 │   ├── itinerary/
 │   │   └── page.tsx            # Client component — split-screen live results (55% timeline + 45% map)
 │   ├── shared/
 │   │   └── [id]/
-│   │       └── page.tsx        # Server component — public read-only shared itinerary (/shared/[id])
+│   │       └── page.tsx        # Server component — public read-only shared itinerary (/shared/[id]), NO auth
 │   └── trips/
 │       ├── page.tsx            # Server component — user archive dashboard (/trips)
 │       └── [id]/
-│           └── page.tsx        # Server component — dynamic saved trip viewer (/trips/[id])
+│           └── page.tsx        # Server component — dynamic saved trip viewer (/trips/[id]) + PDF export
 ├── components/
-│   ├── Navbar.tsx              # Fixed nav — wordmark + logo, MY TRIPS link, dynamic NavbarAuth
+│   ├── Navbar.tsx              # Fixed nav — wordmark + /public/icon-192x192.png logo, MY TRIPS link, dynamic NavbarAuth
 │   ├── NavbarAuth.tsx          # Clerk auth (ssr:false) — SignInButton modal + UserButton
-│   ├── ShareButton.tsx         # Client component — navigator.share() + clipboard fallback + toast
+│   ├── ShareButton.tsx         # Client component — navigator.share() + clipboard fallback + AnimatePresence toast
 │   ├── ExportPdfButton.tsx     # Client component — window.print() trigger, print:hidden in output
 │   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion)
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   ├── BentoGrid.tsx           # 12-col editorial grid
-│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend
-│   └── ItineraryViewer.tsx     # Client component — reusable itinerary display (editorial, tabs, cards)
+│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend (unchanged by timeline refactor)
+│   └── ItineraryViewer.tsx     # Client component — editorial opener, tabbed days, TimelineCard, DaySection, TransitHeader, print all-days section
 ├── middleware.ts               # Clerk middleware — all routes public
 ├── hooks/
 │   └── useItinerary.ts         # Client-side fetch + state for live itinerary generation
 ├── lib/
 │   ├── db.ts                   # Prisma singleton — prevents multiple clients in dev hot-reload
-│   └── getPlacePhoto.ts        # getDestinationPhotoUrl() — Google Places photo for /trips cards
+│   ├── getPlacePhoto.ts        # getDestinationPhotoUrl() — Google Places photo for /trips cards
+│   └── itineraryUtils.ts       # Shared runtime helpers: normalizeDayPlan(), isMealType(), computeMapPoints()
 ├── app/actions/
 │   └── saveTrip.ts             # Server action — auth-gated Prisma trip.create
 └── types/
-    └── itinerary.ts            # Shared TypeScript types (incl. enriched fields)
+    └── itinerary.ts            # Shared TypeScript types ONLY — no runtime functions
 ```
 
 ```
@@ -169,73 +173,128 @@ prisma/
 
 ## Architecture & Patterns
 
-### Server-to-Client Composition Pattern
+### Chronological Timeline Data Shape (Critical — Major Refactor)
 
-`ItineraryViewer.tsx` is a shared `"use client"` component that owns all itinerary display logic: the editorial opener, tabbed day navigation (`activeDay` state), `AnimatePresence` day transitions, `LocationCard`, `DaySection`, and `TransitHeader`.
+The canonical itinerary shape uses a single **`timeline: TimelineItem[]`** array per day — activities, breakfast, lunch, dinner, snacks, and drinks interwoven chronologically by `startTime`. The old shape (`morning`/`afternoon`/`evening` activities + separate `dining[]` array) is fully deprecated for new generations but still exists in the database for old records.
 
-It accepts a `bottomSection?: ReactNode` slot that callers use to inject page-specific CTAs without duplicating display code or adding messy conditionals inside the component:
+**`TimelineItemType`** = `"activity" | "breakfast" | "lunch" | "dinner" | "snack" | "drinks"`
 
-```tsx
-// itinerary/page.tsx (client) — passes save button as bottomSection
-<ItineraryViewer itinerary={itinerary} bottomSection={<SaveCta />} />
-
-// trips/[id]/page.tsx (server) — passes back-to-archive links as bottomSection
-<ItineraryViewer itinerary={itinerary} bottomSection={<BackToArchiveCta />} />
+**`TimelineItem`** — unified card type:
+```ts
+type TimelineItem = {
+  type: TimelineItemType;
+  title: string;           // activity name OR restaurant name
+  description: string;     // 2 sentences for activities; cuisine for meals
+  duration: string;        // e.g. "2 hours"; empty for meals
+  startTime?: string;      // HH:MM — strictly sequential
+  category?: string;       // SIGHTSEEING | MUSEUM | CULTURE etc — activities only
+  coordinates: Coordinate;
+  cuisine?: string;        // meals only
+  pricePoint?: string;     // meals only
+  reservation?: boolean;   // meals only
+  dietaryNote?: string;    // meals only
+  // Google Places enriched:
+  photoUrl?: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  openNow?: boolean;
+  hoursOpen?: string;
+  priceLevel?: number;
+  transitFromPrevious?: TransitInfo;
+}
 ```
 
-Next.js 14 supports passing server-rendered JSX (including `<Link>`) to client components via props — this is the standard composition pattern. The slot content is rendered server-side and streamed into the client component boundary.
+**`DayPlan`** (updated):
+```ts
+type DayPlan = {
+  day: number;
+  theme: string;
+  pace: Pace;
+  timeline: TimelineItem[];        // canonical field
+  hiddenGem: string;
+  hiddenGemCoordinates: Coordinate;
+  // Legacy — optional, only present in DB records saved before the refactor:
+  morning?: Activity;
+  afternoon?: Activity;
+  evening?: Activity;
+  dining?: DiningRec[];
+}
+```
 
-**Do not** move page-specific CTAs, save buttons, or navigation inside `ItineraryViewer`. Keep the component display-only; callers own their actions.
+**`MapPointType`** = `"activity" | "meal" | "gem"` (simplified from the old morning/afternoon/evening/dining types)
+
+### `src/lib/itineraryUtils.ts` — Shared Runtime Helpers
+
+> **Rule:** `src/types/itinerary.ts` exports **types and interfaces only** — no runtime functions. All executable helpers live in `src/lib/itineraryUtils.ts`.
+
+Three exported functions:
+
+1. **`normalizeDayPlan(day: DayPlan): DayPlan`** — Backward-compat shim. Checks `Array.isArray(day.timeline)` — if false, synthesizes `timeline[]` from the legacy `morning`/`afternoon`/`evening`/`dining` fields. Old DB records render correctly with zero migration. Called at the top of `DaySection` in `ItineraryViewer`.
+
+2. **`isMealType(type: TimelineItemType): boolean`** — Returns `true` for breakfast/lunch/dinner/snack/drinks.
+
+3. **`computeMapPoints(days: DayPlan[]): MapPoint[]`** — Converts itinerary days to `MapPoint[]`. Calls `normalizeDayPlan()` internally, handles both old and new records. Used server-side in `trips/[id]` and `shared/[id]`, and client-side via `useMemo` in `itinerary/page.tsx`.
+
+### `ItineraryViewer.tsx` — TimelineCard
+
+- **`TimelineCard`** replaces the old `LocationCard`. Accepts a single `TimelineItem`.
+- Meal items (`isMealType()` true): `Utensils` icon placeholder, `type.toUpperCase()` badge (BREAKFAST, LUNCH, etc.), reservation/pricePoint cost badge.
+- Activity items: `ImageOff` placeholder, `category` badge, priceLevel cost badge.
+- Both share the same layout: photo column left, content column right.
+- `DaySection` calls `normalizeDayPlan(rawDay)` at its top.
+- **No separate dining section** — all items render in a single `items.map()` loop with `TransitHeader` connectors between consecutive items.
+
+### Server-to-Client Composition Pattern
+
+`ItineraryViewer.tsx` is a `"use client"` component with a `bottomSection?: ReactNode` slot:
+
+```tsx
+// itinerary/page.tsx — save button
+<ItineraryViewer itinerary={itinerary} bottomSection={<SaveCta />} />
+
+// trips/[id]/page.tsx — back-to-archive links
+<ItineraryViewer itinerary={itinerary} bottomSection={<BackToArchiveCta />} />
+
+// shared/[id]/page.tsx — acquisition CTA
+<ItineraryViewer itinerary={itinerary} bottomSection={<AcquisitionCta />} />
+```
+
+**Do not** move page-specific CTAs, save buttons, or navigation inside `ItineraryViewer`. Keep it display-only.
 
 ### Security — Ownership Enforcement (IDOR Prevention)
 
-All database queries for user-owned records **must** include both the record ID and the authenticated `userId`. Fetching by ID alone allows users to enumerate other users&apos; data by guessing UUIDs (an Insecure Direct Object Reference attack).
-
-**Correct pattern:**
 ```ts
 // Option A — findUnique + post-fetch ownership check (used in trips/[id])
 const trip = await prisma.trip.findUnique({ where: { id: params.id } });
 if (!trip || trip.userId !== userId) notFound();
-
-// Option B — findFirst with compound where (equivalent, slightly more explicit)
-const trip = await prisma.trip.findFirst({ where: { id: params.id, userId } });
-if (!trip) notFound();
 ```
 
-Both options return a neutral `notFound()` for missing records AND wrong-owner records — the same 404 surface prevents leaking whether a resource exists.
+Both missing and wrong-owner records return the same neutral `notFound()`.
 
-**Never** fetch by ID alone when the resource belongs to a user: `prisma.trip.findUnique({ where: { id } })` without a `userId` check is a vulnerability.
+**`/shared/[id]` is the intentional exception** — public route, NO auth check. Anyone with the link can view.
 
 ### Server Component Auth Pattern (Clerk v6)
 
-`/trips`, `/trips/[id]`, and `saveTrip.ts` authenticate with Clerk using `await auth()`:
-
 ```ts
-// At the top of any auth-gated server component or server action:
 const { userId } = await auth();   // MUST be awaited — auth() returns a Promise in Clerk v6.39+
 if (!userId) redirect("/");
 ```
 
-Key rules:
-- **`auth()` is async and must be `await`ed** — verified against Clerk v6.39.0. The function returns a `Promise<Auth>`. Calling `auth()` without `await` destructures the Promise object itself, giving `userId = undefined` and triggering false "Unauthorized" errors.
-- This applies to **all** server-side auth calls: server components, server actions, and route handlers.
-- Both `/trips` and `/trips/[id]` carry `export const dynamic = "force-dynamic"` to prevent static pre-rendering of auth-gated routes.
+**`auth()` must be `await`ed.** Without it, destructuring gives `userId = undefined`. Both `/trips` and `/trips/[id]` carry `export const dynamic = "force-dynamic"`.
 
 ### Prisma JSON Cast Pattern
-
-`itineraryData` is stored as `Json` in Prisma and read back as `Prisma.JsonValue`. Cast it to the application type with a double-cast through `unknown`:
 
 ```ts
 const itinerary = trip.itineraryData as unknown as ItineraryResponse;
 ```
 
-Always use optional chaining when accessing fields from the cast result — the JSON may have been written by an older schema version.
+Always use optional chaining on the result — JSON may have been written by an older schema version.
 
-### Map Points — Server-Side Computation
+### Map Points — Computation Pattern
 
-When rendering a saved itinerary (`trips/[id]/page.tsx`), `mapPoints` and `mapCenter` are computed in the server component from `itinerary.days` and passed directly as props to `<ItineraryMap>`. No client-side `useMemo` is needed — the computation is pure data transformation.
-
-In the live itinerary page (`itinerary/page.tsx`), `mapPoints` is computed client-side with `useMemo` because the itinerary arrives asynchronously after the API call completes.
+- **Server-side** (`trips/[id]`, `shared/[id]`): `const mapPoints = computeMapPoints(itinerary.days ?? [])` directly in the server component.
+- **Client-side** (`itinerary/page.tsx`): `useMemo(() => computeMapPoints(itinerary.days), [itinerary])`.
+- Both import from `@/lib/itineraryUtils` — zero duplicated logic.
 
 ---
 
@@ -245,9 +304,8 @@ In the live itinerary page (`itinerary/page.tsx`), `mapPoints` is computed clien
 ```prisma
 generator client {
   provider = "prisma-client-js"
-  // No explicit binaryTargets — Prisma 5 auto-detects the correct platform binary
-  // via the postinstall script. Pinning targets (e.g. rhel-openssl-1.0.x) breaks
-  // Vercel which now runs Amazon Linux 2023 (OpenSSL 3.x), not AL2 (OpenSSL 1.0.x).
+  // No explicit binaryTargets — Prisma auto-detects the correct platform binary.
+  // Pinning targets (e.g. rhel-openssl-1.0.x) breaks Vercel (Amazon Linux 2023, OpenSSL 3.x).
 }
 
 model Trip {
@@ -260,9 +318,7 @@ model Trip {
 }
 ```
 
-> **Vercel Deployment:** Do NOT set `binaryTargets` explicitly — Vercel&apos;s serverless runtime uses Amazon Linux 2023 (OpenSSL 3.x) and pinning to `rhel-openssl-1.0.x` causes runtime crashes. Instead, Prisma 5 auto-detects the correct binary when `prisma generate` runs.
->
-> `package.json` includes `"postinstall": "prisma generate"` so Vercel regenerates the Prisma client with the correct Linux binary after `npm install`. This is the only Vercel-specific Prisma config needed.
+> **Vercel Deployment:** `package.json` includes `"postinstall": "prisma generate"` so Vercel regenerates the Prisma client with the correct Linux binary after `npm install`. This is the only Vercel-specific Prisma config needed.
 
 ### ItineraryRequest (POST body)
 ```ts
@@ -271,70 +327,27 @@ type ItineraryRequest = {
   placeId: string        // Google Place ID
   lat: number
   lng: number
-  departureDate?: string
-  returnDate?: string
-  travelParty?: 'solo' | 'couple' | 'family' | 'group'
-  pace?: 'relaxed' | 'moderate' | 'packed'
-  budgetTier?: 'premium' | 'luxury' | 'ultra'
-  dietary?: string[]
-  interests?: string[]
+  departureDate: string  // ISO "YYYY-MM-DD"
+  returnDate: string     // ISO "YYYY-MM-DD"
+  duration: number       // computed from date diff, clamped 1–5
+  travelParty: 'solo' | 'couple' | 'family' | 'group'
+  pace: 'relaxed' | 'moderate' | 'packed'
+  budgetTier: 'premium' | 'luxury' | 'ultra-luxury'
+  dietary: DietaryOption[]
+  interests: Interest[]
 }
 ```
 
 ### ItineraryResponse (AI output + enriched fields)
 ```ts
-type Coordinate = { lat: number; lng: number }
-type TransitInfo = { walkingMinutes?: number; drivingMinutes?: number }
-type MapPoint = { day: number; type: MapPointType; label: string; lat: number; lng: number }
-
-type Activity = {
-  title: string
-  description: string
-  duration: string
-  coordinates?: Coordinate
-  // Enriched by Google APIs:
-  photoUrl?: string
-  rating?: number
-  userRatingsTotal?: number
-  openNow?: boolean
-  hoursOpen?: string          // Today's hours, e.g. "9:00 AM – 9:00 PM"
-  priceLevel?: number         // Google price_level 0–4
-  transitFromPrevious?: TransitInfo
-}
-
-type DiningRec = {
-  name: string
-  cuisine: string
-  pricePoint: string
-  reservation: boolean
-  coordinates?: Coordinate
-  // Enriched by Google APIs:
-  photoUrl?: string
-  rating?: number
-  userRatingsTotal?: number
-  openNow?: boolean
-  hoursOpen?: string
-  transitFromPrevious?: TransitInfo
-}
-
-type DayPlan = {
-  day: number
-  theme: string
-  pace: 'slow' | 'moderate' | 'immersive'
-  morning: Activity
-  afternoon: Activity
-  evening: Activity
-  hiddenGem: string
-  hiddenGemCoordinates?: Coordinate
-  dining: DiningRec[]
-}
-
 type ItineraryResponse = {
   destination: string
-  editorial: string
-  days: DayPlan[]
-  mapPoints: MapPoint[]
+  editorial: string        // Vogue-style opener sentence
+  days: DayPlan[]          // timeline[] shape — see Chronological Timeline section above
 }
+
+// MapPointType = "activity" | "meal" | "gem"
+// MapPoint = { day: number; type: MapPointType; label: string; lat: number; lng: number }
 ```
 
 ---
@@ -342,9 +355,37 @@ type ItineraryResponse = {
 ## Data Pipeline (`src/app/api/itinerary/route.ts`)
 
 ### Overview
-1. **AI generation** — Claude claude-sonnet-4-6 produces pure JSON itinerary
-2. **Place enrichment** — `enrichPlace()` called per activity/dining rec
-3. **Transit calculation** — `getDayTransits()` called per day
+1. **AI generation** — `claude-sonnet-4-6` produces pure JSON with `timeline[]` per day
+2. **Place enrichment** — `enrichPlace()` called for each `timeline` item in parallel
+3. **Transit calculation** — `getDayTransits()` called per day across all timeline stops
+
+### AI JSON Schema (current — timeline shape)
+```json
+{
+  "destination": "string",
+  "editorial": "string (≤25 words)",
+  "days": [{
+    "day": 1,
+    "theme": "string",
+    "pace": "relaxed | moderate | packed",
+    "timeline": [{
+      "type": "activity | breakfast | lunch | dinner | snack | drinks",
+      "title": "string (real place/restaurant name)",
+      "description": "string (exactly 2 sentences)",
+      "duration": "string",
+      "startTime": "HH:MM (strictly sequential)",
+      "category": "SIGHTSEEING | MUSEUM | CULTURE | NATURE | WELLNESS | ADVENTURE | SHOPPING (activities only)",
+      "coordinates": { "lat": number, "lng": number },
+      "cuisine": "string (meals only)",
+      "pricePoint": "$$ | $$$ | $$$$ (meals only)",
+      "reservation": true | false,
+      "dietaryNote": "string | undefined"
+    }],
+    "hiddenGem": "string",
+    "hiddenGemCoordinates": { "lat": number, "lng": number }
+  }]
+}
+```
 
 ### `enrichPlace()` — Two-step Google API chain
 ```
@@ -354,40 +395,60 @@ Step 1: Places Text Search (textsearch/json)
 Step 2: Place Details (details/json?fields=opening_hours)  ← only if place_id found
   → Returns: weekday_text → extracts today's hours
   → todayIdx = (new Date().getDay() + 6) % 7  (Monday=0)
-  → strips "Monday: " prefix, trims to "9:00 AM – 9:00 PM"
+  → strips "Monday: " prefix → "9:00 AM – 9:00 PM"
 ```
-Both steps wrapped in `AbortSignal.timeout()` (5000ms / 4000ms). All errors return `null` gracefully — enrichment is always additive, never blocking.
+Both steps wrapped in `AbortSignal.timeout()` (5000ms / 4000ms). All errors return `null` gracefully.
+
+> **Critical:** The photo URL query parameter is `photoreference` (no underscore). Using `photo_reference` silently returns a broken redirect.
 
 ### Transit Calculation — Haversine + Distance Matrix
 ```
 Haversine baseline (always computed, guarantees transit UI renders):
-  walkingMinutes  = round((km / 5)  * 60)   // 5 km/h walking speed
-  drivingMinutes  = round((km / 25) * 60)   // 25 km/h city driving speed
-  minimum 1 min for both
+  walkingMinutes  = round((km / 5)  * 60)   // 5 km/h walking
+  drivingMinutes  = round((km / 25) * 60)   // 25 km/h city driving
 
 Distance Matrix override (best-effort, replaces Haversine if API succeeds):
-  mode=walking  → overrides walkingMinutes
-  mode=driving  → overrides drivingMinutes
-  Promise.allSettled — partial success accepted
+  mode=walking + mode=driving via Promise.allSettled
 ```
-Transit connector between cards always renders because Haversine ensures `walkingMinutes` and `drivingMinutes` are always defined.
 
 ### `getDestinationPhotoUrl()` — `/trips` Dashboard Photos (`src/lib/getPlacePhoto.ts`)
-
-Fetches a representative destination photo for the `/trips` archive cards. Called server-side in `trips/page.tsx` via `Promise.all`.
-
 ```
 Step 1: findplacefromtext (fields=photos)
-  → Extracts: candidates[0].photos[0].photo_reference
-
-Step 2: Constructs Places Photo URL
-  → https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=REF&key=KEY
+Step 2: Constructs Places Photo URL → photoreference (no underscore)
 ```
+Cache: `next: { revalidate: 86400 }`. Timeout: `AbortSignal.timeout(4000)`. Returns `null` on error → typographic placeholder fallback.
 
-> **Critical:** The query parameter is `photoreference` (no underscore). Using `photo_reference` (with underscore) silently returns a broken redirect. Both `enrichPlace()` in `route.ts` and `getDestinationPhotoUrl()` in `getPlacePhoto.ts` must use `photoreference`.
+---
 
-Caching: `next: { revalidate: 86400 }` — 24-hour cache per destination (photos rarely change).
-Timeout: `AbortSignal.timeout(4000)`. Returns `null` on any error — falls back to typographic placeholder.
+## PWA Infrastructure
+
+- **`src/app/sw.ts`** — Serwist service worker. `CacheFirst` for Google Places photos (30-day TTL, 100-entry cap). `defaultCache` for Next.js static assets.
+- **`src/app/manifest.ts`** — Next.js `MetadataRoute.Manifest`. Name: `"Seek Wander"` (no "AI"). Standalone display, `#F6F1EB` background, `#1B1817` theme color. Icons at `/icon-192x192.png` and `/icon-512x512.png`.
+- **`src/app/layout.tsx`** — `appleWebApp: { capable: true, statusBarStyle: "default", title: "Seek Wander" }` in metadata.
+- **`next.config.mjs`** — wrapped with `withSerwist({ swSrc: "src/app/sw.ts", swDest: "public/sw.js", disable: process.env.NODE_ENV === "development" })`.
+- Icons must be placed manually in `/public/` — any square PNG works as placeholder.
+
+---
+
+## PDF / Print Export
+
+Zero-dependency — `window.print()` + Tailwind `print:` modifiers. No libraries.
+
+- **`<ExportPdfButton />`** — `window.print()` on click, `print:hidden` on itself.
+- **`src/app/globals.css`** — `@media print` block: resets Framer Motion inline `opacity` (`[style*="opacity"] { opacity: 1 !important }`), resets transforms, forces color printing, `@page { margin: 1.5cm 2cm }`.
+- **`src/app/trips/[id]/page.tsx`** — outer wrapper: `print:h-auto print:overflow-visible print:block` (breaks out of `h-screen overflow-hidden`). Branded dossier header (`hidden print:block`): Seek Wander wordmark, destination, date. Navbar + maps + header strip are `print:hidden`.
+- **`ItineraryViewer.tsx`** — tab bar `print:hidden`, active day section `print:hidden`. `hidden print:block` section renders all days sequentially with `print:break-before-page` on days 2+. `bottomSection` is `print:hidden`.
+
+---
+
+## Public Sharing — `/shared/[id]`
+
+- **`src/app/shared/[id]/page.tsx`** — Server component. Intentionally NO auth check — public by design.
+- Fetches by ID only: `prisma.trip.findUnique({ where: { id: params.id } })`.
+- `generateMetadata()` produces dynamic OG tags: `{destination} Itinerary | Seek Wander`.
+- Ink acquisition banner: "Curated by Seek Wander — Create Your Own →".
+- Mobile sticky CTA: `fixed bottom-0 z-40 bg-burnt-orange`.
+- **`<ShareButton tripId={id} destination={name} />`** — on `/trips` card rows. Tries `navigator.share()` first (mobile native), falls back to `navigator.clipboard.writeText()`. AnimatePresence toast: "Link copied to clipboard".
 
 ---
 
@@ -402,7 +463,6 @@ export default clerkMiddleware()
 
 ### Layout (`src/app/layout.tsx`)
 ```tsx
-// ClerkProvider is conditional — app builds/runs without Clerk keys
 {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
   <ClerkProvider>{children}</ClerkProvider>
 ) : (
@@ -412,17 +472,16 @@ export default clerkMiddleware()
 
 ### Navbar Auth (`src/components/NavbarAuth.tsx`)
 - Loaded via `next/dynamic(..., { ssr: false })` in `Navbar.tsx`
-- SSR skip prevents Clerk context errors during Next.js prerendering
 - Uses `<SignedOut>` / `<SignedIn>` (Clerk v6 API — NOT `<Show>`)
 - `<SignInButton mode="modal">` — no redirect pages needed
 - `<UserButton>` with `appearance.elements.avatarBox: "w-8 h-8"`
 
 ### Route Auth Model
-All middleware routes are public. Auth is enforced at the component/action level:
-- `/trips` — server component calls `auth()` + `redirect('/')` if no userId
-- `/trips/[id]` — server component calls `auth()` + ownership check + `notFound()` if unauthorized
-- `saveTrip` server action — calls `auth()` + throws if no userId
-- `/itinerary` — client component, save button gated by `<SignedIn>`; page itself is publicly accessible
+- `/trips` — `auth()` + `redirect('/')` if no userId
+- `/trips/[id]` — `auth()` + ownership check + `notFound()` if unauthorized
+- `saveTrip` server action — `auth()` + throws if no userId
+- `/itinerary` — save button gated by `<SignedIn>`; page itself is public
+- `/shared/[id]` — **intentionally public, no auth**
 
 ---
 
@@ -430,14 +489,12 @@ All middleware routes are public. Auth is enforced at the component/action level
 
 Model: `claude-sonnet-4-6` | Max tokens: `8192`
 
-The AI is instructed to roleplay as an elite luxury travel curator (Condé Nast Traveller × private concierge). Each itinerary response includes:
-- Vogue-style editorial opener (1 sentence capturing the soul of the destination)
-- 3–5 days (scaled to trip duration), each with a poetic theme title
-- Honest pace rating: `slow` (restorative) | `moderate` (balanced) | `immersive` (culturally dense)
-- Morning / Afternoon / Evening activities with unique titles + coordinates
+The model is instructed to act as an elite luxury travel curator (Condé Nast Traveller × private concierge). Each response is a `timeline[]`-based JSON itinerary with:
+- Vogue-style editorial opener (≤25 words)
+- Days with poetic theme title + honest pace rating
+- `timeline[]` items ordered by `startTime` — activities AND meals interwoven
+- 1–2 real restaurant meals per day with real GPS coordinates
 - 1 hidden gem per day (95% of tourists never find it)
-- 1–2 dining recommendations per day + coordinates
-- `mapPoints` array of all coordinates keyed by day number
 
 Response is **always pure JSON** — no markdown, no preamble.
 
@@ -455,7 +512,7 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 4 | Pace | Relaxed (3–4/day) / Moderate (4–5/day) / Packed (6–7/day) cards | |
 | 5 | Budget Tier | Premium $$ / Luxury $$$ / Ultra-Luxury $$$$ cards | |
 | 6 | Dietary | 7 options (None / Vegetarian / Vegan / Halal / Kosher / Gluten-Free / Dairy-Free) | Halal, Kosher, GF require detailed dietaryNote in prompt |
-| 7 | Interests | 10 options, no max cap | Replaces "Vibes" |
+| 7 | Interests | 10 options, no max cap | |
 
 ---
 
@@ -467,8 +524,7 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 2 — Concierge UX | **Complete** | 7-field intake form, split-screen results, Google enrichment, Haversine transit |
 | 3 — Ultra-Luxury UI | **Complete** | Tabbed day nav, hoursOpen, cost badges, dashed transit connectors, day-centric map |
 | 4 — Auth | **Complete** | Clerk v6 integration, conditional ClerkProvider, NavbarAuth, custom 404 |
-| 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive dashboard, /trips/[id] viewer, ItineraryViewer composition pattern, IDOR ownership enforcement |
-| 6 — PWA & Brand | **Complete** | @serwist/next service worker, web app manifest, Apple PWA metadata, logo in navbar |
-| 7 — Public Sharing | **Complete** | /shared/[id] public read-only route, generateMetadata OG tags, ShareButton (navigator.share + clipboard), mobile sticky CTA |
-| 8 — PDF Export | **Complete** | Zero-dependency print export — window.print(), Tailwind print: modifiers, branded dossier header, all-days print section, @media print CSS resets |
-| 9 — Monetization & Growth | **Next** | Booking integrations, email notifications, subscription paywall |
+| 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive, /trips/[id] viewer, ItineraryViewer composition, IDOR enforcement |
+| 6 — PWA, Sharing & Export | **Complete** | @serwist/next PWA, manifest.ts (brand "Seek Wander", no AI), public /shared/[id] with OG tags & acquisition banners, ShareButton, PDF/print export with Tailwind print: modifiers |
+| 7 — Chronological Timeline | **Complete** | timeline: TimelineItem[] canonical shape; normalizeDayPlan() backward-compat shim in itineraryUtils.ts; isMealType() + computeMapPoints() co-located in itineraryUtils.ts; no DB migration needed |
+| 8 — Monetization & Cost Optimisation | **Next** | **Option A:** Supabase `PlaceCache` table — cache Google Places API responses by place name + city, eliminating repeat enrichment API calls (saves ~$0.64/itinerary on repeat destinations). **Option B:** Stripe Checkout — $4.99 paywall for itinerary generation (free tier: 1 generation; paid: unlimited). Both can be pursued sequentially. |
