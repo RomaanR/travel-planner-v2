@@ -27,6 +27,11 @@ export const metadata: Metadata = {
     description: "Luxury AI travel curation for the discerning traveler.",
     type: "website",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Seek Wander",
+  },
 };
 
 export default function RootLayout({

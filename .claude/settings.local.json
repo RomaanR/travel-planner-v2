@@ -29,7 +29,16 @@
       "Bash(node -e \"const m = require\\(''''./node_modules/@clerk/nextjs/server''''\\); console.log\\(typeof m.auth\\); const a = m.auth\\(\\); console.log\\(''''auth\\(\\) returns Promise?'''', a instanceof Promise\\);\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python -c \"import openpyxl; print\\(''openpyxl version:'', openpyxl.__version__\\)\")",
+      "Bash(python build_ledger.py)",
+      "Bash(python -c \"import os; print\\(os.path.expanduser\\(''~''\\)\\); import subprocess; result = subprocess.run\\([''cmd'', ''/c'', ''echo %USERPROFILE%''], capture_output=True, text=True\\); print\\(result.stdout.strip\\(\\)\\)\")",
+      "Bash(python scripts/recalc.py \"C:\\\\Users\\\\User\\\\OneDrive\\\\Desktop\\\\SeekWander_Infrastructure_Ledger.xlsx\")",
+      "Bash(python -c \":*)",
+      "Bash(python3 -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
+      "Bash(python -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
+      "Bash(python \"D:\\\\travel-plannner-v2\\\\add_monthly_cost_column.py\")",
+      "Bash(npm install:*)"
     ]
   }
 }

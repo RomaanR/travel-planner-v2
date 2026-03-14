@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -16,7 +17,15 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 border-b border-black/5 bg-paper/80 backdrop-blur-sm"
     >
       {/* Wordmark */}
-      <Link href="/" className="flex items-baseline gap-2">
+      <Link href="/" className="flex items-center gap-3">
+        <Image
+          src="/icon-192x192.png"
+          alt="Seek Wander"
+          width={36}
+          height={36}
+          className="w-9 h-9 object-cover rounded-none"
+          priority
+        />
         <span className="font-serif italic text-2xl text-ink leading-none">
           Seek Wander
         </span>
