@@ -38,7 +38,8 @@
       "Bash(python3 -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
       "Bash(python -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
       "Bash(python \"D:\\\\travel-plannner-v2\\\\add_monthly_cost_column.py\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

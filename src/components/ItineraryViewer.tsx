@@ -8,6 +8,7 @@ import {
   Gem,
   Star,
   ImageOff,
+  Utensils,
   Car,
   PersonStanding,
   Clock,
@@ -17,10 +18,9 @@ import {
 import type {
   ItineraryResponse,
   DayPlan,
-  Activity,
-  DiningRec,
-  TransitInfo,
+  TimelineItem,
 } from "@/types/itinerary";
+import { normalizeDayPlan, isMealType } from "@/lib/itineraryUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ function formatRatingCount(n: number): string {
 
 // ─── Transit connector ────────────────────────────────────────────────────────
 
-function TransitHeader({ transit }: { transit: TransitInfo }) {
+function TransitHeader({ transit }: { transit: { walkingMinutes?: number; drivingMinutes?: number } }) {
   if (!transit?.walkingMinutes && !transit?.drivingMinutes) return null;
   return (
     <div className="flex items-stretch gap-3 pl-3 py-0.5 print:hidden">
@@ -89,55 +89,40 @@ function TransitHeader({ transit }: { transit: TransitInfo }) {
   );
 }
 
-// ─── Location card ────────────────────────────────────────────────────────────
+// ─── Timeline card ────────────────────────────────────────────────────────────
 
-type LocationCardItem = {
-  title?: string;
-  name?: string;
-  description?: string;
-  cuisine?: string;
-  duration: string;
-  startTime?: string;
-  category?: string;
-  photoUrl?: string;
-  rating?: number;
-  userRatingsTotal?: number;
-  openNow?: boolean;
-  hoursOpen?: string;
-  priceLevel?: number;
-  pricePoint?: string;
-  reservation?: boolean;
-  dietaryNote?: string;
-};
-
-function LocationCard({
+function TimelineCard({
   item,
-  type,
   delay,
 }: {
-  item: LocationCardItem;
-  type: "activity" | "dining";
+  item: TimelineItem;
   delay: number;
 }) {
-  const displayName = item.title ?? item.name ?? "";
+  const displayName = item.title ?? "";
   const displayDesc = item.description ?? item.cuisine ?? "";
   const endTime = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
+  const isMeal = isMealType(item.type);
 
-  // Cost & Access badge
+  // Cost & access badge
   let costBadge: { label: string; className: string; icon?: ReactNode } | null = null;
-  if (type === "activity") {
+  if (!isMeal) {
+    // Activity
     if (item.priceLevel === 0) {
       costBadge = { label: "FREE ENTRY", className: "text-emerald-accent border-emerald-accent/30", icon: <Ticket size={9} strokeWidth={1.5} /> };
     } else if (item.priceLevel !== undefined && item.priceLevel >= 3) {
       costBadge = { label: "$$$ EXPERIENCE", className: "text-ink border-ink/20" };
     }
   } else {
+    // Meal
     if (item.reservation) {
       costBadge = { label: "RES. REQUIRED", className: "text-ink-light border-ink/15", icon: <CalendarCheck size={9} strokeWidth={1.5} /> };
     } else if (item.pricePoint) {
       costBadge = { label: item.pricePoint, className: "text-ink-light border-ink/15" };
     }
   }
+
+  // Badge text for the top-right type indicator
+  const typeBadge = isMeal ? item.type.toUpperCase() : (item.category ?? "EXPERIENCE");
 
   return (
     <motion.div
@@ -147,7 +132,7 @@ function LocationCard({
       className="flex border border-ink/8 bg-paper overflow-hidden print:break-inside-avoid print:opacity-100"
     >
       {/* Left: Photo */}
-      <div className="w-36 md:w-48 shrink-0 relative bg-paper-dark self-stretch min-h-[140px] overflow-hidden print:w-28">
+      <div className={`w-36 md:w-48 shrink-0 relative self-stretch min-h-[140px] overflow-hidden print:w-28 ${isMeal ? "bg-paper-dark" : "bg-paper-dark"}`}>
         {item.photoUrl ? (
           <Image
             src={item.photoUrl}
@@ -159,7 +144,10 @@ function LocationCard({
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <ImageOff size={22} className="text-ink/15" strokeWidth={1} />
+            {isMeal
+              ? <Utensils size={22} className="text-ink/15" strokeWidth={1} />
+              : <ImageOff size={22} className="text-ink/15" strokeWidth={1} />
+            }
           </div>
         )}
       </div>
@@ -167,14 +155,14 @@ function LocationCard({
       {/* Right: Content */}
       <div className="flex flex-col flex-1 min-w-0 p-4 md:p-5">
 
-        {/* Time + Category badge */}
+        {/* Time + Type badge */}
         <div className="flex items-start justify-between gap-2 mb-2">
           <span className="font-sans text-xs text-ink-light leading-none print:text-black">
             {item.startTime ?? ""}
             {endTime ? ` — ${endTime}` : ""}
           </span>
           <span className="micro-copy border border-ink/12 px-2 py-0.5 shrink-0 text-ink-light print:text-black print:border-black/20">
-            {type === "dining" ? "DINING" : (item.category ?? "EXPERIENCE")}
+            {typeBadge}
           </span>
         </div>
 
@@ -254,8 +242,9 @@ const PACE_COLORS: Record<string, string> = {
   packed:   "text-ink border-ink",
 };
 
-function DaySection({ day }: { day: DayPlan }) {
-  const activities = [day.morning, day.afternoon, day.evening].filter(Boolean);
+function DaySection({ day: rawDay }: { day: DayPlan }) {
+  const day = normalizeDayPlan(rawDay);
+  const items = day.timeline ?? [];
 
   return (
     <div>
@@ -276,16 +265,15 @@ function DaySection({ day }: { day: DayPlan }) {
         </span>
       </div>
 
-      {/* Activity timeline */}
+      {/* Unified chronological timeline */}
       <div className="flex flex-col gap-1">
-        {activities.map((act: Activity, i) => (
-          <div key={`act-${i}`} className="print:break-inside-avoid">
-            {act?.transitFromPrevious && i > 0 && (
-              <TransitHeader transit={act.transitFromPrevious} />
+        {items.map((item: TimelineItem, i) => (
+          <div key={`item-${i}`} className="print:break-inside-avoid">
+            {item?.transitFromPrevious && i > 0 && (
+              <TransitHeader transit={item.transitFromPrevious} />
             )}
-            <LocationCard
-              item={act}
-              type="activity"
+            <TimelineCard
+              item={item}
               delay={0.06 * (i + 1)}
             />
           </div>
@@ -313,27 +301,6 @@ function DaySection({ day }: { day: DayPlan }) {
               </p>
             </div>
           </motion.div>
-        )}
-
-        {/* Dining */}
-        {day.dining?.length > 0 && (
-          <div className="mt-1">
-            <p className="micro-copy text-ink-light py-2 px-1 print:text-black/50">Dining</p>
-            <div className="flex flex-col gap-1">
-              {day.dining.map((d: DiningRec, i) => (
-                <div key={`dining-${i}`} className="print:break-inside-avoid">
-                  {d?.transitFromPrevious && (
-                    <TransitHeader transit={d.transitFromPrevious} />
-                  )}
-                  <LocationCard
-                    item={{ ...d, title: d.name, duration: "", startTime: undefined }}
-                    type="dining"
-                    delay={0.32 + i * 0.06}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         )}
       </div>
     </div>

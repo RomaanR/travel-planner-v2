@@ -47,20 +47,55 @@ export type TransitInfo = {
   drivingMinutes?: number;
 };
 
-export type Activity = {
-  title: string;
-  description: string;
-  duration: string;     // e.g. "2 hours"
-  startTime: string;    // e.g. "09:00" — AI-provided
-  category: string;     // e.g. "SIGHTSEEING", "MUSEUM", "WELLNESS"
+// ─── Timeline (new canonical shape) ──────────────────────────────────────────
+
+export type TimelineItemType =
+  | "activity"
+  | "breakfast"
+  | "lunch"
+  | "dinner"
+  | "snack"
+  | "drinks";
+
+/** Unified card type — replaces separate Activity + DiningRec for new itineraries */
+export type TimelineItem = {
+  type: TimelineItemType;
+  title: string;           // activity name OR restaurant name
+  description: string;     // 2 sentences for activities; cuisine for meals
+  duration: string;        // e.g. "2 hours"; empty string for meals
+  startTime?: string;      // HH:MM — AI-provided
+  category?: string;       // SIGHTSEEING etc — activities only
   coordinates: Coordinate;
-  // Enriched by Google Places after AI generation:
+  // Meal-specific fields
+  cuisine?: string;
+  pricePoint?: string;     // $$ | $$$ | $$$$
+  reservation?: boolean;
+  dietaryNote?: string;
+  // Google Places enriched fields (same as legacy Activity / DiningRec)
   photoUrl?: string;
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
-  hoursOpen?: string;   // e.g. "9:00 AM – 9:00 PM" (today's hours)
-  priceLevel?: number;  // Google price_level 0–4
+  hoursOpen?: string;      // e.g. "9:00 AM – 9:00 PM" (today's hours)
+  priceLevel?: number;     // Google price_level 0–4
+  transitFromPrevious?: TransitInfo;
+};
+
+// ─── Legacy types (kept for backward-compat with existing DB records) ─────────
+
+export type Activity = {
+  title: string;
+  description: string;
+  duration: string;
+  startTime: string;
+  category: string;
+  coordinates: Coordinate;
+  photoUrl?: string;
+  rating?: number;
+  userRatingsTotal?: number;
+  openNow?: boolean;
+  hoursOpen?: string;
+  priceLevel?: number;
   transitFromPrevious?: TransitInfo;
 };
 
@@ -71,25 +106,28 @@ export type DiningRec = {
   reservation: boolean;
   coordinates: Coordinate;
   dietaryNote?: string;
-  // Enriched:
   photoUrl?: string;
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
-  hoursOpen?: string;   // e.g. "9:00 AM – 9:00 PM" (today's hours)
+  hoursOpen?: string;
   transitFromPrevious?: TransitInfo;
 };
+
+// ─── Day Plan ─────────────────────────────────────────────────────────────────
 
 export type DayPlan = {
   day: number;
   theme: string;
   pace: Pace;
-  morning: Activity;
-  afternoon: Activity;
-  evening: Activity;
+  timeline: TimelineItem[];            // NEW canonical field
   hiddenGem: string;
   hiddenGemCoordinates: Coordinate;
-  dining: DiningRec[];
+  // Legacy fields — present in DB records saved before the timeline refactor
+  morning?: Activity;
+  afternoon?: Activity;
+  evening?: Activity;
+  dining?: DiningRec[];
 };
 
 export type ItineraryResponse = {
@@ -100,12 +138,7 @@ export type ItineraryResponse = {
 
 // ─── Map ──────────────────────────────────────────────────────────────────────
 
-export type MapPointType =
-  | "morning"
-  | "afternoon"
-  | "evening"
-  | "dining"
-  | "gem";
+export type MapPointType = "activity" | "meal" | "gem";
 
 export type MapPoint = {
   lat: number;

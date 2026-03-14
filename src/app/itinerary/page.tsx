@@ -16,6 +16,7 @@ import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { useItinerary } from "@/hooks/useItinerary";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
+import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
@@ -53,21 +54,7 @@ export default function ItineraryPage() {
 
   const mapPoints = useMemo<MapPoint[]>(() => {
     if (!itinerary) return [];
-    return itinerary.days.flatMap((day) => {
-      const pts: MapPoint[] = [
-        { type: "morning",   label: day.morning?.title ?? "",   day: day.day, ...(day.morning?.coordinates ?? { lat: 0, lng: 0 }) },
-        { type: "afternoon", label: day.afternoon?.title ?? "", day: day.day, ...(day.afternoon?.coordinates ?? { lat: 0, lng: 0 }) },
-        { type: "evening",   label: day.evening?.title ?? "",   day: day.day, ...(day.evening?.coordinates ?? { lat: 0, lng: 0 }) },
-        { type: "gem",       label: day.hiddenGem?.split("—")?.[0]?.trim() ?? "", day: day.day, ...(day.hiddenGemCoordinates ?? { lat: 0, lng: 0 }) },
-        ...(day.dining ?? []).map((d) => ({
-          type: "dining" as const,
-          label: d.name,
-          day: day.day,
-          ...(d.coordinates ?? { lat: 0, lng: 0 }),
-        })),
-      ];
-      return pts.filter((p) => p.lat && p.lng);
-    });
+    return computeMapPoints(itinerary.days);
   }, [itinerary]);
 
   return (
