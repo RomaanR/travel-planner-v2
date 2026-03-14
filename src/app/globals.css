@@ -60,3 +60,32 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ─── Print styles ────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Page margins — luxury dossier feel */
+  @page {
+    margin: 1.5cm 2cm;
+  }
+
+  /* Reset Framer Motion inline opacity/transform — prevents animation initial
+     states from hiding content in the print-only all-days section */
+  [style*="opacity"] {
+    opacity: 1 !important;
+  }
+  [style*="transform"] {
+    transform: none !important;
+  }
+
+  /* Print destination images in full colour, not grayscale */
+  .img-grayscale {
+    filter: none !important;
+  }
+
+  /* Force background colours and images to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
