@@ -26,6 +26,7 @@ model PlaceCache {
   hoursOpen        String?
   priceLevel       Int?
   fetchedAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 }
 
 model CostLog {
