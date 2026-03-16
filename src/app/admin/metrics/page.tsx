@@ -30,9 +30,7 @@ export default async function AdminMetricsPage() {
   // ── Auth guard ──────────────────────────────────────────────────────────────
   const { userId } = await auth();
   const adminId    = process.env.ADMIN_USER_ID?.trim();
-  console.log("[admin] userId:", userId, "adminId:", adminId, "match:", userId === adminId);
-  // TEMP: skip guard to isolate issue
-  // if (!userId || !adminId || userId !== adminId) notFound();
+  if (!adminId || userId !== adminId) notFound();
 
   // ── Data ────────────────────────────────────────────────────────────────────
   const [agg, logs] = await Promise.all([
