@@ -39,7 +39,18 @@
       "Bash(python -c \"import openpyxl; print\\(''openpyxl available''\\)\")",
       "Bash(python \"D:\\\\travel-plannner-v2\\\\add_monthly_cost_column.py\")",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Read(//c/Users/User/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/a5c5a4d2-619b-412b-ad02-3512fb5cb6f8/11dd478f-fe3b-49f3-a36e-ca2f7bda399e/skills/docx/**)",
+      "Bash(node -e \"const { Document } = require\\(''docx''\\); console.log\\(''docx available''\\);\")",
+      "Bash(node -e \"const { Document } = require\\(''docx''\\); console.log\\(''OK''\\);\")",
+      "Bash(npm root:*)",
+      "Bash(node -e \"const { Document } = require\\(''C:/Users/User/AppData/Roaming/npm/node_modules/docx''\\); console.log\\(''OK''\\);\")",
+      "Bash(node generate-prs.js)",
+      "Bash(python scripts/office/validate.py D:/travel-plannner-v2/Seek-Wander-PRS.docx)",
+      "Bash(npx prisma:*)",
+      "Bash(npx dotenv:*)",
+      "Bash(dir .env*)",
+      "Bash(npx next:*)"
     ]
   }
 }

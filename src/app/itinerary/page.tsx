@@ -11,6 +11,7 @@ import {
   BookmarkPlus,
   AlertCircle,
   Check,
+  Zap,
 } from "lucide-react";
 import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
@@ -81,6 +82,21 @@ export default function ItineraryPage() {
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
               {destination || "Loading\u2026"}
             </h1>
+            {itinerary?._meta && (
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 micro-copy text-ink-light border border-ink/10 px-2.5 py-1 bg-paper-dark">
+                  <Zap size={10} className="text-burnt-orange" />
+                  Est. cost: ${itinerary._meta.totalEstimatedCostUsd.toFixed(4)}
+                </span>
+                <span className="micro-copy text-ink-light/60 hidden md:inline">
+                  Claude {itinerary._meta.claudeInputTokens.toLocaleString()} in &middot; {itinerary._meta.claudeOutputTokens.toLocaleString()} out
+                  &nbsp;&middot;&nbsp;
+                  {itinerary._meta.googleCacheHits > 0
+                    ? `${itinerary._meta.googleCacheHits} cached`
+                    : `${itinerary._meta.googleTextSearchCalls} places fetched`}
+                </span>
+              </div>
+            )}
           </div>
           {itinerary && (
             <SignedIn>

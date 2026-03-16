@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { prisma } from "@/lib/db";
 import type {
   ItineraryRequest,
   ItineraryResponse,
   Coordinate,
   TransitInfo,
+  GenerationMeta,
 } from "@/types/itinerary";
 
 const client = new Anthropic();
@@ -31,16 +33,16 @@ const budgetDescriptions: Record<string, string> = {
 };
 
 const interestLabels: Record<string, string> = {
-  sightseeing:         "Sightseeing",
-  "museums-art":       "Museums & Art",
-  "food-dining":       "Food & Dining",
-  "nature-parks":      "Nature & Parks",
-  shopping:            "Shopping",
-  nightlife:           "Nightlife",
-  "culture-history":   "Culture & History",
-  "adventure-sports":  "Adventure & Sports",
+  sightseeing:           "Sightseeing",
+  "museums-art":         "Museums & Art",
+  "food-dining":         "Food & Dining",
+  "nature-parks":        "Nature & Parks",
+  shopping:              "Shopping",
+  nightlife:             "Nightlife",
+  "culture-history":     "Culture & History",
+  "adventure-sports":    "Adventure & Sports",
   "relaxation-wellness": "Relaxation & Wellness",
-  photography:         "Photography",
+  photography:           "Photography",
 };
 
 // ─── AI Prompt JSON Schema ────────────────────────────────────────────────────
@@ -138,6 +140,20 @@ Return ONLY valid JSON. No markdown, no code fences, no preamble:
 ${SCHEMA}`;
 }
 
+// ─── Cache helpers ────────────────────────────────────────────────────────────
+
+function buildCacheKey(name: string, city: string): string {
+  const normalize = (s: string) =>
+    s.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `${normalize(name)}|${normalize(city)}`;
+}
+
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// ─── Categories that skip Place Details (no meaningful opening hours) ─────────
+
+const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
+
 // ─── Google Places enrichment ─────────────────────────────────────────────────
 
 type PlacesEnrichment = {
@@ -149,11 +165,34 @@ type PlacesEnrichment = {
   priceLevel?: number;
 };
 
+type ApiCounters = { textSearch: number; details: number; cacheHits: number };
+
 async function enrichPlace(
   name: string,
   city: string,
-  apiKey: string
+  apiKey: string,
+  skipDetails: boolean,
+  counters: ApiCounters
 ): Promise<PlacesEnrichment | null> {
+  const cacheKey = buildCacheKey(name, city);
+
+  // ── 1. Check PlaceCache ────────────────────────────────────────────────────
+  try {
+    const cached = await prisma.placeCache.findUnique({ where: { cacheKey } });
+    if (cached && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
+      counters.cacheHits++;
+      return {
+        photoUrl:         cached.photoUrl         ?? undefined,
+        rating:           cached.rating           ?? undefined,
+        userRatingsTotal: cached.userRatingsTotal ?? undefined,
+        hoursOpen:        cached.hoursOpen        ?? undefined,
+        priceLevel:       cached.priceLevel       ?? undefined,
+        // openNow is real-time — not stored in cache
+      };
+    }
+  } catch { /* DB unavailable — fall through to live fetch */ }
+
+  // ── 2. Fresh fetch from Google Places ─────────────────────────────────────
   try {
     const query = encodeURIComponent(`${name} ${city}`);
     const res = await fetch(
@@ -165,11 +204,13 @@ async function enrichPlace(
     const place = data.results?.[0];
     if (!place) return null;
 
+    counters.textSearch++;
+
     const photoRef = place.photos?.[0]?.photo_reference;
 
-    // weekday_text is NOT in Text Search results — requires Place Details API
+    // ── 3. Place Details (opening hours) — skipped for NATURE / ADVENTURE ───
     let hoursOpen: string | undefined;
-    if (place.place_id) {
+    if (!skipDetails && place.place_id) {
       try {
         const det = await fetch(
           `${PLACES_BASE}/details/json?place_id=${place.place_id}&fields=opening_hours&key=${apiKey}`,
@@ -177,34 +218,56 @@ async function enrichPlace(
         );
         if (det.ok) {
           const dj = await det.json();
-          // weekday_text[0] = Monday ... [6] = Sunday; JS getDay() 0=Sun ... 6=Sat
           const wt: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
           if (wt?.length) {
             const todayIdx = (new Date().getDay() + 6) % 7;
-            // Strip "Monday: " prefix → "9:00 AM – 9:00 PM"
             const stripped = (wt[todayIdx] ?? "").replace(/^[^:]+:\s*/, "").trim();
             if (stripped) hoursOpen = stripped;
           }
+          counters.details++;
         }
       } catch { /* silently skip — hours are optional enrichment */ }
     }
 
-    return {
+    const enrichment: PlacesEnrichment = {
       photoUrl: photoRef
         ? `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
         : undefined,
-      rating: place.rating,
+      rating:           place.rating,
       userRatingsTotal: place.user_ratings_total,
-      openNow: place.opening_hours?.open_now,
+      openNow:          place.opening_hours?.open_now,
       hoursOpen,
-      priceLevel: place.price_level,
+      priceLevel:       place.price_level,
     };
+
+    // ── 4. Write to cache (fire-and-forget — never blocks response) ──────────
+    prisma.placeCache.upsert({
+      where: { cacheKey },
+      update: {
+        photoUrl:         enrichment.photoUrl         ?? null,
+        rating:           enrichment.rating           ?? null,
+        userRatingsTotal: enrichment.userRatingsTotal ?? null,
+        hoursOpen:        enrichment.hoursOpen        ?? null,
+        priceLevel:       enrichment.priceLevel       ?? null,
+        fetchedAt:        new Date(),
+      },
+      create: {
+        cacheKey,
+        photoUrl:         enrichment.photoUrl         ?? null,
+        rating:           enrichment.rating           ?? null,
+        userRatingsTotal: enrichment.userRatingsTotal ?? null,
+        hoursOpen:        enrichment.hoursOpen        ?? null,
+        priceLevel:       enrichment.priceLevel       ?? null,
+      },
+    }).catch(() => { /* cache write failure is non-fatal */ });
+
+    return enrichment;
   } catch {
-    return null; // silently fail — graceful degradation
+    return null; // graceful degradation
   }
 }
 
-// ─── Haversine distance helpers ───────────────────────────────────────────────
+// ─── Haversine transit (pure — no API calls) ──────────────────────────────────
 
 function haversineKm(a: Coordinate, b: Coordinate): number {
   const R = 6371;
@@ -218,61 +281,26 @@ function haversineKm(a: Coordinate, b: Coordinate): number {
   return R * 2 * Math.asin(Math.sqrt(h));
 }
 
-function haversineTransit(a: Coordinate, b: Coordinate): TransitInfo {
-  const km = haversineKm(a, b);
-  return {
-    walkingMinutes: Math.max(1, Math.round((km / 5) * 60)),   // 5 km/h walking
-    drivingMinutes: Math.max(1, Math.round((km / 25) * 60)),  // 25 km/h city driving
-  };
-}
-
-// ─── Distance Matrix ──────────────────────────────────────────────────────────
-
-async function getDayTransits(
-  stops: Coordinate[],
-  apiKey: string
-): Promise<TransitInfo[]> {
+function getDayTransits(stops: Coordinate[]): TransitInfo[] {
   if (stops.length < 2) return stops.map(() => ({}));
-
-  // Baseline: Haversine estimates for every consecutive pair
-  // These always render — Distance Matrix will override where available
-  const transits: TransitInfo[] = [{}]; // first stop has no predecessor
+  const transits: TransitInfo[] = [{}]; // index 0 — first stop has no predecessor
   for (let i = 0; i < stops.length - 1; i++) {
-    transits.push(haversineTransit(stops[i], stops[i + 1]));
+    const km = haversineKm(stops[i], stops[i + 1]);
+    transits.push({
+      walkingMinutes:  Math.max(1, Math.round((km / 5)  * 60)),
+      drivingMinutes:  Math.max(1, Math.round((km / 25) * 60)),
+    });
   }
-
-  // Try Distance Matrix for more accurate road-based durations
-  try {
-    const origins      = stops.slice(0, -1).map((s) => `${s.lat},${s.lng}`).join("|");
-    const destinations = stops.slice(1).map((s) => `${s.lat},${s.lng}`).join("|");
-
-    const [walkRes, driveRes] = await Promise.all([
-      fetch(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=walking&key=${apiKey}`,
-        { signal: AbortSignal.timeout(6000) }
-      ),
-      fetch(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins}&destinations=${destinations}&mode=driving&key=${apiKey}`,
-        { signal: AbortSignal.timeout(6000) }
-      ),
-    ]);
-
-    const walkData  = walkRes.ok  ? await walkRes.json()  : null;
-    const driveData = driveRes.ok ? await driveRes.json() : null;
-
-    // Override Haversine estimates only when Distance Matrix returns valid values
-    for (let i = 0; i < stops.length - 1; i++) {
-      const walkSecs  = walkData?.rows?.[i]?.elements?.[i]?.duration?.value;
-      const driveSecs = driveData?.rows?.[i]?.elements?.[i]?.duration?.value;
-      if (walkSecs)  transits[i + 1].walkingMinutes  = Math.max(1, Math.round(walkSecs  / 60));
-      if (driveSecs) transits[i + 1].drivingMinutes  = Math.max(1, Math.round(driveSecs / 60));
-    }
-  } catch { /* keep Haversine estimates */ }
-
   return transits;
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
+
+// Pricing constants (per unit)
+const CLAUDE_INPUT_COST  = 3  / 1_000_000; // $3 per million input tokens
+const CLAUDE_OUTPUT_COST = 15 / 1_000_000; // $15 per million output tokens
+const GOOGLE_TEXT_SEARCH = 0.032;           // $0.032 per Places Text Search request
+const GOOGLE_DETAILS     = 0.017;           // $0.017 per Place Details request
 
 export async function POST(req: Request) {
   try {
@@ -309,22 +337,29 @@ export async function POST(req: Request) {
 
     const itinerary: ItineraryResponse = JSON.parse(cleaned);
 
-    // ── Step 2: Build flat work list for Places enrichment ────────────────────
+    // ── Step 2: Build flat work list (includes category for selective enrichment)
     type WorkItem = {
       obj: Record<string, unknown>;
       name: string;
+      category?: string;
     };
 
     const workItems: WorkItem[] = itinerary.days.flatMap((day) =>
       (day.timeline ?? []).map((item) => ({
         obj: item as unknown as Record<string, unknown>,
         name: item.title,
+        category: item.category,
       }))
     );
 
-    // ── Step 3: Parallel Places enrichment (allSettled = no crash on failure) ─
+    // ── Step 3: Parallel Places enrichment (cache-first, selective details) ──
+    const apiCounters: ApiCounters = { textSearch: 0, details: 0, cacheHits: 0 };
+
     const enrichResults = await Promise.allSettled(
-      workItems.map((w) => enrichPlace(w.name, safeBody.destination, apiKey))
+      workItems.map((w) => {
+        const skipDetails = SKIP_DETAILS_CATEGORIES.has(w.category ?? "");
+        return enrichPlace(w.name, safeBody.destination, apiKey, skipDetails, apiCounters);
+      })
     );
 
     enrichResults.forEach((result, i) => {
@@ -333,25 +368,44 @@ export async function POST(req: Request) {
       }
     });
 
-    // ── Step 4: Distance Matrix — one batch per day ───────────────────────────
-    await Promise.allSettled(
-      itinerary.days.map(async (day) => {
-        const stops: Coordinate[] = (day.timeline ?? [])
-          .map((item) => item.coordinates)
-          .filter((c) => c?.lat && c?.lng);
+    // ── Step 4: Transit — pure Haversine (zero API calls) ────────────────────
+    itinerary.days.forEach((day) => {
+      const stops: Coordinate[] = (day.timeline ?? [])
+        .map((item) => item.coordinates)
+        .filter((c) => c?.lat && c?.lng);
 
-        const transits = await getDayTransits(stops, apiKey);
+      const transits = getDayTransits(stops);
 
-        // Assign transitFromPrevious to each timeline item (index 1 onward)
-        (day.timeline ?? []).forEach((item, idx) => {
-          if (transits[idx]) {
-            (item as unknown as Record<string, unknown>).transitFromPrevious = transits[idx];
-          }
-        });
-      })
-    );
+      (day.timeline ?? []).forEach((item, idx) => {
+        if (transits[idx]) {
+          (item as unknown as Record<string, unknown>).transitFromPrevious = transits[idx];
+        }
+      });
+    });
 
-    return Response.json(itinerary);
+    // ── Step 5: Calculate generation cost ────────────────────────────────────
+    const claudeCostUsd =
+      message.usage.input_tokens  * CLAUDE_INPUT_COST +
+      message.usage.output_tokens * CLAUDE_OUTPUT_COST;
+
+    const googleCostUsd =
+      apiCounters.textSearch * GOOGLE_TEXT_SEARCH +
+      apiCounters.details    * GOOGLE_DETAILS;
+
+    const meta: GenerationMeta = {
+      claudeInputTokens:      message.usage.input_tokens,
+      claudeOutputTokens:     message.usage.output_tokens,
+      estimatedClaudeCostUsd: parseFloat(claudeCostUsd.toFixed(4)),
+      googleTextSearchCalls:  apiCounters.textSearch,
+      googleDetailsCalls:     apiCounters.details,
+      googleCacheHits:        apiCounters.cacheHits,
+      estimatedGoogleCostUsd: parseFloat(googleCostUsd.toFixed(4)),
+      totalEstimatedCostUsd:  parseFloat((claudeCostUsd + googleCostUsd).toFixed(4)),
+    };
+
+    console.log("[itinerary] generation cost:", meta);
+
+    return Response.json({ ...itinerary, _meta: meta });
   } catch (e) {
     console.error("[itinerary/route]", e);
     const isParseError = e instanceof SyntaxError;

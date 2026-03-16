@@ -16,3 +16,14 @@ model Trip {
   itineraryData Json
   createdAt     DateTime @default(now())
 }
+
+model PlaceCache {
+  id               String   @id @default(uuid())
+  cacheKey         String   @unique  // "{normalized-name}|{normalized-city}"
+  photoUrl         String?
+  rating           Float?
+  userRatingsTotal Int?
+  hoursOpen        String?
+  priceLevel       Int?
+  fetchedAt        DateTime @default(now())
+}

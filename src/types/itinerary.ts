@@ -130,10 +130,24 @@ export type DayPlan = {
   dining?: DiningRec[];
 };
 
+// ─── Generation cost metadata ─────────────────────────────────────────────────
+
+export type GenerationMeta = {
+  claudeInputTokens: number;
+  claudeOutputTokens: number;
+  estimatedClaudeCostUsd: number;
+  googleTextSearchCalls: number;
+  googleDetailsCalls: number;
+  googleCacheHits: number;
+  estimatedGoogleCostUsd: number;
+  totalEstimatedCostUsd: number;
+};
+
 export type ItineraryResponse = {
   destination: string;
   editorial: string;
   days: DayPlan[];
+  _meta?: GenerationMeta;
 };
 
 // ─── Map ──────────────────────────────────────────────────────────────────────
