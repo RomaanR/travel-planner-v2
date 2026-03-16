@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { parseOpenNow } from "@/lib/itineraryUtils";
 import type {
   ItineraryRequest,
   ItineraryResponse,
@@ -172,7 +174,8 @@ async function enrichPlace(
   city: string,
   apiKey: string,
   skipDetails: boolean,
-  counters: ApiCounters
+  counters: ApiCounters,
+  destinationLng: number
 ): Promise<PlacesEnrichment | null> {
   const cacheKey = buildCacheKey(name, city);
 
@@ -187,7 +190,10 @@ async function enrichPlace(
         userRatingsTotal: cached.userRatingsTotal ?? undefined,
         hoursOpen:        cached.hoursOpen        ?? undefined,
         priceLevel:       cached.priceLevel       ?? undefined,
-        // openNow is real-time — not stored in cache
+        // openNow computed locally — zero API calls
+        openNow: cached.hoursOpen
+          ? parseOpenNow(cached.hoursOpen, destinationLng)
+          : undefined,
       };
     }
   } catch { /* DB unavailable — fall through to live fetch */ }
@@ -358,7 +364,7 @@ export async function POST(req: Request) {
     const enrichResults = await Promise.allSettled(
       workItems.map((w) => {
         const skipDetails = SKIP_DETAILS_CATEGORIES.has(w.category ?? "");
-        return enrichPlace(w.name, safeBody.destination, apiKey, skipDetails, apiCounters);
+        return enrichPlace(w.name, safeBody.destination, apiKey, skipDetails, apiCounters, safeBody.lng);
       })
     );
 
@@ -403,9 +409,30 @@ export async function POST(req: Request) {
       totalEstimatedCostUsd:  parseFloat((claudeCostUsd + googleCostUsd).toFixed(4)),
     };
 
+    // ── Step 6: Persist cost to CostLog ──────────────────────────────────────
+    // Awaited before response — Vercel freezes functions on HTTP response,
+    // killing any fire-and-forget promise mid-flight. 50ms DB write is the
+    // correct tradeoff for guaranteed financial data integrity.
+    const { userId: requestUserId } = await auth();
+    try {
+      await prisma.costLog.create({
+        data: {
+          userId:      requestUserId ?? null,
+          destination: safeBody.destination,
+          aiCost:      meta.estimatedClaudeCostUsd,
+          googleCost:  meta.estimatedGoogleCostUsd,
+          totalCost:   meta.totalEstimatedCostUsd,
+          cacheHits:   apiCounters.cacheHits,
+          cacheMisses: apiCounters.textSearch,
+        },
+      });
+    } catch {
+      console.error("[itinerary] CostLog write failed");
+    }
+
     console.log("[itinerary] generation cost:", meta);
 
-    return Response.json({ ...itinerary, _meta: meta });
+    return Response.json(itinerary);
   } catch (e) {
     console.error("[itinerary/route]", e);
     const isParseError = e instanceof SyntaxError;

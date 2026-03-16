@@ -147,7 +147,6 @@ export type ItineraryResponse = {
   destination: string;
   editorial: string;
   days: DayPlan[];
-  _meta?: GenerationMeta;
 };
 
 // ─── Map ──────────────────────────────────────────────────────────────────────

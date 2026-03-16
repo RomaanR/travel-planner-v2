@@ -27,3 +27,15 @@ model PlaceCache {
   priceLevel       Int?
   fetchedAt        DateTime @default(now())
 }
+
+model CostLog {
+  id          String   @id @default(uuid())
+  userId      String?                        // Clerk userId — null if unauthenticated
+  destination String
+  aiCost      Decimal  @db.Decimal(10, 6)
+  googleCost  Decimal  @db.Decimal(10, 6)
+  totalCost   Decimal  @db.Decimal(10, 6)
+  cacheHits   Int
+  cacheMisses Int                            // = googleTextSearchCalls (items not in cache)
+  createdAt   DateTime @default(now())
+}
