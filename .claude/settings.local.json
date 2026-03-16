@@ -50,7 +50,8 @@
       "Bash(npx prisma:*)",
       "Bash(npx dotenv:*)",
       "Bash(dir .env*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(dir \"D:\\\\travel-plannner-v2\\\\src\\\\app\\\\api\")"
     ]
   }
 }

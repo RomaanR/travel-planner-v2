@@ -29,7 +29,7 @@ function costColour(total: number): string {
 export default async function AdminMetricsPage() {
   // ── Auth guard ──────────────────────────────────────────────────────────────
   const { userId } = await auth();
-  const adminId    = process.env.ADMIN_USER_ID;
+  const adminId    = process.env.ADMIN_USER_ID?.trim();
   if (!userId || !adminId || userId !== adminId) notFound();
 
   // ── Data ────────────────────────────────────────────────────────────────────
