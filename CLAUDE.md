@@ -25,6 +25,7 @@ This is not a travel app — it is a digital concierge.
 | AI | @anthropic-ai/sdk — model: `claude-sonnet-4-6`, max_tokens: `8192` |
 | Auth | **@clerk/nextjs v6** — **ACTIVE** (v6 is required; v7 breaks Next.js 14) |
 | ORM | **Prisma 7 + Supabase (PostgreSQL)** — **ACTIVE** |
+| Validation | **zod** — Zod schema on all API POST bodies |
 | PWA | **@serwist/next + serwist** — service worker, offline caching, installable |
 
 > **Clerk version lock:** Always install `@clerk/nextjs@6`, never `@clerk/nextjs@7+`. Clerk v7 requires Next.js 15. The v6 API uses `<SignedIn>/<SignedOut>` — `<Show>` is v7-only and must NOT be used.
@@ -90,9 +91,13 @@ Polyline: `strokeColor: #0A0A0A`, `strokeOpacity: 0.08`, `strokeWeight: 1`
 # AI
 ANTHROPIC_API_KEY=                       # console.anthropic.com → API Keys
 
-# Google Maps (NEXT_PUBLIC_ required for client-side)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=         # Google Cloud Console → Maps JavaScript API + Places API
-                                         # NOTE: Must have NO HTTP referrer restrictions for server-side use
+# Google Maps — CLIENT-SIDE (restricted to HTTP referrers: vercel domain + localhost)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=         # Google Cloud → Maps JavaScript API + Places API
+                                         # Restrict to: https://travel-planner-v2-pearl.vercel.app/* + http://localhost:3000/*
+
+# Google Maps — SERVER-SIDE (no HTTP referrer restriction — server has no referrer header)
+MAPS_SERVER_KEY=                         # Google Cloud → Places API only, Application restrictions: None
+                                         # Used in: src/app/api/itinerary/route.ts + src/lib/getPlacePhoto.ts
 
 # Clerk Auth
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=       # dashboard.clerk.com → API Keys
@@ -101,11 +106,21 @@ CLERK_SECRET_KEY=                        # dashboard.clerk.com → API Keys
 # Database (Supabase)
 DATABASE_URL=                            # Supabase → Project Settings → Database → Connection string (port 6543, PgBouncer pooled)
 DIRECT_URL=                              # Supabase → Project Settings → Database → Connection string (port 5432, direct — required by Prisma)
+
+# Admin Dashboard
+ADMIN_USER_ID=                           # Clerk userId of the business owner (e.g. user_3AsR5caVfAvf9sfqkUsb48ZNMnh)
+                                         # Must be trimmed — no trailing whitespace. Controls access to /admin/metrics.
+
+# Cron Job Security
+CRON_SECRET=                             # Random secret string — Vercel sends this as Authorization: Bearer <CRON_SECRET>
+                                         # Generate with: openssl rand -hex 32
 ```
 
 > **Clerk keyless mode:** If `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is absent, `<ClerkProvider>` is skipped entirely (conditional in `layout.tsx`). The app renders and builds correctly without Clerk keys.
 
 > **Supabase dual URLs:** `DATABASE_URL` uses PgBouncer (port 6543) for runtime queries. `DIRECT_URL` uses a direct connection (port 5432) required by Prisma for schema introspection and `db push`. Both must be set in `.env.local`.
+
+> **Google key split:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is exposed to the browser — restrict it by HTTP referrer in Google Cloud Console. `MAPS_SERVER_KEY` is never sent to the client and has no referrer restriction (server-side fetch has no referrer header).
 
 ### Removed / Deprecated
 The following Clerk redirect env vars are NOT needed for the current implementation (modal sign-in, no dedicated sign-in/sign-up pages):
@@ -130,8 +145,14 @@ src/
 │   ├── manifest.ts             # Next.js PWA manifest — "Seek Wander", standalone display, brand colors (no "AI" in name)
 │   ├── sw.ts                   # Serwist service worker — precache + Google Places photo CacheFirst (30d)
 │   ├── api/
-│   │   └── itinerary/
-│   │       └── route.ts        # POST — AI generation + Google enrichment pipeline (timeline schema)
+│   │   ├── itinerary/
+│   │   │   └── route.ts        # POST — Zod validation → AI generation → PlaceCache enrichment → Haversine transit → CostLog
+│   │   └── cron/
+│   │       └── cleanup/
+│   │           └── route.ts    # GET — Vercel Cron: deletes PlaceCache rows with updatedAt > 14 days (CRON_SECRET auth)
+│   ├── admin/
+│   │   └── metrics/
+│   │       └── page.tsx        # Server component — internal BI dashboard (/admin/metrics), ADMIN_USER_ID gated
 │   ├── itinerary/
 │   │   └── page.tsx            # Client component — split-screen live results (55% timeline + 45% map)
 │   ├── shared/
@@ -149,15 +170,15 @@ src/
 │   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion)
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   ├── BentoGrid.tsx           # 12-col editorial grid
-│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend (unchanged by timeline refactor)
+│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend
 │   └── ItineraryViewer.tsx     # Client component — editorial opener, tabbed days, TimelineCard, DaySection, TransitHeader, print all-days section
 ├── middleware.ts               # Clerk middleware — all routes public
 ├── hooks/
 │   └── useItinerary.ts         # Client-side fetch + state for live itinerary generation
 ├── lib/
 │   ├── db.ts                   # Prisma singleton — prevents multiple clients in dev hot-reload
-│   ├── getPlacePhoto.ts        # getDestinationPhotoUrl() — Google Places photo for /trips cards
-│   └── itineraryUtils.ts       # Shared runtime helpers: normalizeDayPlan(), isMealType(), computeMapPoints()
+│   ├── getPlacePhoto.ts        # getDestinationPhotoUrl() — uses MAPS_SERVER_KEY, for /trips cards
+│   └── itineraryUtils.ts       # Shared runtime helpers: normalizeDayPlan(), isMealType(), computeMapPoints(), parseOpenNow()
 ├── app/actions/
 │   └── saveTrip.ts             # Server action — auth-gated Prisma trip.create
 └── types/
@@ -166,7 +187,9 @@ src/
 
 ```
 prisma/
-└── schema.prisma               # Trip model — id, userId, destination, days, itineraryData (Json), createdAt
+└── schema.prisma               # Trip, PlaceCache, CostLog models
+
+vercel.json                     # Cron job schedule: /api/cron/cleanup at "0 0 * * *"
 ```
 
 ---
@@ -227,13 +250,15 @@ type DayPlan = {
 
 > **Rule:** `src/types/itinerary.ts` exports **types and interfaces only** — no runtime functions. All executable helpers live in `src/lib/itineraryUtils.ts`.
 
-Three exported functions:
+Four exported functions:
 
-1. **`normalizeDayPlan(day: DayPlan): DayPlan`** — Backward-compat shim. Checks `Array.isArray(day.timeline)` — if false, synthesizes `timeline[]` from the legacy `morning`/`afternoon`/`evening`/`dining` fields. Old DB records render correctly with zero migration. Called at the top of `DaySection` in `ItineraryViewer`.
+1. **`normalizeDayPlan(day: DayPlan): DayPlan`** — Backward-compat shim. Checks `Array.isArray(day.timeline)` — if false, synthesizes `timeline[]` from the legacy `morning`/`afternoon`/`evening`/`dining` fields. Old DB records render correctly with zero migration.
 
 2. **`isMealType(type: TimelineItemType): boolean`** — Returns `true` for breakfast/lunch/dinner/snack/drinks.
 
-3. **`computeMapPoints(days: DayPlan[]): MapPoint[]`** — Converts itinerary days to `MapPoint[]`. Calls `normalizeDayPlan()` internally, handles both old and new records. Used server-side in `trips/[id]` and `shared/[id]`, and client-side via `useMemo` in `itinerary/page.tsx`.
+3. **`computeMapPoints(days: DayPlan[]): MapPoint[]`** — Converts itinerary days to `MapPoint[]`. Calls `normalizeDayPlan()` internally.
+
+4. **`parseOpenNow(hoursOpen: string, lng: number): boolean | undefined`** — Computes open/closed status locally from a cached `hoursOpen` string and destination longitude (used as UTC offset estimate). Zero API calls on cache hits. Handles: `"Open 24 hours"` → `true`, `"Closed"` → `false`, `"9:00 AM – 9:00 PM"` ranges, overnight spans. Uses `Math.round(lng / 15)` hours as UTC offset (±30 min accuracy, sufficient for a planning app).
 
 ### `ItineraryViewer.tsx` — TimelineCard
 
@@ -273,6 +298,17 @@ Both missing and wrong-owner records return the same neutral `notFound()`.
 
 **`/shared/[id]` is the intentional exception** — public route, NO auth check. Anyone with the link can view.
 
+### Admin Dashboard Auth Pattern
+
+```ts
+// src/app/admin/metrics/page.tsx
+const { userId } = await auth();
+const adminId    = process.env.ADMIN_USER_ID?.trim(); // .trim() — Vercel env vars can have trailing newline
+if (!adminId || userId !== adminId) notFound();       // neutral 404 for all non-admin access
+```
+
+`notFound()` is used (not `redirect`) so the route's existence is not leaked to non-admin users.
+
 ### Server Component Auth Pattern (Clerk v6)
 
 ```ts
@@ -300,7 +336,7 @@ Always use optional chaining on the result — JSON may have been written by an 
 
 ## Data Schemas
 
-### Prisma — Trip Model
+### Prisma — Full Schema
 ```prisma
 generator client {
   provider = "prisma-client-js"
@@ -316,25 +352,50 @@ model Trip {
   itineraryData Json                            // Full ItineraryResponse blob
   createdAt     DateTime @default(now())
 }
+
+model PlaceCache {
+  id               String   @id @default(uuid())
+  cacheKey         String   @unique             // "{normalized-name}|{normalized-city}"
+  photoUrl         String?
+  rating           Float?
+  userRatingsTotal Int?
+  hoursOpen        String?                      // e.g. "9:00 AM – 9:00 PM" (today's hours, stripped of day prefix)
+  priceLevel       Int?
+  fetchedAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt          // auto-updated on every write — used by cron cleanup
+}
+
+model CostLog {
+  id          String   @id @default(uuid())
+  userId      String?                           // Clerk userId — null for unauthenticated generations
+  destination String
+  aiCost      Decimal  @db.Decimal(10, 6)       // Anthropic cost in USD
+  googleCost  Decimal  @db.Decimal(10, 6)       // Google Places API cost in USD
+  totalCost   Decimal  @db.Decimal(10, 6)       // aiCost + googleCost
+  cacheHits   Int                               // PlaceCache hits (zero Google API calls)
+  cacheMisses Int                               // Fresh Google Places Text Search calls
+  createdAt   DateTime @default(now())
+}
 ```
 
 > **Vercel Deployment:** `package.json` includes `"postinstall": "prisma generate"` so Vercel regenerates the Prisma client with the correct Linux binary after `npm install`. This is the only Vercel-specific Prisma config needed.
 
-### ItineraryRequest (POST body)
+### ItineraryRequest (POST body — Zod-validated)
 ```ts
+// Defined as z.infer<typeof ItinerarySchema> in route.ts — source of truth is the Zod schema
 type ItineraryRequest = {
-  destination: string    // "Kyoto, Japan"
-  placeId: string        // Google Place ID
-  lat: number
-  lng: number
+  destination: string    // max 100 chars
+  placeId: string        // max 300 chars
+  lat: number            // finite
+  lng: number            // finite
   departureDate: string  // ISO "YYYY-MM-DD"
   returnDate: string     // ISO "YYYY-MM-DD"
-  duration: number       // computed from date diff, clamped 1–5
+  duration: number       // int, 1–5 (enforced by Zod — no manual Math.min/max needed)
   travelParty: 'solo' | 'couple' | 'family' | 'group'
   pace: 'relaxed' | 'moderate' | 'packed'
   budgetTier: 'premium' | 'luxury' | 'ultra-luxury'
-  dietary: DietaryOption[]
-  interests: Interest[]
+  dietary: DietaryOption[]   // max 7 items
+  interests: Interest[]      // max 10 items
 }
 ```
 
@@ -355,9 +416,40 @@ type ItineraryResponse = {
 ## Data Pipeline (`src/app/api/itinerary/route.ts`)
 
 ### Overview
-1. **AI generation** — `claude-sonnet-4-6` produces pure JSON with `timeline[]` per day
-2. **Place enrichment** — `enrichPlace()` called for each `timeline` item in parallel
-3. **Transit calculation** — `getDayTransits()` called per day across all timeline stops
+1. **Zod validation** — `ItinerarySchema.safeParse(raw)` — 400 on failure with `fieldErrors`
+2. **AI generation** — `claude-sonnet-4-6` with `SYSTEM_PROMPT` (injection defence) produces pure JSON
+3. **Place enrichment** — `enrichPlace()` per `timeline` item in parallel (PlaceCache-first)
+4. **Transit calculation** — pure Haversine (zero API calls)
+5. **Cost tracking** — `CostLog` written (awaited) before response
+
+### Zod Request Validation
+```ts
+const ItinerarySchema = z.object({
+  destination:   z.string().min(1).max(100),
+  placeId:       z.string().min(1).max(300),
+  lat:           z.number().finite(),
+  lng:           z.number().finite(),
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  returnDate:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  duration:      z.number().int().min(1).max(5),
+  travelParty:   z.enum(["solo", "couple", "family", "group"]),
+  pace:          z.enum(["relaxed", "moderate", "packed"]),
+  budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
+  dietary:       z.array(z.enum([...])).max(7),
+  interests:     z.array(z.enum([...])).max(10),
+});
+type ItineraryRequest = z.infer<typeof ItinerarySchema>; // local to route.ts
+```
+
+`safeParse` is used — never `parse` — so errors are handled gracefully without try/catch.
+
+### Prompt Injection Defence (System Prompt)
+A `SYSTEM_PROMPT` constant is passed as the `system` parameter to `client.messages.create()`. It instructs the model:
+- Role and output format are **fixed** — cannot be overridden by user message content
+- Any injection attempt in destination/interests/dietary fields is silently ignored
+- Output is always pure JSON — never markdown, explanations, or apologies
+
+The `system` parameter is processed at a higher trust level than `messages[]` — the model treats system instructions as authoritative and user content as untrusted input.
 
 ### AI JSON Schema (current — timeline shape)
 ```json
@@ -387,36 +479,129 @@ type ItineraryResponse = {
 }
 ```
 
-### `enrichPlace()` — Two-step Google API chain
+### `enrichPlace()` — PlaceCache-First Enrichment
 ```
-Step 1: Places Text Search (textsearch/json)
-  → Returns: photoUrl, rating, reviewCount, openNow, priceLevel, place_id
+1. Check prisma.placeCache (cacheKey = "{normalized-name}|{normalized-city}")
+   HIT  (< 30 days old): return cached data + parseOpenNow(hoursOpen, lng) — ZERO Google API calls
+   MISS: continue to Google Places
 
-Step 2: Place Details (details/json?fields=opening_hours)  ← only if place_id found
-  → Returns: weekday_text → extracts today's hours
-  → todayIdx = (new Date().getDay() + 6) % 7  (Monday=0)
-  → strips "Monday: " prefix → "9:00 AM – 9:00 PM"
+2. Google Places Text Search (textsearch/json) using MAPS_SERVER_KEY
+   → photoUrl, rating, userRatingsTotal, openNow, priceLevel, place_id
+
+3. Google Place Details (details/json?fields=opening_hours) — skipped for NATURE/ADVENTURE
+   → weekday_text → today's hours string (e.g. "9:00 AM – 9:00 PM")
+   → todayIdx = (new Date().getDay() + 6) % 7  (Monday=0)
+
+4. Write result to PlaceCache (upsert, fire-and-forget — non-fatal if it fails)
 ```
-Both steps wrapped in `AbortSignal.timeout()` (5000ms / 4000ms). All errors return `null` gracefully.
 
-> **Critical:** The photo URL query parameter is `photoreference` (no underscore). Using `photo_reference` silently returns a broken redirect.
+Both Google steps use `AbortSignal.timeout()` (5000ms / 4000ms). All errors return `null` gracefully.
 
-### Transit Calculation — Haversine + Distance Matrix
+**`SKIP_DETAILS_CATEGORIES`** = `Set(["NATURE", "ADVENTURE"])` — outdoor places have no meaningful opening hours; skipping saves one Place Details call per item.
+
+> **Critical:** Photo URL parameter is `photoreference` (no underscore). `photo_reference` silently returns a broken redirect.
+
+### Transit Calculation — Pure Haversine (Zero API Calls)
+**Distance Matrix API has been removed entirely.** Transit is 100% local math:
+```ts
+walkingMinutes  = max(1, round((km / 5)  * 60))   // 5 km/h walking
+drivingMinutes  = max(1, round((km / 25) * 60))   // 25 km/h city driving
 ```
-Haversine baseline (always computed, guarantees transit UI renders):
-  walkingMinutes  = round((km / 5)  * 60)   // 5 km/h walking
-  drivingMinutes  = round((km / 25) * 60)   // 25 km/h city driving
+No async, no API key, no cost. Applied per-day across all `timeline` stop coordinates.
 
-Distance Matrix override (best-effort, replaces Haversine if API succeeds):
-  mode=walking + mode=driving via Promise.allSettled
+### Cost Tracking — `GenerationMeta` + `CostLog`
+```ts
+// Pricing constants
+CLAUDE_INPUT_COST  = $3  / 1_000_000 tokens
+CLAUDE_OUTPUT_COST = $15 / 1_000_000 tokens
+GOOGLE_TEXT_SEARCH = $0.032 / call
+GOOGLE_DETAILS     = $0.017 / call
 ```
+
+`GenerationMeta` is assembled locally and **logged to server console only** — never transmitted to the client (margin protection). It is then **awaited** as `prisma.costLog.create()` inside a try/catch *before* `return Response.json(itinerary)`.
+
+> **Why awaited (not fire-and-forget)?** Vercel freezes the serverless function the instant the HTTP response is returned, killing any background promise mid-flight. Awaiting the DB write guarantees financial data integrity at the cost of ~50ms (negligible vs. 10+ second generation time).
 
 ### `getDestinationPhotoUrl()` — `/trips` Dashboard Photos (`src/lib/getPlacePhoto.ts`)
 ```
-Step 1: findplacefromtext (fields=photos)
+Step 1: findplacefromtext (fields=photos) — uses MAPS_SERVER_KEY
 Step 2: Constructs Places Photo URL → photoreference (no underscore)
 ```
 Cache: `next: { revalidate: 86400 }`. Timeout: `AbortSignal.timeout(4000)`. Returns `null` on error → typographic placeholder fallback.
+
+---
+
+## Admin Dashboard (`/admin/metrics`)
+
+Internal BI page — access controlled by `ADMIN_USER_ID` env var.
+
+**KPI cards:**
+- Total Spent (sum of `totalCost`)
+- Total Generations (count of `CostLog` rows)
+- Avg Cost / Trip
+- Cache Hit Rate (`cacheHits / (cacheHits + cacheMisses)`)
+
+**Cost split section:** Claude vs Google with per-trip averages.
+
+**Generation log table:** Last 200 rows, newest first. Cost colour-coding: green < $0.15, amber > $0.50. Cache column: `{hits}/{hits+misses}`.
+
+Auth pattern:
+```ts
+const { userId } = await auth();
+const adminId    = process.env.ADMIN_USER_ID?.trim(); // trim() prevents Vercel newline bug
+if (!adminId || userId !== adminId) notFound();
+```
+
+---
+
+## Automated Garbage Collection — Vercel Cron
+
+**Route:** `GET /api/cron/cleanup`
+**Schedule:** `"0 0 * * *"` (daily at midnight UTC) — configured in `vercel.json`
+**Security:** Vercel automatically sends `Authorization: Bearer <CRON_SECRET>` on every invocation. Route checks this header and returns 401 for any other caller.
+
+**Logic:**
+```ts
+const fourteenDaysAgo = new Date();
+fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+const result = await prisma.placeCache.deleteMany({
+  where: { updatedAt: { lt: fourteenDaysAgo } },
+});
+```
+
+`PlaceCache.updatedAt` uses Prisma `@updatedAt` — auto-refreshed on every upsert. Records accessed recently (cache hits that trigger an upsert) stay alive.
+
+---
+
+## Security Architecture
+
+### 1. Input Validation (Zod)
+All POST bodies to `/api/itinerary` are parsed through `ItinerarySchema.safeParse()` before any database or API call. Invalid requests return `400` with per-field `fieldErrors`. The `ItineraryRequest` type is derived from the Zod schema (`z.infer<>`) — the schema is the single source of truth.
+
+### 2. Prompt Injection Defence
+`SYSTEM_PROMPT` is passed as the `system` parameter (not inside `messages[]`) to the Anthropic SDK. The model is instructed to ignore any instructions embedded in user-supplied fields (destination, interests, dietary). Malicious payloads are silently discarded and a standard itinerary is generated.
+
+### 3. HTTP Security Headers (`next.config.mjs`)
+Applied to all routes via `headers()`:
+```
+X-Frame-Options:        DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy:        strict-origin-when-cross-origin
+Permissions-Policy:     camera=(), microphone=(), payment=(), usb=(), geolocation=(self)
+```
+No `Content-Security-Policy` (would break Google Maps JS SDK + Clerk). No `Strict-Transport-Security` (Vercel enforces HTTPS at the edge).
+
+### 4. Google API Key Split
+| Key | Env Var | Restriction | Used In |
+|-----|---------|-------------|---------|
+| Client key | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | HTTP referrers: Vercel domain + localhost | Maps JS SDK, Places Autocomplete (browser) |
+| Server key | `MAPS_SERVER_KEY` | API restriction: Places API only; no referrer | `route.ts` enrichment, `getPlacePhoto.ts` |
+
+### 5. IDOR Prevention
+`/trips/[id]` fetches by ID then checks `trip.userId === userId` — both missing and wrong-owner records return a neutral `notFound()`. Never expose ownership information in error responses.
+
+### 6. Admin Route — Neutral 404
+`/admin/metrics` calls `notFound()` (not `redirect`) for all non-admin access. This prevents leaking that the route exists to non-admin users.
 
 ---
 
@@ -479,6 +664,7 @@ export default clerkMiddleware()
 ### Route Auth Model
 - `/trips` — `auth()` + `redirect('/')` if no userId
 - `/trips/[id]` — `auth()` + ownership check + `notFound()` if unauthorized
+- `/admin/metrics` — `auth()` + `ADMIN_USER_ID` match + `notFound()` if unauthorized
 - `saveTrip` server action — `auth()` + throws if no userId
 - `/itinerary` — save button gated by `<SignedIn>`; page itself is public
 - `/shared/[id]` — **intentionally public, no auth**
@@ -489,7 +675,9 @@ export default clerkMiddleware()
 
 Model: `claude-sonnet-4-6` | Max tokens: `8192`
 
-The model is instructed to act as an elite luxury travel curator (Condé Nast Traveller × private concierge). Each response is a `timeline[]`-based JSON itinerary with:
+The model receives a fixed `SYSTEM_PROMPT` (injection defence) plus a `buildPrompt()` user message. The system prompt locks the role, format, and schema. The user message contains the curated client profile.
+
+Each response is a `timeline[]`-based JSON itinerary with:
 - Vogue-style editorial opener (≤25 words)
 - Days with poetic theme title + honest pace rating
 - `timeline[]` items ordered by `startTime` — activities AND meals interwoven
@@ -525,6 +713,7 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 3 — Ultra-Luxury UI | **Complete** | Tabbed day nav, hoursOpen, cost badges, dashed transit connectors, day-centric map |
 | 4 — Auth | **Complete** | Clerk v6 integration, conditional ClerkProvider, NavbarAuth, custom 404 |
 | 5 — Persistence & Dynamic Routes | **Complete** | Prisma + Supabase, saveTrip server action, /trips archive, /trips/[id] viewer, ItineraryViewer composition, IDOR enforcement |
-| 6 — PWA, Sharing & Export | **Complete** | @serwist/next PWA, manifest.ts (brand "Seek Wander", no AI), public /shared/[id] with OG tags & acquisition banners, ShareButton, PDF/print export with Tailwind print: modifiers |
-| 7 — Chronological Timeline | **Complete** | timeline: TimelineItem[] canonical shape; normalizeDayPlan() backward-compat shim in itineraryUtils.ts; isMealType() + computeMapPoints() co-located in itineraryUtils.ts; no DB migration needed |
-| 8 — Monetization & Cost Optimisation | **Next** | **Option A:** Supabase `PlaceCache` table — cache Google Places API responses by place name + city, eliminating repeat enrichment API calls (saves ~$0.64/itinerary on repeat destinations). **Option B:** Stripe Checkout — $4.99 paywall for itinerary generation (free tier: 1 generation; paid: unlimited). Both can be pursued sequentially. |
+| 6 — PWA, Sharing & Export | **Complete** | @serwist/next PWA, manifest.ts, public /shared/[id] with OG tags & acquisition banners, ShareButton, PDF/print export |
+| 7 — Chronological Timeline | **Complete** | timeline: TimelineItem[] canonical shape; normalizeDayPlan() backward-compat shim; isMealType() + computeMapPoints() in itineraryUtils.ts |
+| 8 — Margin Protection & Observability | **Complete** | PlaceCache (Supabase) — 30-day TTL, cache-first enrichment; Distance Matrix removed → pure Haversine; parseOpenNow() local computation; CostLog Prisma model (Decimal(10,6)); /admin/metrics BI dashboard (ADMIN_USER_ID gated); Vercel Cron daily cleanup (CRON_SECRET); Zod validation; SYSTEM_PROMPT injection defence; HTTP security headers; Google API key split (NEXT_PUBLIC_ client / MAPS_SERVER_KEY server) |
+| 9 — Monetization | **Next** | Stripe Checkout — $4.99 paywall for itinerary generation (free tier: 1 generation; paid: unlimited) |
