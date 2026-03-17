@@ -33,7 +33,7 @@ export default async function TripsPage() {
             className="flex md:hidden items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-6"
           >
             <ChevronLeft size={13} strokeWidth={1.5} />
-            Home
+            BACK TO HOME
           </Link>
           <p className="micro-copy text-ink-light mb-4 animate-fade-in-up">
             Private Archive

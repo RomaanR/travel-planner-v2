@@ -21,8 +21,8 @@ export default function MobileMenu() {
 
   // Prevent body scroll while overlay is open
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overflow = open ? "hidden" : "unset";
+    return () => { document.body.style.overflow = "unset"; };
   }, [open]);
 
   function close() { setOpen(false); }
@@ -33,7 +33,7 @@ export default function MobileMenu() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="md:hidden flex items-center justify-center bg-paper p-2.5 border border-ink/10 shadow-sm text-ink z-50 relative"
+        className="md:hidden flex items-center justify-center bg-paper p-2.5 border border-ink/20 rounded-full shadow-sm text-ink z-50 relative"
       >
         <Menu size={18} strokeWidth={1.5} />
       </button>
@@ -46,7 +46,7 @@ export default function MobileMenu() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed inset-0 z-40 bg-paper flex flex-col md:hidden"
+            className="fixed inset-0 z-[100] bg-paper flex flex-col md:hidden"
           >
             {/* Header — mirrors Navbar layout */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-ink/5">
@@ -67,7 +67,7 @@ export default function MobileMenu() {
               <button
                 onClick={close}
                 aria-label="Close navigation"
-                className="flex items-center justify-center bg-paper p-2.5 border border-ink/10 shadow-sm text-ink"
+                className="flex items-center justify-center bg-paper p-2.5 border border-ink/20 rounded-full shadow-sm text-ink"
               >
                 <X size={18} strokeWidth={1.5} />
               </button>
