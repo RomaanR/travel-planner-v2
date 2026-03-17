@@ -108,9 +108,9 @@ export default function HomePage() {
       <section className="border-b border-ink/5 bg-paper-dark">
         <div className="max-w-screen-xl mx-auto px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: "3-Day", label: "Curated Itineraries" },
-            { value: "AI", label: "Luxury Intelligence" },
-            { value: "100%", label: "Hidden Gems Sourced" },
+            { value: "Bespoke", label: "Curated Itineraries" },
+            { value: "Vetted", label: "Luxury Stays" },
+            { value: "100%", label: "Hidden Gems" },
             { value: "Zero", label: "Tourist Traps" },
           ].map((stat, i) => (
             <motion.div
