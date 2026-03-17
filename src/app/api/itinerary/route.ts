@@ -432,7 +432,7 @@ export async function POST(req: Request) {
     // Build accommodation-aware system prompt — appended after the immutable security rules
     const accommodationInstruction =
       safeBody.accommodationStatus === "booked"
-        ? `\n\nACCOMMODATION — CONFIRMED RESERVATION:\nThe user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}. You MUST anchor the start and end of every single day's itinerary around this location. Ensure all travel times and routing are realistic from this hotel. DO NOT recommend any new hotels or alternative accommodations.`
+        ? `\n\nACCOMMODATION — CONFIRMED RESERVATION: The user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}.  CRITICAL GEOGRAPHY RULE: You MUST anchor the start and end of every single day around this exact hotel.  - Breakfast and morning activities MUST be within a strict 15-minute walk or 5-minute taxi ride from ${safeBody.hotelName || "the hotel"}. - Do NOT suggest any location that is more than a 30-minute transit ride away unless it is a world-renowned landmark. - Cluster activities geographically to avoid zig-zagging across the city.  DO NOT recommend any new hotels to stay at.`
         : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 2 highly-vetted, luxury accommodation options in a "recommendedStays" array at the root of your JSON response. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch). Select properties that match the stated budget tier and destination vibe.`;
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
