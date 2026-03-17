@@ -146,10 +146,17 @@ export type GenerationMeta = {
   totalEstimatedCostUsd: number;
 };
 
+export type RecommendedStay = {
+  name:         string;  // real hotel name
+  description:  string;  // exactly 2 sentences — luxury editorial pitch
+  neighborhood: string;  // area or district name
+};
+
 export type ItineraryResponse = {
-  destination: string;
-  editorial: string;
-  days: DayPlan[];
+  destination:       string;
+  editorial:         string;
+  days:              DayPlan[];
+  recommendedStays?: RecommendedStay[];  // present when accommodationStatus !== "booked"
 };
 
 // ─── Map ──────────────────────────────────────────────────────────────────────

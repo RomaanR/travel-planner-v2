@@ -26,7 +26,9 @@ const ItinerarySchema = z.object({
   pace:          z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
   dietary:       z.array(z.enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten-free", "dairy-free"])).max(7),
-  interests:     z.array(z.enum(["sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife", "culture-history", "adventure-sports", "relaxation-wellness", "photography"])).max(10),
+  interests:           z.array(z.enum(["sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife", "culture-history", "adventure-sports", "relaxation-wellness", "photography"])).max(10),
+  accommodationStatus: z.enum(["needed", "booked"]).optional(),
+  hotelName:           z.string().max(200).optional(),
 });
 
 type ItineraryRequest = z.infer<typeof ItinerarySchema>;
@@ -99,9 +101,47 @@ const SCHEMA = `{
   ]
 }`;
 
+// Schema variant used when accommodationStatus !== "booked" — adds recommendedStays at root
+const SCHEMA_WITH_STAYS = `{
+  "destination": "string",
+  "editorial": "string (one Vogue-style sentence, ≤25 words)",
+  "recommendedStays": [
+    {
+      "name": "string (real hotel name — no fictional properties)",
+      "description": "string (exactly 2 sentences — restrained luxury editorial pitch)",
+      "neighborhood": "string (area or district name, e.g. 'Omotesandō, Tokyo')"
+    }
+  ],
+  "days": [
+    {
+      "day": 1,
+      "theme": "string (poetic day title)",
+      "pace": "relaxed | moderate | packed",
+      "timeline": [
+        {
+          "type": "activity | breakfast | lunch | dinner | snack | drinks",
+          "title": "string (place or activity name — real names only)",
+          "description": "string (exactly 2 sentences)",
+          "duration": "string (e.g. '2 hours' for activities; '1 hour' for meals)",
+          "startTime": "string (HH:MM — must be strictly sequential through the day)",
+          "category": "string (SIGHTSEEING | MUSEUM | CULTURE | NATURE | WELLNESS | ADVENTURE | SHOPPING — activities only, omit for meals)",
+          "coordinates": { "lat": number, "lng": number },
+          "cuisine": "string (meals only — omit for activities)",
+          "pricePoint": "$$ | $$$ | $$$$ (meals only — omit for activities)",
+          "reservation": true | false,
+          "dietaryNote": "string | undefined (meals only)"
+        }
+      ],
+      "hiddenGem": "string (exact place name + 1 sentence why it matters)",
+      "hiddenGemCoordinates": { "lat": number, "lng": number }
+    }
+  ]
+}`;
+
 // ─── Prompt builder ───────────────────────────────────────────────────────────
 
 function buildPrompt(data: ItineraryRequest): string {
+  const needsHotel = data.accommodationStatus !== "booked";
   const { destination, duration, travelParty, pace, budgetTier, dietary, interests, departureDate, returnDate } = data;
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
@@ -160,7 +200,7 @@ Travel dates: ${departureDate} to ${returnDate}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
-${SCHEMA}`;
+${needsHotel ? SCHEMA_WITH_STAYS : SCHEMA}`;
 }
 
 // ─── Cache helpers ────────────────────────────────────────────────────────────
@@ -389,11 +429,18 @@ export async function POST(req: Request) {
     const apiKey = process.env.MAPS_SERVER_KEY ?? "";
 
     // ── Step 1: Anthropic AI generation ──────────────────────────────────────
+    // Build accommodation-aware system prompt — appended after the immutable security rules
+    const accommodationInstruction =
+      safeBody.accommodationStatus === "booked"
+        ? `\n\nACCOMMODATION — CONFIRMED RESERVATION:\nThe user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}. You MUST anchor the start and end of every single day's itinerary around this location. Ensure all travel times and routing are realistic from this hotel. DO NOT recommend any new hotels or alternative accommodations.`
+        : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 2 highly-vetted, luxury accommodation options in a "recommendedStays" array at the root of your JSON response. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch). Select properties that match the stated budget tier and destination vibe.`;
+    const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
+
     const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
+      model:      "claude-sonnet-4-6",
       max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt(safeBody) }],
+      system:     dynamicSystemPrompt,
+      messages:   [{ role: "user", content: buildPrompt(safeBody) }],
     });
 
     // ── Step 2: Extract + sanitize raw LLM text ──────────────────────────────
