@@ -20,6 +20,7 @@ import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
+import GenerationLoader from "@/components/GenerationLoader";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -115,15 +116,9 @@ export default function ItineraryPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center py-24 gap-5"
+                transition={{ duration: 0.4 }}
               >
-                <Loader2 size={28} className="animate-spin text-burnt-orange" strokeWidth={1} />
-                <p className="font-serif italic text-3xl text-ink">
-                  Curating your journey&hellip;
-                </p>
-                <p className="micro-copy text-ink-light">
-                  Sourcing locations, photos, ratings and transit times
-                </p>
+                <GenerationLoader />
               </motion.div>
             )}
 
