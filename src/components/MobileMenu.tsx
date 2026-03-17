@@ -33,7 +33,7 @@ export default function MobileMenu() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="md:hidden flex items-center justify-center bg-paper p-2.5 border border-ink/20 rounded-full shadow-sm text-ink z-50 relative"
+        className="md:hidden p-3 bg-paper border border-ink/20 rounded-full text-ink shadow-md relative z-[60] flex items-center justify-center"
       >
         <Menu size={18} strokeWidth={1.5} />
       </button>
@@ -42,11 +42,12 @@ export default function MobileMenu() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed inset-0 z-[100] bg-paper flex flex-col md:hidden"
+            initial={{ opacity: 1, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed inset-0 z-[100] bg-paper flex flex-col"
+            style={{ backgroundColor: "#F5F0E8" }}
           >
             {/* Header — mirrors Navbar layout */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-ink/5">
@@ -67,7 +68,7 @@ export default function MobileMenu() {
               <button
                 onClick={close}
                 aria-label="Close navigation"
-                className="flex items-center justify-center bg-paper p-2.5 border border-ink/20 rounded-full shadow-sm text-ink"
+                className="flex items-center justify-center p-3 bg-paper border border-ink/20 rounded-full shadow-md text-ink"
               >
                 <X size={18} strokeWidth={1.5} />
               </button>
@@ -81,7 +82,7 @@ export default function MobileMenu() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 + i * 0.08 }}
+                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 + i * 0.08 }}
                 >
                   <Link
                     href={link.href}
@@ -99,7 +100,7 @@ export default function MobileMenu() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.38 }}
+              transition={{ delay: 0.35 }}
               className="px-8 py-8 border-t border-ink/5 text-center"
             >
               <p className="micro-copy text-ink-light">Curated Luxury Journeys</p>
