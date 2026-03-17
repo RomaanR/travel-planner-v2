@@ -19,13 +19,24 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Seek Wander — Luxury AI Travel Curation",
+  title: {
+    default: "Seek Wander | Bespoke AI Travel Curation",
+    template: "%s | Seek Wander",
+  },
   description:
-    "Your personal AI concierge for ultra-curated, editorial travel experiences. Built for the discerning traveler.",
+    "High-fidelity, geographically-aware itineraries for the discerning traveler.",
   openGraph: {
-    title: "Seek Wander",
-    description: "Luxury AI travel curation for the discerning traveler.",
+    title: "Seek Wander | Bespoke AI Travel Curation",
+    description:
+      "High-fidelity, geographically-aware itineraries for the discerning traveler.",
     type: "website",
+    siteName: "Seek Wander",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seek Wander | Bespoke AI Travel Curation",
+    description:
+      "High-fidelity, geographically-aware itineraries for the discerning traveler.",
   },
   appleWebApp: {
     capable: true,

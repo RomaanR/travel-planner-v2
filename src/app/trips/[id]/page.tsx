@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +12,57 @@ import ItineraryViewer from "@/components/ItineraryViewer";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
 import { computeMapPoints, normalizeDayPlan } from "@/lib/itineraryUtils";
+import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
+
+// ─── Dynamic OG Metadata ──────────────────────────────────────────────────────
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  // No auth check here — generateMetadata cannot access Clerk session.
+  // The page itself enforces auth + ownership; metadata just needs the
+  // destination name and editorial text for social previews.
+  const trip = await prisma.trip.findUnique({ where: { id: params.id } });
+  if (!trip) return { title: "Itinerary Not Found" };
+
+  const itinerary = trip.itineraryData as unknown as ItineraryResponse;
+
+  // Extract the first sentence of the editorial opener as the OG description.
+  // e.g. "Kyoto's ancient temples await. A city revealed slowly." → "Kyoto's ancient temples await."
+  const editorial = itinerary?.editorial ?? "";
+  const firstSentence = editorial.split(/\.\s+/)[0]?.trim();
+  const description = firstSentence
+    ? `${firstSentence}.`
+    : `A curated luxury journey to ${trip.destination}, crafted by Seek Wander.`;
+
+  // Destination hero photo for og:image / twitter:image.
+  // Returns null if MAPS_SERVER_KEY is absent or the Places call fails.
+  const photoUrl = await getDestinationPhotoUrl(trip.destination);
+
+  const title = `${trip.destination} | Curated by Seek Wander`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: "Seek Wander",
+      ...(photoUrl
+        ? { images: [{ url: photoUrl, width: 800, alt: trip.destination }] }
+        : {}),
+    },
+    twitter: {
+      card: photoUrl ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(photoUrl ? { images: [photoUrl] } : {}),
+    },
+  };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
