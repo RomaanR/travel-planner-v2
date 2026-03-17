@@ -36,6 +36,9 @@ export type ItineraryRequest = {
   budgetTier: BudgetTier;
   dietary: DietaryOption[];
   interests: Interest[]; // no max cap
+  // Accommodation branching — optional, appended at submit time
+  accommodationStatus?: "needed" | "booked";
+  hotelName?: string;
 };
 
 // ─── Response ─────────────────────────────────────────────────────────────────

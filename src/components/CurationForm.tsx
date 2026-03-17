@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Loader2,
   Calendar,
+  Building2,
 } from "lucide-react";
 import type {
   ItineraryRequest,
@@ -138,6 +139,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [stage, setStage] = useState<0 | 1>(0);
+  const [accommodationStatus, setAccommodationStatus] = useState<"needed" | "booked">("needed");
+  const [hotelName, setHotelName] = useState("");
   const localToday = useMemo(getLocalToday, []);
 
   const [form, setForm] = useState<Partial<ItineraryRequest>>({
@@ -237,7 +240,12 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   // ── Submit ────────────────────────────────────────────────────────────────────
   async function handleSubmit() {
     if (!isComplete || loading) return;
-    await onGenerate({ ...(form as ItineraryRequest), duration });
+    await onGenerate({
+      ...(form as ItineraryRequest),
+      duration,
+      accommodationStatus,
+      hotelName: accommodationStatus === "booked" ? hotelName.trim() : "",
+    });
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -340,6 +348,86 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   )}
                 </motion.p>
               )}
+            </div>
+
+            {/* ── Row 1b: Accommodation ── */}
+            <div className="mb-8">
+              <p className="micro-copy text-ink-light mb-4">Accommodation</p>
+              <div className="grid grid-cols-2 gap-2">
+
+                {/* Option A — Need recommendations */}
+                <button
+                  type="button"
+                  onClick={() => { setAccommodationStatus("needed"); setHotelName(""); }}
+                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                    ${accommodationStatus === "needed"
+                      ? "border-ink bg-ink text-paper"
+                      : "border-ink/10 text-ink hover:border-ink/30"
+                    }`}
+                >
+                  <Building2
+                    size={16}
+                    strokeWidth={1.5}
+                    className={accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"}
+                  />
+                  <span className="micro-copy leading-none">I need recommendations</span>
+                  <span className={`font-sans text-xs leading-tight ${
+                    accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"
+                  }`}>
+                    Surface luxury hotel options
+                  </span>
+                </button>
+
+                {/* Option B — Already booked */}
+                <button
+                  type="button"
+                  onClick={() => setAccommodationStatus("booked")}
+                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                    ${accommodationStatus === "booked"
+                      ? "border-ink bg-ink text-paper"
+                      : "border-ink/10 text-ink hover:border-ink/30"
+                    }`}
+                >
+                  <Building2
+                    size={16}
+                    strokeWidth={1.5}
+                    className={accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"}
+                  />
+                  <span className="micro-copy leading-none">I have a reservation</span>
+                  <span className={`font-sans text-xs leading-tight ${
+                    accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"
+                  }`}>
+                    Focus itinerary around my stay
+                  </span>
+                </button>
+              </div>
+
+              {/* Conditional hotel name input — animated reveal */}
+              <AnimatePresence>
+                {accommodationStatus === "booked" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="mt-4"
+                  >
+                    <label className="font-sans text-xs text-ink-light block mb-1.5">
+                      Where are you staying?
+                    </label>
+                    <div className="flex items-center gap-2 border-b border-ink/20 pb-2">
+                      <Building2 size={13} strokeWidth={1.5} className="text-ink-light shrink-0" />
+                      <input
+                        type="text"
+                        value={hotelName}
+                        onChange={(e) => setHotelName(e.target.value)}
+                        placeholder="The Ritz-Carlton, Tokyo"
+                        className="flex-1 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-ink/30"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* ── Row 2: Travel Party ── */}
