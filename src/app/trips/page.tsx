@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
 import Navbar from "@/components/Navbar";
 import ShareButton from "@/components/ShareButton";
+import EmptyTripsState from "@/components/EmptyTripsState";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -74,24 +75,8 @@ export default async function TripsPage() {
       {/* ── Content ── */}
       <div className="px-8 md:px-16 py-14 md:py-20">
 
-        {/* Empty State */}
-        {trips.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-8 h-px bg-burnt-orange mb-8" />
-            <p className="font-serif italic text-4xl md:text-5xl text-ink leading-tight mb-4">
-              Your archive is<br />currently empty.
-            </p>
-            <p className="font-sans text-sm text-ink-light mb-10 max-w-xs mx-auto leading-relaxed">
-              Save an itinerary from the results page and it will appear here.
-            </p>
-            <Link
-              href="/"
-              className="micro-copy border border-ink/20 px-8 py-4 text-ink hover:bg-ink hover:text-paper transition-all duration-300"
-            >
-              Begin Curating
-            </Link>
-          </div>
-        )}
+        {/* Empty State — Inspiration Hub */}
+        {trips.length === 0 && <EmptyTripsState />}
 
         {/* Trip Grid */}
         {trips.length > 0 && (
