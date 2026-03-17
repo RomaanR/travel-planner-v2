@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo } from "react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -37,8 +38,14 @@ export default function ItineraryPage() {
     try {
       await saveTripToDb(itinerary.destination, itinerary.days.length, itinerary);
       setSaveState("saved");
+      toast.success("Passport Updated", {
+        description: "This journey has been saved to your archive.",
+      });
     } catch {
       setSaveState("error");
+      toast.error("Save Failed", {
+        description: "Unable to save this journey. Please try again.",
+      });
       setTimeout(() => setSaveState("idle"), 3000);
     }
   }

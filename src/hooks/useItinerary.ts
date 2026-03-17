@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import type { ItineraryRequest, ItineraryResponse } from "@/types/itinerary";
 
 export function useItinerary() {
@@ -11,6 +12,7 @@ export function useItinerary() {
   async function generateItinerary(data: ItineraryRequest) {
     setLoading(true);
     setError(null);
+    toast.loading("Consulting the concierge\u2026", { id: "curate-task" });
     try {
       const res = await fetch("/api/itinerary", {
         method: "POST",
@@ -23,9 +25,17 @@ export function useItinerary() {
       }
       const result: ItineraryResponse = await res.json();
       setItinerary(result);
+      toast.success("Itinerary Prepared", {
+        id: "curate-task",
+        description: "Your bespoke journey is ready for review.",
+      });
       return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
+      toast.error("Concierge Busy", {
+        id: "curate-task",
+        description: "Our desk is at capacity. Please try again in a moment.",
+      });
       return null;
     } finally {
       setLoading(false);

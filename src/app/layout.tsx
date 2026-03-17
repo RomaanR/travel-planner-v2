@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -58,6 +59,21 @@ export default function RootLayout({
         ) : (
           children
         )}
+        <Toaster
+          position="bottom-right"
+          expand={false}
+          richColors
+          toastOptions={{
+            style: {
+              background: "#F5F0E8",
+              color: "#0A0A0A",
+              border: "1px solid rgba(10, 10, 10, 0.1)",
+              borderRadius: "0",
+              fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+              fontSize: "0.8125rem",
+            },
+          }}
+        />
       </body>
     </html>
   );
