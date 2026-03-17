@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
@@ -10,6 +9,7 @@ import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
 import Navbar from "@/components/Navbar";
 import ShareButton from "@/components/ShareButton";
 import EmptyTripsState from "@/components/EmptyTripsState";
+import UnauthenticatedState from "@/components/UnauthenticatedState";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,12 @@ function formatDate(date: Date): string {
 
 export default async function TripsPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/");
+  if (!userId) return (
+    <div className="min-h-screen bg-paper">
+      <Navbar />
+      <UnauthenticatedState />
+    </div>
+  );
 
   let trips: Awaited<ReturnType<typeof prisma.trip.findMany>> = [];
   try {
