@@ -33,9 +33,9 @@ export default function MobileMenu() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Open navigation"
-        className="md:hidden flex items-center justify-center w-9 h-9 text-ink"
+        className="md:hidden flex items-center justify-center bg-paper p-2.5 border border-ink/10 shadow-sm text-ink z-50 relative"
       >
-        <Menu size={20} strokeWidth={1.5} />
+        <Menu size={18} strokeWidth={1.5} />
       </button>
 
       {/* ── Full-screen overlay ── */}
@@ -46,7 +46,7 @@ export default function MobileMenu() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="fixed inset-0 z-[60] bg-paper flex flex-col md:hidden"
+            className="fixed inset-0 z-40 bg-paper flex flex-col md:hidden"
           >
             {/* Header — mirrors Navbar layout */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-ink/5">
@@ -67,9 +67,9 @@ export default function MobileMenu() {
               <button
                 onClick={close}
                 aria-label="Close navigation"
-                className="flex items-center justify-center w-9 h-9 text-ink"
+                className="flex items-center justify-center bg-paper p-2.5 border border-ink/10 shadow-sm text-ink"
               >
-                <X size={20} strokeWidth={1.5} />
+                <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
