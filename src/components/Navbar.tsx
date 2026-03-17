@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import MobileMenu from "@/components/MobileMenu";
 
 // Load Clerk auth components client-side only — prevents SSR throws when no key is configured
 const NavbarAuth = dynamic(() => import("./NavbarAuth"), { ssr: false });
@@ -31,18 +32,26 @@ export default function Navbar() {
         </span>
       </Link>
 
-      {/* Nav links */}
-      <div className="hidden md:flex items-center gap-8">
-        <Link
-          href="/trips"
-          className="micro-copy text-ink-light hover:text-ink transition-colors"
-        >
-          MY TRIPS
-        </Link>
-      </div>
+      {/* Right side — desktop nav + auth + mobile hamburger */}
+      <div className="flex items-center gap-4">
 
-      {/* Auth — dynamically loaded to skip SSR (Clerk requires a key during SSR) */}
-      <NavbarAuth />
+        {/* Desktop nav links */}
+        <div className="hidden md:flex items-center gap-8">
+          <Link
+            href="/trips"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            MY TRIPS
+          </Link>
+        </div>
+
+        {/* Auth — always visible (UserButton is compact on mobile) */}
+        <NavbarAuth />
+
+        {/* Mobile hamburger — hidden on desktop */}
+        <MobileMenu />
+
+      </div>
     </motion.nav>
   );
 }
