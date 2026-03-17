@@ -169,7 +169,7 @@ function TimelineCard({
         </div>
 
         {/* Title */}
-        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black">
+        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
           {displayName}
         </h4>
 
@@ -191,7 +191,7 @@ function TimelineCard({
         )}
 
         {/* Description */}
-        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3 print:text-black">
+        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3 print:text-black print:text-xs">
           {displayDesc}
         </p>
 
@@ -254,7 +254,7 @@ function DaySection({ day: rawDay }: { day: DayPlan }) {
       <div className="flex items-start justify-between mb-4 pb-4 border-b border-ink/8 print:border-black/15">
         <div>
           <p className="micro-copy text-ink-light mb-1 print:text-black/50">Day {day.day}</p>
-          <h3 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight print:text-black">
+          <h3 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
             {day.theme}
           </h3>
         </div>
@@ -323,6 +323,25 @@ export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryV
 
   return (
     <>
+      {/* ── PRINT ONLY: Branded dossier header ── */}
+      <div className="hidden print:flex flex-col mb-10">
+        <div className="flex items-center justify-between pb-3 border-b-2 border-black mb-4">
+          <span className="font-sans font-bold text-[11px] tracking-[0.3em] uppercase text-black">
+            Seek Wander
+          </span>
+          <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/40">
+            Curated Luxury Itinerary
+          </span>
+        </div>
+        <h1 className="font-serif italic text-5xl text-black leading-none">
+          {itinerary.destination}
+        </h1>
+        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/50 mt-2">
+          {itinerary.days.length}&nbsp;{itinerary.days.length === 1 ? "Day" : "Days"}
+        </p>
+        <div className="mt-4 h-px bg-black/10" />
+      </div>
+
       {/* Editorial opener */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -413,7 +432,7 @@ export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryV
         {itinerary.days.map((day, i) => (
           <div
             key={`print-day-${day.day}`}
-            className={i > 0 ? "print:break-before-page" : ""}
+            className={`print:break-inside-avoid${i > 0 ? " print:break-before-page" : ""}`}
           >
             <DaySection day={day} />
           </div>

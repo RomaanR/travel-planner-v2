@@ -83,26 +83,6 @@ export default async function TripViewPage({
   return (
     <div className="h-screen flex flex-col bg-paper overflow-hidden print:h-auto print:overflow-visible print:block">
 
-      {/* ── PRINT ONLY: Branded dossier header ──────────────────────────────── */}
-      <div className="hidden print:block mb-10">
-        <div className="flex items-center justify-between pb-4 border-b-2 border-black mb-6">
-          <span className="font-sans font-bold text-[11px] tracking-[0.3em] uppercase text-black">
-            Seek Wander
-          </span>
-          <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/40">
-            Luxury Travel Dossier
-          </span>
-        </div>
-        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/50 mb-2">
-          {trip.days}&nbsp;{trip.days === 1 ? "Day" : "Days"}
-          &ensp;&middot;&ensp;Saved&ensp;{formatDate(trip.createdAt)}
-        </p>
-        <h1 className="font-serif italic text-6xl text-black leading-none">
-          {trip.destination}
-        </h1>
-        <div className="mt-6 h-px bg-black/10" />
-      </div>
-
       {/* Navbar — hidden in print */}
       <div className="print:hidden">
         <Navbar />
