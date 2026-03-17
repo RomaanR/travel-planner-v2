@@ -27,6 +27,9 @@ This is not a travel app — it is a digital concierge.
 | ORM | **Prisma 7 + Supabase (PostgreSQL)** — **ACTIVE** |
 | Validation | **zod** — Zod schema on all API POST bodies |
 | PWA | **@serwist/next + serwist** — service worker, offline caching, installable |
+| Rate Limiting | **@upstash/redis + @upstash/ratelimit** — slidingWindow(5, "1 h") per userId |
+| Notifications | **sonner** — branded toast layer (loading → success → error lifecycle) |
+| Affiliate | **Booking.com** — AID 4013143, `createAffiliateUrl()` in `src/lib/affiliate.ts` |
 
 > **Clerk version lock:** Always install `@clerk/nextjs@6`, never `@clerk/nextjs@7+`. Clerk v7 requires Next.js 15. The v6 API uses `<SignedIn>/<SignedOut>` — `<Show>` is v7-only and must NOT be used.
 
@@ -114,6 +117,10 @@ ADMIN_USER_ID=                           # Clerk userId of the business owner (e
 # Cron Job Security
 CRON_SECRET=                             # Random secret string — Vercel sends this as Authorization: Bearer <CRON_SECRET>
                                          # Generate with: openssl rand -hex 32
+
+# Rate Limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=                  # Upstash Console → Redis → REST API → Endpoint
+UPSTASH_REDIS_REST_TOKEN=               # Upstash Console → Redis → REST API → Token
 ```
 
 > **Clerk keyless mode:** If `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is absent, `<ClerkProvider>` is skipped entirely (conditional in `layout.tsx`). The app renders and builds correctly without Clerk keys.
@@ -167,17 +174,26 @@ src/
 │   ├── NavbarAuth.tsx          # Clerk auth (ssr:false) — SignInButton modal + UserButton
 │   ├── ShareButton.tsx         # Client component — navigator.share() + clipboard fallback + AnimatePresence toast
 │   ├── ExportPdfButton.tsx     # Client component — window.print() trigger, print:hidden in output
-│   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion)
+│   ├── CurationForm.tsx        # 7-field concierge intake (staged inline expansion) + accommodation branching
+│   ├── MobileMenu.tsx          # Mobile nav overlay — createPortal(…, document.body) escapes Navbar backdrop-blur stacking context
+│   ├── GenerationLoader.tsx    # "Concierge at Work" loader — thin spinning ring + AnimatePresence cycling editorial steps
+│   ├── EmptyTripsState.tsx     # Editorial inspiration hub — shown when /trips archive is empty
+│   ├── UnauthenticatedState.tsx # "Velvet Rope" gate — Lock icon + Clerk modal SignInButton (shown instead of /trips redirect)
+│   ├── TripsClient.tsx         # Client component for /trips — useOfflineTrips hook, offline banner, trip grid
+│   ├── StayCard.tsx            # Booking.com affiliate card — motion.a, whileHover y:-2, AID 4013143
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   ├── BentoGrid.tsx           # 12-col editorial grid
 │   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend
-│   └── ItineraryViewer.tsx     # Client component — editorial opener, tabbed days, TimelineCard, DaySection, TransitHeader, print all-days section
+│   └── ItineraryViewer.tsx     # Client component — editorial opener, tabbed days, TimelineCard, StayCard section, print all-days
 ├── middleware.ts               # Clerk middleware — all routes public
 ├── hooks/
-│   └── useItinerary.ts         # Client-side fetch + state for live itinerary generation
+│   ├── useItinerary.ts         # Client-side fetch + state + Sonner toast lifecycle (loading → success → error)
+│   └── useOfflineTrips.ts      # localStorage cache + /api/trips fetch; falls back to seek_wander_archive key when offline
 ├── lib/
 │   ├── db.ts                   # Prisma singleton — prevents multiple clients in dev hot-reload
-│   ├── getPlacePhoto.ts        # getDestinationPhotoUrl() — uses MAPS_SERVER_KEY, for /trips cards
+│   ├── affiliate.ts            # createAffiliateUrl(hotelName, destination) → Booking.com AID 4013143 URL
+│   ├── ratelimit.ts            # Upstash Redis ratelimit — slidingWindow(5, "1 h"), prefix: "seek-wander:itinerary"
+│   ├── getPlacePhoto.ts        # getDestinationPhotoUrl() — uses MAPS_SERVER_KEY, for /trips cards + OG images
 │   └── itineraryUtils.ts       # Shared runtime helpers: normalizeDayPlan(), isMealType(), computeMapPoints(), parseOpenNow()
 ├── app/actions/
 │   └── saveTrip.ts             # Server action — auth-gated Prisma trip.create
@@ -191,6 +207,14 @@ prisma/
 
 vercel.json                     # Cron job schedule: /api/cron/cleanup at "0 0 * * *"
 ```
+
+**New API routes:**
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `GET /api/trips` | Clerk userId required | Returns user's trips with photoUrls serialised (for `useOfflineTrips` client fetch) |
+| `GET /api/cron/cleanup` | CRON_SECRET bearer | Deletes PlaceCache rows older than 14 days |
+| `POST /api/itinerary` | Rate-limited per userId | Main generation pipeline |
 
 ---
 
@@ -603,6 +627,15 @@ No `Content-Security-Policy` (would break Google Maps JS SDK + Clerk). No `Stric
 ### 6. Admin Route — Neutral 404
 `/admin/metrics` calls `notFound()` (not `redirect`) for all non-admin access. This prevents leaking that the route exists to non-admin users.
 
+### 7. Rate Limiting (Upstash Redis)
+`POST /api/itinerary` checks `ratelimit.limit(userId || ip)` before any AI or DB call. Returns `429` with `X-RateLimit-*` headers on exhaustion. Sliding window: 5 generations per user per hour.
+
+### 8. AI JSON Self-Healing
+Two-phase pipeline prevents raw malformed JSON from ever reaching the client: (1) `sanitizeJson()` regex sweep strips code fences and trailing commas; (2) fallback Anthropic `JSON_REPAIR_PROMPT` call if `JSON.parse()` still throws. Both failures → clean `500`.
+
+### 9. `/api/trips` Auth Guard
+`GET /api/trips` returns `401 Unauthorized` if Clerk `userId` is absent. All data in the response is scoped to `{ where: { userId } }` — a user can never receive another user's trips through this endpoint.
+
 ---
 
 ## PWA Infrastructure
@@ -634,6 +667,209 @@ Zero-dependency — `window.print()` + Tailwind `print:` modifiers. No libraries
 - Ink acquisition banner: "Curated by Seek Wander — Create Your Own →".
 - Mobile sticky CTA: `fixed bottom-0 z-40 bg-burnt-orange`.
 - **`<ShareButton tripId={id} destination={name} />`** — on `/trips` card rows. Tries `navigator.share()` first (mobile native), falls back to `navigator.clipboard.writeText()`. AnimatePresence toast: "Link copied to clipboard".
+
+---
+
+## Monetization Layer — Booking.com Affiliate
+
+### `src/lib/affiliate.ts`
+```ts
+export function createAffiliateUrl(hotelName: string, destination: string): string {
+  const query = encodeURIComponent(`${hotelName} ${destination}`);
+  return `https://www.booking.com/searchresults.html?ss=${query}&aid=4013143`;
+}
+```
+AID `4013143` is the Seek Wander affiliate account. All hotel links must use this utility — never construct Booking.com URLs manually.
+
+### `StayCard.tsx`
+- `motion.a` pointing to `createAffiliateUrl()` result
+- `target="_blank" rel="noopener noreferrer"` — always
+- `whileHover={{ y: -2 }}` lift effect
+- `ArrowUpRight` CTA icon with `group-hover:translate` nudge
+- Rendered inside `ItineraryViewer` when `itinerary.recommendedStays?.length > 0`
+- **Guard pattern:** `(itinerary.recommendedStays?.length ?? 0) > 0` — section is completely absent if the AI returns no stays
+- Section is `print:hidden` — stays don't belong in the PDF dossier
+
+### Accommodation Branching (`CurationForm` + API)
+`CurationForm` collects `accommodationStatus: "needed" | "booked"` and an optional `hotelName` (revealed via `AnimatePresence` when status is "booked"). The API route reads these fields and branches the `SYSTEM_PROMPT` dynamically:
+- `"needed"` → Claude generates `recommendedStays[]` with real hotel names + Booking.com search terms
+- `"booked"` → Claude uses the provided `hotelName` as the base, skips hotel recommendations
+
+---
+
+## Offline & PWA Architecture
+
+### Service Worker (`src/app/sw.ts` — Serwist)
+- `CacheFirst` strategy for Google Places photo URLs — 30-day TTL, 100-entry cap
+- `defaultCache` for Next.js static assets (JS chunks, fonts, CSS)
+- Disabled in `development` (`process.env.NODE_ENV === "development"`) to prevent stale caches during iteration
+- Service worker source: `src/app/sw.ts` → compiled to `public/sw.js` by `withSerwist()` in `next.config.mjs`
+
+### Offline Trip Archive (`src/hooks/useOfflineTrips.ts`)
+Client-side hook used by `TripsClient.tsx`. Two-phase data strategy:
+
+```
+Phase 1 — navigator.onLine check
+  → false: load from localStorage immediately, set isOffline: true, skip fetch
+
+Phase 2 — /api/trips fetch (Clerk-authed GET)
+  → success: update state + persist to localStorage ("seek_wander_archive" key)
+  → failure: load from localStorage fallback, set isOffline: true
+```
+
+**Cache key:** `seek_wander_archive` — stores `CachedTrip[]` as JSON. Includes `itineraryData` for editorial preview text.
+
+**`TripsClient.tsx`** — the `"use client"` boundary for `/trips`. The server component (`trips/page.tsx`) handles auth + header rendering; `TripsClient` owns the data fetching, offline banner (`bg-ink text-paper WifiOff`), loading state, and trip grid.
+
+> **Why not server-side fetch?** `getDestinationPhotoUrl()` uses `MAPS_SERVER_KEY` (server-only). The `/api/trips` route computes photo URLs server-side and serialises them into the response. `TripsClient` gets pre-resolved URLs — no client-side key exposure.
+
+### `/api/trips` Route
+```ts
+// GET — Clerk auth required
+const { userId } = await auth();
+if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+const trips = await prisma.trip.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
+const tripsWithPhotos = await Promise.all(
+  trips.map(async (t) => ({
+    ...t,
+    createdAt: t.createdAt.toISOString(),   // serialise Date for JSON transport
+    photoUrl: await getDestinationPhotoUrl(t.destination),
+  }))
+);
+```
+
+---
+
+## UX & Polish Layer
+
+### Sonner Notification System (`sonner@2`)
+Configured globally in `src/app/layout.tsx`:
+```tsx
+<Toaster
+  position="bottom-right"
+  expand={false}
+  richColors
+  toastOptions={{
+    style: {
+      background: "#F5F0E8",           // brand paper
+      color: "#0A0A0A",                // brand ink
+      border: "1px solid rgba(10,10,10,0.1)",
+      borderRadius: "0",               // design system: no rounding
+      fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
+      fontSize: "0.8125rem",
+    },
+  }}
+/>
+```
+
+**Generation lifecycle** — all three calls share `id: "curate-task"` so Sonner mutates the same toast in place:
+```ts
+toast.loading("Consulting the concierge…", { id: "curate-task" })   // fetch start
+toast.success("Itinerary Prepared", { id: "curate-task", description: "…" }) // success
+toast.error("Concierge Busy", { id: "curate-task", description: "…" })        // any error
+```
+
+**Save action** (no shared ID — independent toasts):
+```ts
+toast.success("Passport Updated", { description: "This journey has been saved to your archive." })
+toast.error("Save Failed",        { description: "Unable to save this journey. Please try again." })
+```
+
+### `GenerationLoader.tsx` — "Concierge at Work"
+- Thin ring: static `border-ink/10` track + rotating `border-t-ink/40` arc (`animationDuration: 2.4s linear`)
+- `STEPS` array (5 items) cycles via `setInterval(3500ms)` + `useState(stepIndex)`
+- `AnimatePresence mode="wait"` with `initial={{ opacity: 0, y: 10 }}` / `exit={{ opacity: 0, y: -10 }}` / `transition={{ duration: 0.8, ease: "easeInOut" }}`
+- Persistent sub-label: `"This takes around 15–20 seconds"` (micro-copy)
+
+### `UnauthenticatedState.tsx` — "The Velvet Rope"
+Replaces the old `redirect("/")` on `/trips` for unauthenticated users. Instead of bouncing the user away, renders an editorial gate:
+- `Lock` icon (Lucide, `strokeWidth={1}`)
+- `"Private Access"` micro-copy kicker
+- `"Your passport awaits."` serif headline
+- `<SignInButton mode="modal">` styled as `bg-ink text-paper hover:bg-burnt-orange` primary button
+- **Why `<SignInButton mode="modal">` instead of `<Link href="/sign-in">`?** No `/sign-in` page exists. Auth is modal-only throughout the app.
+
+### `EmptyTripsState.tsx` — Inspiration Hub
+Two-section editorial experience for users with zero saved trips:
+- **Section A:** `Compass` icon, micro-copy kicker, `"Your passport is currently blank."` serif headline, `bg-ink text-paper hover:bg-burnt-orange` CTA to `/`
+- **Section B:** 3-column `CARDS` grid (editorial destination teasers), staggered `delay: 0.3 + i * 0.08` — all link to `/` to start a curation
+
+### Mobile Navigation — CSS Stacking Context Lesson
+**Bug:** `MobileMenu.tsx` overlay appeared transparent — text camouflaged into background hero images.
+
+**Root cause:** `Navbar.tsx` applies `backdrop-blur-sm` to its root `<motion.nav>`. `backdrop-filter` creates a new CSS stacking context. Any `fixed`-positioned descendant is anchored to that ancestor, not the viewport. The overlay only covered the ~64px navbar bar height.
+
+**Fix:** `createPortal(overlay, document.body)` in `MobileMenu.tsx`. The portal moves the DOM node outside the Navbar tree entirely. `fixed inset-0` then covers the true viewport as intended. SSR guard: `const [mounted, setMounted] = useState(false)` + `useEffect(() => setMounted(true), [])`.
+
+> **Rule for future overlays:** Any `fixed`-positioned full-screen overlay rendered inside a component that uses `backdrop-filter`, `transform`, `filter`, `will-change`, or `perspective` MUST use `createPortal(…, document.body)`.
+
+---
+
+## Rate Limiting (`src/lib/ratelimit.ts`)
+
+```ts
+import { Redis }     from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+
+const redis = new Redis({
+  url:   process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+export const ratelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(5, "1 h"),
+  analytics: true,
+  prefix:    "seek-wander:itinerary",
+});
+```
+
+**Applied in `POST /api/itinerary`:**
+- Key: Clerk `userId` (authenticated) or request IP (unauthenticated fallback)
+- `{ success, limit, remaining, reset }` returned from `ratelimit.limit(key)`
+- On failure: `429 Too Many Requests` with `X-RateLimit-Limit` / `X-RateLimit-Remaining` / `X-RateLimit-Reset` headers
+- Sonner surfaces this as `toast.error("Concierge Busy", { description: "Our desk is at capacity. Please try again in a moment." })`
+
+---
+
+## AI Resilience — JSON Self-Healing
+
+The `POST /api/itinerary` route implements a two-phase JSON recovery pipeline:
+
+**Phase 1 — `sanitizeJson(raw: string): string`**
+Pre-parser regex sweep applied before `JSON.parse()`:
+- Strips markdown code fences (`` ```json … ``` ``)
+- Removes trailing commas before `}` and `]`
+- Trims surrounding whitespace
+
+**Phase 2 — Claude Repair Call (`JSON_REPAIR_PROMPT`)**
+If `sanitizeJson()` + `JSON.parse()` still throws, a second Anthropic call is made with the malformed string and a strict repair instruction. The repair response is then parsed again. If both phases fail, a clean `500` is returned.
+
+This means Claude's own output is never shown raw to users even if partially malformed — a second Claude call silently fixes it.
+
+---
+
+## Open Graph & Social Metadata
+
+### Global defaults (`src/app/layout.tsx`)
+```ts
+title: {
+  default: "Seek Wander | Bespoke AI Travel Curation",
+  template: "%s | Seek Wander",   // subpages set only their unique part
+},
+openGraph: { type: "website", siteName: "Seek Wander", … },
+twitter:   { card: "summary_large_image", … },
+```
+
+### Per-trip dynamic OG (`src/app/trips/[id]/page.tsx` — `generateMetadata()`)
+- **Title:** `"{destination} | Curated by Seek Wander"` (full string — not `%s` template, because "Curated by" is trip-specific)
+- **Description:** First sentence of `itinerary.editorial` extracted by `editorial.split(/\.\s+/)[0]?.trim()` — the Vogue opener becomes the social card tagline
+- **og:image / twitter:image:** `getDestinationPhotoUrl(destination)` — gracefully omitted if null; `twitter:card` degrades to `"summary"` when no image available
+- **No auth in `generateMetadata`:** Clerk session unavailable there. The page component enforces full auth + IDOR ownership check.
+
+### Shared itinerary OG (`src/app/shared/[id]/page.tsx`)
+Already has `generateMetadata()` — produces `{destination} Itinerary | Seek Wander`. Public route (intentional, no auth).
 
 ---
 
@@ -716,4 +952,7 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 6 — PWA, Sharing & Export | **Complete** | @serwist/next PWA, manifest.ts, public /shared/[id] with OG tags & acquisition banners, ShareButton, PDF/print export |
 | 7 — Chronological Timeline | **Complete** | timeline: TimelineItem[] canonical shape; normalizeDayPlan() backward-compat shim; isMealType() + computeMapPoints() in itineraryUtils.ts |
 | 8 — Margin Protection & Observability | **Complete** | PlaceCache (Supabase) — 30-day TTL, cache-first enrichment; Distance Matrix removed → pure Haversine; parseOpenNow() local computation; CostLog Prisma model (Decimal(10,6)); /admin/metrics BI dashboard (ADMIN_USER_ID gated); Vercel Cron daily cleanup (CRON_SECRET); Zod validation; SYSTEM_PROMPT injection defence; HTTP security headers; Google API key split (NEXT_PUBLIC_ client / MAPS_SERVER_KEY server) |
-| 9 — Monetization | **Next** | Stripe Checkout — $4.99 paywall for itinerary generation (free tier: 1 generation; paid: unlimited) |
+| 9 — Affiliate Monetization | **Complete** | Booking.com AID 4013143 — createAffiliateUrl(), StayCard component, accommodation branching in CurationForm + API (needed/booked), recommendedStays[] in ItineraryResponse, print:hidden on StayCard section |
+| 10 — UX & Polish | **Complete** | GenerationLoader "Concierge at Work" cycling steps; Sonner notification layer (loading → success → error lifecycle, brand tokens); UnauthenticatedState "Velvet Rope" (Clerk modal gate); EmptyTripsState Inspiration Hub; MobileMenu createPortal fix (backdrop-blur stacking context bug resolved) |
+| 11 — Mobile, Offline & Resilience | **Complete** | useOfflineTrips hook + TripsClient (localStorage seek_wander_archive fallback); /api/trips GET route with Clerk auth + photo serialisation; Upstash Redis rate limiting (5/hr sliding window); AI JSON self-healing (sanitizeJson + repair Anthropic call); dynamic OG metadata (trips/[id] generateMetadata, editorial first-sentence description, getDestinationPhotoUrl og:image); global metadata template in layout.tsx |
+| 12 — Stripe Paywall | **Next** | Stripe Checkout — $4.99 paywall for itinerary generation (free tier: 1 generation; paid: unlimited) |
