@@ -25,11 +25,66 @@ function getDayColor(day: number) {
   return DAY_PALETTE[day] ?? FALLBACK;
 }
 
-// Build an inline SVG dot marker colored by day
-function buildSvgMarker(day: number): string {
-  const { fill, stroke } = getDayColor(day);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="9" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+// ─── Semantic icon SVG per activity type (16×16, white stroke) ────────────────
+
+function getIconSvg(type: string): string {
+  const s = `stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+  switch (type) {
+    case "breakfast":
+      // Coffee mug with steam lines
+      return `<g ${s}>
+        <path d="M10 5h1a2.5 2.5 0 0 1 0 5h-1"/>
+        <path d="M2 5h8v4.5a4 4 0 0 1-8 0V5z"/>
+        <line x1="4" y1="1" x2="4" y2="3"/>
+        <line x1="8" y1="0" x2="8" y2="2"/>
+      </g>`;
+    case "lunch":
+      // Fork (left) + knife (right)
+      return `<g ${s}>
+        <line x1="4" y1="1" x2="4" y2="15"/>
+        <path d="M2 1v4c0 1.1.9 2 2 2s2-.9 2-2V1"/>
+        <path d="M12 8V1a3 3 0 0 0-3 3v3c0 .6.4 1 1 1h2zm0 0v7"/>
+      </g>`;
+    case "dinner":
+    case "drinks":
+      // Wine glass: funnel top, stem, base
+      return `<g ${s}>
+        <path d="M3 2h10L11 7a3 3 0 0 1-6 0L3 2z"/>
+        <line x1="8" y1="10" x2="8" y2="14"/>
+        <line x1="5" y1="14" x2="11" y2="14"/>
+      </g>`;
+    case "activity":
+      // Camera: body rectangle + lens circle + top notch
+      return `<g ${s}>
+        <path d="M1 6h14v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6z"/>
+        <path d="M5 6l1.5-2h3L11 6"/>
+        <circle cx="8" cy="10" r="2.5"/>
+      </g>`;
+    case "hotel":
+    case "accommodation":
+      // Bed: headboard + mattress + pillow
+      return `<g ${s}>
+        <line x1="2" y1="4" x2="2" y2="14"/>
+        <path d="M2 9h12v5"/>
+        <line x1="2" y1="13" x2="14" y2="13"/>
+        <path d="M5 9V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </g>`;
+    default:
+      // Map pin: teardrop + dot
+      return `<g ${s}>
+        <path d="M8 1a5 5 0 0 1 5 5c0 4-5 9-5 9S3 10 3 6a5 5 0 0 1 5-5z"/>
+        <circle cx="8" cy="6" r="1.5" fill="white" stroke="none"/>
+      </g>`;
+  }
+}
+
+// Build an inline SVG marker: day-colored circle + semantic type icon
+function buildSvgMarker(day: number, type: string): string {
+  const { fill } = getDayColor(day);
+  const icon = getIconSvg(type);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="14" fill="${fill}" stroke="white" stroke-width="2"/>
+    <g transform="translate(8,8)">${icon}</g>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -137,9 +192,9 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
             key={`day${point.day}-${point.type}-${i}`}
             position={{ lat: point.lat, lng: point.lng }}
             icon={{
-              url: buildSvgMarker(point.day),
-              scaledSize: new window.google.maps.Size(24, 24),
-              anchor: new window.google.maps.Point(12, 12),
+              url: buildSvgMarker(point.day, point.type),
+              scaledSize: new window.google.maps.Size(32, 32),
+              anchor: new window.google.maps.Point(16, 16),
             }}
             onClick={() => setActiveMarker(activeMarker === i ? null : i)}
             title={point.label}
