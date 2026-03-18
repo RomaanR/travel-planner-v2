@@ -1,8 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import type { ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   ImageOff,
@@ -11,7 +8,6 @@ import {
   Clock,
   CalendarCheck,
   Ticket,
-  RefreshCw,
 } from "lucide-react";
 import type { TimelineItem } from "@/types/itinerary";
 import { isMealType } from "@/lib/itineraryUtils";
@@ -55,17 +51,10 @@ interface TimelineCardProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TimelineCard({ item, delay }: TimelineCardProps) {
-  const [isSwapped, setIsSwapped] = useState(false);
-
-  const hasAlternative = (item.alternatives?.length ?? 0) > 0;
-
-  const displayName = isSwapped ? item.alternatives![0].name : (item.title ?? "");
-  const displayDesc = isSwapped
-    ? item.alternatives![0].description
-    : (item.description ?? item.cuisine ?? "");
-
-  const endTime = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
-  const isMeal  = isMealType(item.type);
+  const displayName = item.title ?? "";
+  const displayDesc = item.description ?? item.cuisine ?? "";
+  const endTime     = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
+  const isMeal      = isMealType(item.type);
 
   // Cost & access badge
   let costBadge: { label: string; className: string; icon?: ReactNode } | null = null;
@@ -98,28 +87,8 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay }}
-      className="relative flex border border-ink/8 bg-paper overflow-hidden print:break-inside-avoid print:opacity-100"
+      className="flex border border-ink/8 bg-paper overflow-hidden print:break-inside-avoid print:opacity-100"
     >
-      {/* Swap button — activity items with alternatives only */}
-      {hasAlternative && (
-        <button
-          onClick={() => setIsSwapped(s => !s)}
-          aria-label={isSwapped ? "Restore original activity" : "Swap to alternative"}
-          className="absolute top-2 right-2 z-10 flex items-center gap-1 micro-copy text-ink-light
-                     hover:text-ink transition-colors duration-150 print:hidden"
-        >
-          <RefreshCw
-            size={11}
-            strokeWidth={1.5}
-            className={isSwapped
-              ? "rotate-180 transition-transform duration-300"
-              : "transition-transform duration-300"
-            }
-          />
-          {isSwapped ? "RESTORE" : "SWAP"}
-        </button>
-      )}
-
       {/* Left: Photo */}
       <div className="w-36 md:w-48 shrink-0 relative self-stretch min-h-[140px] overflow-hidden bg-paper-dark print:w-28">
         {item.photoUrl ? (
@@ -155,41 +124,32 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
           </span>
         </div>
 
-        {/* Title + Description — cross-fade on swap */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={isSwapped ? "alt" : "main"}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
-            <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
-              {displayName}
-            </h4>
+        {/* Title */}
+        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
+          {displayName}
+        </h4>
 
-            {/* Hours + Open/Closed — only on original, hidden in print */}
-            {!isSwapped && (item.hoursOpen || item.openNow !== undefined) && (
-              <div className="flex items-center gap-2 mb-2 print:hidden">
-                <Clock size={10} strokeWidth={1.5} className="text-ink-light shrink-0" />
-                {item.hoursOpen ? (
-                  <span className="font-mono text-xs text-ink-light flex-1">{item.hoursOpen}</span>
-                ) : (
-                  <span className="flex-1" />
-                )}
-                {item.openNow !== undefined && (
-                  <span className={`micro-copy shrink-0 ${item.openNow ? "text-emerald-accent" : "text-burnt-orange"}`}>
-                    {item.openNow ? "OPEN" : "CLOSED"}
-                  </span>
-                )}
-              </div>
+        {/* Hours + Open/Closed — hidden in print */}
+        {(item.hoursOpen || item.openNow !== undefined) && (
+          <div className="flex items-center gap-2 mb-2 print:hidden">
+            <Clock size={10} strokeWidth={1.5} className="text-ink-light shrink-0" />
+            {item.hoursOpen ? (
+              <span className="font-mono text-xs text-ink-light flex-1">{item.hoursOpen}</span>
+            ) : (
+              <span className="flex-1" />
             )}
+            {item.openNow !== undefined && (
+              <span className={`micro-copy shrink-0 ${item.openNow ? "text-emerald-accent" : "text-burnt-orange"}`}>
+                {item.openNow ? "OPEN" : "CLOSED"}
+              </span>
+            )}
+          </div>
+        )}
 
-            <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3 print:text-black print:text-xs">
-              {displayDesc}
-            </p>
-          </motion.div>
-        </AnimatePresence>
+        {/* Description */}
+        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3 print:text-black print:text-xs">
+          {displayDesc}
+        </p>
 
         {/* Dietary note */}
         {item.dietaryNote && (
