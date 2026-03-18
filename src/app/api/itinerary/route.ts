@@ -92,7 +92,13 @@ const SCHEMA = `{
           "cuisine": "string (meals only — omit for activities)",
           "pricePoint": "$$ | $$$ | $$$$ (meals only — omit for activities)",
           "reservation": true | false,
-          "dietaryNote": "string | undefined (meals only)"
+          "dietaryNote": "string | undefined (meals only)",
+          "alternatives": [
+            {
+              "name": "string (real alternative place name — same neighbourhood)",
+              "description": "string (exactly 2 sentences — same time slot, different vibe)"
+            }
+          ]
         }
       ],
       "hiddenGem": "string (exact place name + 1 sentence why it matters)",
@@ -131,7 +137,13 @@ const SCHEMA_WITH_STAYS = `{
           "cuisine": "string (meals only — omit for activities)",
           "pricePoint": "$$ | $$$ | $$$$ (meals only — omit for activities)",
           "reservation": true | false,
-          "dietaryNote": "string | undefined (meals only)"
+          "dietaryNote": "string | undefined (meals only)",
+          "alternatives": [
+            {
+              "name": "string (real alternative place name — same neighbourhood)",
+              "description": "string (exactly 2 sentences — same time slot, different vibe)"
+            }
+          ]
         }
       ],
       "hiddenGem": "string (exact place name + 1 sentence why it matters)",
@@ -198,7 +210,11 @@ Travel dates: ${departureDate} to ${returnDate}
 7. category: Assign an uppercase category to every activity-type item (SIGHTSEEING, MUSEUM, CULTURE, NATURE, WELLNESS, ADVENTURE, SHOPPING). Omit for meals.
 8. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
 9. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
-10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
+10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.
+11. ANTI-TELEPORTATION: Consecutive activities MUST be geographically proximate. Group morning activities within one specific neighbourhood, and afternoon activities within a different neighbouring area. Never schedule two activities that require crossing the entire city without a meal break or a dedicated transit gap.
+12. TRANSIT REALITY: If any activity is more than 15km from the previous location, you MUST leave an appropriate gap in the startTime schedule to account for travel. Do not schedule a 09:00 breakfast and a 09:30 activity that is an hour away — the startTime gap must reflect the real transit duration.
+13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit.
+14. ALTERNATIVES: For every activity-type timeline item (type: "activity"), you MUST include exactly 1 alternative in an "alternatives" array — a different real venue fitting the exact same time slot and neighbourhood, for users who want a different vibe. Meals (breakfast/lunch/dinner/snack/drinks) do NOT need alternatives — omit the field entirely for meal items.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:

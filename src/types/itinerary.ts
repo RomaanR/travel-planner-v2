@@ -60,6 +60,12 @@ export type TimelineItemType =
   | "snack"
   | "drinks";
 
+/** Alternative venue for an activity — same time slot, same neighbourhood, different vibe */
+export type ActivityAlternative = {
+  name:        string;  // real alternative place name
+  description: string;  // 2 sentences — same time slot, different vibe
+};
+
 /** Unified card type — replaces separate Activity + DiningRec for new itineraries */
 export type TimelineItem = {
   type: TimelineItemType;
@@ -82,6 +88,7 @@ export type TimelineItem = {
   hoursOpen?: string;      // e.g. "9:00 AM – 9:00 PM" (today's hours)
   priceLevel?: number;     // Google price_level 0–4
   transitFromPrevious?: TransitInfo;
+  alternatives?: ActivityAlternative[];  // activity items only — swap slot, same neighbourhood
 };
 
 // ─── Legacy types (kept for backward-compat with existing DB records) ─────────
