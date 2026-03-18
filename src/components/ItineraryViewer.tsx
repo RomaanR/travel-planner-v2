@@ -21,8 +21,7 @@ import type {
   TimelineItem,
 } from "@/types/itinerary";
 import { normalizeDayPlan, isMealType } from "@/lib/itineraryUtils";
-import StayCard from "@/components/StayCard";
-import { createAffiliateUrl } from "@/lib/affiliate";
+import InteractiveStays from "@/components/InteractiveStays";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -357,26 +356,10 @@ export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryV
 
       {/* ── Recommended Stays — only renders when present (accommodationStatus: "needed") ── */}
       {(itinerary.recommendedStays?.length ?? 0) > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8 print:hidden"
-        >
-          <div className="w-8 h-px bg-ink/20 mb-4" />
-          <p className="micro-copy text-ink-light mb-4">The Curation</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {itinerary.recommendedStays!.map((stay) => (
-              <StayCard
-                key={stay.name}
-                name={stay.name}
-                description={stay.description}
-                neighborhood={stay.neighborhood}
-                affiliateUrl={createAffiliateUrl(stay.name, itinerary.destination)}
-              />
-            ))}
-          </div>
-        </motion.div>
+        <InteractiveStays
+          stays={itinerary.recommendedStays!}
+          destination={itinerary.destination}
+        />
       )}
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}

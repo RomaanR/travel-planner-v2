@@ -109,7 +109,9 @@ const SCHEMA_WITH_STAYS = `{
     {
       "name": "string (real hotel name — no fictional properties)",
       "description": "string (exactly 2 sentences — restrained luxury editorial pitch)",
-      "neighborhood": "string (area or district name, e.g. 'Omotesandō, Tokyo')"
+      "neighborhood": "string (area or district name, e.g. 'Omotesandō, Tokyo')",
+      "rating": "integer — MUST be exactly 3, 4, or 5. No other values permitted.",
+      "priceTier": "string — use '$$$' for 3-star, '$$$$' for 4-star, '$$$$$' for 5-star"
     }
   ],
   "days": [
@@ -433,7 +435,7 @@ export async function POST(req: Request) {
     const accommodationInstruction =
       safeBody.accommodationStatus === "booked"
         ? `\n\nACCOMMODATION — CONFIRMED RESERVATION: The user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}.  CRITICAL GEOGRAPHY RULE: You MUST anchor the start and end of every single day around this exact hotel.  - Breakfast and morning activities MUST be within a strict 15-minute walk or 5-minute taxi ride from ${safeBody.hotelName || "the hotel"}. - Do NOT suggest any location that is more than a 30-minute transit ride away unless it is a world-renowned landmark. - Cluster activities geographically to avoid zig-zagging across the city.  DO NOT recommend any new hotels to stay at.`
-        : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 2 highly-vetted, luxury accommodation options in a "recommendedStays" array at the root of your JSON response. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch). Select properties that match the stated budget tier and destination vibe.`;
+        : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 6 accommodation options in a "recommendedStays" array at the root of your JSON response — two 5-star ultra-luxury hotels (rating: 5, priceTier: '$$$$$'), two 4-star premium hotels (rating: 4, priceTier: '$$$$'), and two 3-star highly-rated boutique hotels (rating: 3, priceTier: '$$$'). The rating integer MUST strictly be 3, 4, or 5 — no other values. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch), rating (integer 3/4/5), priceTier (string). Select properties that match the destination vibe across all three tiers.`;
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
     const message = await client.messages.create({

@@ -150,6 +150,8 @@ export type RecommendedStay = {
   name:         string;  // real hotel name
   description:  string;  // exactly 2 sentences — luxury editorial pitch
   neighborhood: string;  // area or district name
+  rating?:      number;  // 3 | 4 | 5 — present on new generations only
+  priceTier?:   string;  // "$$$" | "$$$$" | "$$$$$" — present on new generations only
 };
 
 export type ItineraryResponse = {
