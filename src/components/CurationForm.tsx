@@ -446,6 +446,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                         onLoad={(ref) => (hotelAutocompleteRef.current = ref)}
                         onPlaceChanged={onHotelPlaceChanged}
                         options={{ types: ["lodging"] }}
+                        className="flex-1 min-w-0"
                       >
                         <input
                           type="text"
@@ -456,7 +457,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                             setExactHotelAddress("");
                           }}
                           placeholder="The Ritz-Carlton, Tokyo"
-                          className="flex-1 w-full bg-transparent font-sans text-sm text-ink outline-none placeholder:text-ink/30"
+                          className="w-full bg-transparent font-sans text-sm text-ink outline-none placeholder:text-ink/30"
                         />
                       </Autocomplete>
                     </div>
