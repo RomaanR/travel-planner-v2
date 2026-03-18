@@ -27,8 +27,10 @@ const ItinerarySchema = z.object({
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
   dietary:       z.array(z.enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten-free", "dairy-free"])).max(7),
   interests:           z.array(z.enum(["sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife", "culture-history", "adventure-sports", "relaxation-wellness", "photography"])).max(10),
-  accommodationStatus: z.enum(["needed", "booked"]).optional(),
-  hotelName:           z.string().max(200).optional(),
+  accommodationStatus:  z.enum(["needed", "booked"]).optional(),
+  hotelName:            z.string().max(200).optional(),
+  exactHotelAddress:    z.string().max(300).optional(),
+  transportMode:        z.enum(["walking-transit", "car-driver"]).optional(),
 });
 
 type ItineraryRequest = z.infer<typeof ItinerarySchema>;
@@ -144,7 +146,22 @@ const SCHEMA_WITH_STAYS = `{
 
 function buildPrompt(data: ItineraryRequest): string {
   const needsHotel = data.accommodationStatus !== "booked";
-  const { destination, duration, travelParty, pace, budgetTier, dietary, interests, departureDate, returnDate } = data;
+  const {
+    destination, duration, travelParty, pace, budgetTier, dietary, interests,
+    departureDate, returnDate, exactHotelAddress, transportMode,
+  } = data;
+
+  const baseCamp = exactHotelAddress
+    ? `The user is staying exactly at: ${exactHotelAddress}`
+    : "Unknown — keep all activities central to the destination.";
+
+  const mobilityLabel = transportMode === "car-driver"
+    ? "Rental Car / Private Driver"
+    : "Walking & Public Transit (default)";
+
+  const radiusLockRule = transportMode === "car-driver"
+    ? "The user has a Rental Car or Private Driver. The maximum distance between any two consecutive stops is 20km. You may plan across different districts but never more than 20km apart in a single hop."
+    : "The user is on Walking & Public Transit. ALL activities within a single day MUST be clustered within a strict 3km radius of each other. Do not schedule stops that require crossing the city — this is a hard constraint, not a guideline.";
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
     ? "No dietary restrictions"
@@ -187,6 +204,8 @@ Travel dates: ${departureDate} to ${returnDate}
 - Budget: ${budgetDescriptions[budgetTier]}
 - Dietary: ${dietaryStr}
 - Interests: ${interestStr}
+- Base Camp: ${baseCamp}
+- Mobility: ${mobilityLabel}
 
 ━━━ MANDATORY RULES ━━━
 1. Generate EXACTLY ${duration} day objects in the "days" array.
@@ -199,8 +218,8 @@ Travel dates: ${departureDate} to ${returnDate}
 8. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
 9. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
 10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.
-11. ANTI-TELEPORTATION: Consecutive activities MUST be geographically proximate. Group morning activities within one specific neighbourhood, and afternoon activities within a different neighbouring area. Never schedule two activities that require crossing the entire city without a meal break or a dedicated transit gap.
-12. TRANSIT REALITY: If any activity is more than 15km from the previous location, you MUST leave an appropriate gap in the startTime schedule to account for travel. Do not schedule a 09:00 breakfast and a 09:30 activity that is an hour away — the startTime gap must reflect the real transit duration.
+11. THE RADIUS LOCK: ${radiusLockRule}
+12. THE TIME-DISTANCE LAW: Mentally calculate the exact straight-line distance between every pair of consecutive timeline items and enforce these minimum startTime gaps: 3km walking = 40-minute gap minimum; 15km driving = 30-minute gap minimum. DO NOT schedule any location that requires more than 45 minutes of transit from the previous stop under the user&apos;s transport mode. A 09:00 restaurant followed by a 09:30 activity that is 4km away is a hard failure.
 13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━

@@ -16,6 +16,8 @@ import {
   Loader2,
   Calendar,
   Building2,
+  TrainFront,
+  Car,
 } from "lucide-react";
 import type {
   ItineraryRequest,
@@ -137,10 +139,14 @@ interface CurationFormProps {
 
 export default function CurationForm({ onGenerate, loading }: CurationFormProps) {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const hotelAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [stage, setStage] = useState<0 | 1>(0);
   const [accommodationStatus, setAccommodationStatus] = useState<"needed" | "booked">("needed");
   const [hotelName, setHotelName] = useState("");
+  const [hotelInputValue, setHotelInputValue] = useState("");
+  const [exactHotelAddress, setExactHotelAddress] = useState("");
+  const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
   const localToday = useMemo(getLocalToday, []);
 
   const [form, setForm] = useState<Partial<ItineraryRequest>>({
@@ -170,6 +176,18 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     setInputValue(update.destination);
     setForm((f) => ({ ...f, ...update }));
     setStage(1);
+  }
+
+  // ── Hotel autocomplete ────────────────────────────────────────────────────────
+  function onHotelPlaceChanged() {
+    if (!hotelAutocompleteRef.current) return;
+    const place = hotelAutocompleteRef.current.getPlace();
+    if (!place.geometry?.location) return;
+    const name    = place.name ?? "";
+    const address = place.formatted_address ?? name;
+    setHotelName(name);
+    setExactHotelAddress(address);
+    setHotelInputValue(address);
   }
 
   // ── Dates ────────────────────────────────────────────────────────────────────
@@ -244,7 +262,9 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
       ...(form as ItineraryRequest),
       duration,
       accommodationStatus,
-      hotelName: accommodationStatus === "booked" ? hotelName.trim() : "",
+      hotelName:          accommodationStatus === "booked" ? hotelName.trim() : "",
+      exactHotelAddress:  accommodationStatus === "booked" ? exactHotelAddress.trim() : "",
+      transportMode,
     });
   }
 
@@ -358,7 +378,12 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 {/* Option A — Need recommendations */}
                 <button
                   type="button"
-                  onClick={() => { setAccommodationStatus("needed"); setHotelName(""); }}
+                  onClick={() => {
+                    setAccommodationStatus("needed");
+                    setHotelName("");
+                    setExactHotelAddress("");
+                    setHotelInputValue("");
+                  }}
                   className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
                     ${accommodationStatus === "needed"
                       ? "border-ink bg-ink text-paper"
@@ -417,17 +442,80 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     </label>
                     <div className="flex items-center gap-2 border-b border-ink/20 pb-2">
                       <Building2 size={13} strokeWidth={1.5} className="text-ink-light shrink-0" />
-                      <input
-                        type="text"
-                        value={hotelName}
-                        onChange={(e) => setHotelName(e.target.value)}
-                        placeholder="The Ritz-Carlton, Tokyo"
-                        className="flex-1 bg-transparent font-sans text-sm text-ink outline-none placeholder:text-ink/30"
-                      />
+                      <Autocomplete
+                        onLoad={(ref) => (hotelAutocompleteRef.current = ref)}
+                        onPlaceChanged={onHotelPlaceChanged}
+                        options={{ types: ["lodging"] }}
+                      >
+                        <input
+                          type="text"
+                          value={hotelInputValue}
+                          onChange={(e) => {
+                            setHotelInputValue(e.target.value);
+                            setHotelName(e.target.value);
+                            setExactHotelAddress("");
+                          }}
+                          placeholder="The Ritz-Carlton, Tokyo"
+                          className="flex-1 w-full bg-transparent font-sans text-sm text-ink outline-none placeholder:text-ink/30"
+                        />
+                      </Autocomplete>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+
+            {/* ── Row 1c: Getting Around ── */}
+            <div className="mb-8">
+              <p className="micro-copy text-ink-light mb-4">Getting Around</p>
+              <div className="grid grid-cols-2 gap-2">
+
+                {/* Walking & Transit */}
+                <button
+                  type="button"
+                  onClick={() => setTransportMode("walking-transit")}
+                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                    ${transportMode === "walking-transit"
+                      ? "border-ink bg-ink text-paper"
+                      : "border-ink/10 text-ink hover:border-ink/30"
+                    }`}
+                >
+                  <TrainFront
+                    size={16}
+                    strokeWidth={1.5}
+                    className={transportMode === "walking-transit" ? "text-paper/70" : "text-ink-light"}
+                  />
+                  <span className="micro-copy leading-none">Walking &amp; Transit</span>
+                  <span className={`font-sans text-xs leading-tight ${
+                    transportMode === "walking-transit" ? "text-paper/70" : "text-ink-light"
+                  }`}>
+                    Public transport &amp; on foot
+                  </span>
+                </button>
+
+                {/* Rental Car / Private Driver */}
+                <button
+                  type="button"
+                  onClick={() => setTransportMode("car-driver")}
+                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                    ${transportMode === "car-driver"
+                      ? "border-ink bg-ink text-paper"
+                      : "border-ink/10 text-ink hover:border-ink/30"
+                    }`}
+                >
+                  <Car
+                    size={16}
+                    strokeWidth={1.5}
+                    className={transportMode === "car-driver" ? "text-paper/70" : "text-ink-light"}
+                  />
+                  <span className="micro-copy leading-none">Car / Private Driver</span>
+                  <span className={`font-sans text-xs leading-tight ${
+                    transportMode === "car-driver" ? "text-paper/70" : "text-ink-light"
+                  }`}>
+                    Rental car or hired driver
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* ── Row 2: Travel Party ── */}

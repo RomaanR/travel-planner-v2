@@ -39,6 +39,8 @@ export type ItineraryRequest = {
   // Accommodation branching — optional, appended at submit time
   accommodationStatus?: "needed" | "booked";
   hotelName?: string;
+  exactHotelAddress?: string;  // Places-verified formatted_address — captured when accommodationStatus === "booked"
+  transportMode?: string;      // "walking-transit" | "car-driver"
 };
 
 // ─── Response ─────────────────────────────────────────────────────────────────
