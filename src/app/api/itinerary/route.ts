@@ -159,9 +159,13 @@ function buildPrompt(data: ItineraryRequest): string {
     ? "Rental Car / Private Driver"
     : "Walking & Public Transit (default)";
 
-  const radiusLockRule = transportMode === "car-driver"
-    ? "The user has a Rental Car or Private Driver. The maximum distance between any two consecutive stops is 20km. You may plan across different districts but never more than 20km apart in a single hop."
-    : "The user is on Walking & Public Transit. ALL activities within a single day MUST be clustered within a strict 3km radius of each other. Do not schedule stops that require crossing the city — this is a hard constraint, not a guideline.";
+  const neighborhoodLockRule = transportMode === "car-driver"
+    ? "You may suggest regional day trips and cross-district exploration. However, consecutive stops WITHIN a single day must still be geographically clustered — do not schedule stops more than 40km apart within the same day."
+    : `ALL activities for the ENTIRE TRIP must stay within the exact same city and its immediate walkable neighbourhoods as the Base Camp. DO NOT suggest regional day trips, neighbouring towns, or any attraction that requires highway travel or a dedicated long-distance journey. Concrete example: if the Base Camp is central Antalya, do NOT suggest Aspendos, Perge, Side, Pamukkale, or Cappadocia — these violate this rule. Every single activity must be reachable on foot or by local public transit within the city.`;
+
+  const transitTimeRule = transportMode === "car-driver"
+    ? "Verify that consecutive stops within a day are reachable within 30 minutes by car. If a pair of stops would take longer, widen the startTime gap to reflect reality."
+    : "No two consecutive stops can be more than a 20-minute walk apart. If a location would require more than 20 minutes of walking from the previous stop, do NOT include it — replace it with a closer alternative in the same neighbourhood.";
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
     ? "No dietary restrictions"
@@ -218,8 +222,8 @@ Travel dates: ${departureDate} to ${returnDate}
 8. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
 9. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
 10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.
-11. THE RADIUS LOCK: ${radiusLockRule}
-12. THE TIME-DISTANCE LAW: Mentally calculate the exact straight-line distance between every pair of consecutive timeline items and enforce these minimum startTime gaps: 3km walking = 40-minute gap minimum; 15km driving = 30-minute gap minimum. DO NOT schedule any location that requires more than 45 minutes of transit from the previous stop under the user&apos;s transport mode. A 09:00 restaurant followed by a 09:30 activity that is 4km away is a hard failure.
+11. THE NEIGHBOURHOOD LOCK: ${neighborhoodLockRule}
+12. TRANSIT TIME REALITY: ${transitTimeRule}
 13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━

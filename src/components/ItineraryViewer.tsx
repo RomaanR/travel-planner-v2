@@ -38,7 +38,7 @@ function TransitHeader({ transit }: { transit: { walkingMinutes?: number; drivin
         {transit.walkingMinutes !== undefined && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
             <PersonStanding size={10} strokeWidth={1.5} />
-            {transit.walkingMinutes}m Walk
+            {transit.walkingMinutes} min walk
           </span>
         )}
         {transit.walkingMinutes !== undefined && transit.drivingMinutes !== undefined && (
@@ -47,7 +47,7 @@ function TransitHeader({ transit }: { transit: { walkingMinutes?: number; drivin
         {transit.drivingMinutes !== undefined && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
             <Car size={10} strokeWidth={1.5} />
-            {transit.drivingMinutes}m Drive
+            {transit.drivingMinutes} min drive
           </span>
         )}
       </div>
