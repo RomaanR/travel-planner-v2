@@ -19,8 +19,18 @@ import TimelineCard from "@/components/TimelineCard";
 
 // ─── Transit connector ────────────────────────────────────────────────────────
 
-function TransitHeader({ transit }: { transit: { walkingMinutes?: number; drivingMinutes?: number } }) {
-  if (!transit?.walkingMinutes && !transit?.drivingMinutes) return null;
+function TransitHeader({
+  transit,
+  transportMode,
+}: {
+  transit: { walkingMinutes?: number; drivingMinutes?: number };
+  transportMode?: "walking-transit" | "car-driver";
+}) {
+  // Show only the relevant mode when known; show both when unknown (e.g. saved trips).
+  const showWalking = transportMode !== "car-driver"    && transit?.walkingMinutes  !== undefined;
+  const showDriving = transportMode !== "walking-transit" && transit?.drivingMinutes !== undefined;
+  if (!showWalking && !showDriving) return null;
+
   return (
     <div className="flex items-stretch gap-3 pl-3 py-0.5 print:hidden">
       {/* Vertical dashed connector line */}
@@ -35,16 +45,16 @@ function TransitHeader({ transit }: { transit: { walkingMinutes?: number; drivin
       </div>
       {/* Labels */}
       <div className="flex items-center gap-3 py-2.5">
-        {transit.walkingMinutes !== undefined && (
+        {showWalking && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
             <PersonStanding size={10} strokeWidth={1.5} />
             {transit.walkingMinutes} min walk
           </span>
         )}
-        {transit.walkingMinutes !== undefined && transit.drivingMinutes !== undefined && (
+        {showWalking && showDriving && (
           <span className="micro-copy text-ink/20">·</span>
         )}
-        {transit.drivingMinutes !== undefined && (
+        {showDriving && (
           <span className="flex items-center gap-1 micro-copy text-ink-light">
             <Car size={10} strokeWidth={1.5} />
             {transit.drivingMinutes} min drive
@@ -69,7 +79,7 @@ const PACE_COLORS: Record<string, string> = {
   packed:   "text-ink border-ink",
 };
 
-function DaySection({ day: rawDay }: { day: DayPlan }) {
+function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMode?: "walking-transit" | "car-driver" }) {
   const day = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
@@ -97,7 +107,7 @@ function DaySection({ day: rawDay }: { day: DayPlan }) {
         {items.map((item: TimelineItem, i) => (
           <div key={`item-${i}`} className="print:break-inside-avoid">
             {item?.transitFromPrevious && i > 0 && (
-              <TransitHeader transit={item.transitFromPrevious} />
+              <TransitHeader transit={item.transitFromPrevious} transportMode={transportMode} />
             )}
             <TimelineCard
               item={item}
@@ -140,9 +150,11 @@ interface ItineraryViewerProps {
   itinerary: ItineraryResponse;
   /** CTA slot rendered below the last day — save button (live page) or back-to-archive (saved trip page) */
   bottomSection?: ReactNode;
+  /** User's chosen transport mode — filters transit display to show only the relevant time */
+  transportMode?: "walking-transit" | "car-driver";
 }
 
-export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryViewerProps) {
+export default function ItineraryViewer({ itinerary, bottomSection, transportMode }: ItineraryViewerProps) {
   const [activeDay, setActiveDay] = useState(0);
   const currentDay = itinerary.days?.[activeDay];
 
@@ -230,7 +242,7 @@ export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryV
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
-              <DaySection day={currentDay} />
+              <DaySection day={currentDay} transportMode={transportMode} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -243,7 +255,7 @@ export default function ItineraryViewer({ itinerary, bottomSection }: ItineraryV
             key={`print-day-${day.day}`}
             className={`print:break-inside-avoid${i > 0 ? " print:break-before-page" : ""}`}
           >
-            <DaySection day={day} />
+            <DaySection day={day} transportMode={transportMode} />
           </div>
         ))}
       </div>

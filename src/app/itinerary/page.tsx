@@ -54,6 +54,7 @@ export default function ItineraryPage() {
   const { itinerary, loading, error, generateItinerary } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
+  const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function handleSave() {
@@ -93,6 +94,7 @@ export default function ItineraryPage() {
     const data = result.data as ItineraryRequest;
     setDestination(data.destination);
     setMapCenter({ lat: data.lat, lng: data.lng });
+    if (data.transportMode) setTransportMode(data.transportMode);
     generateItinerary(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -195,6 +197,7 @@ export default function ItineraryPage() {
             {itinerary && !loading && (
               <ItineraryViewer
                 itinerary={itinerary}
+                transportMode={transportMode}
                 bottomSection={
                   <motion.div
                     initial={{ opacity: 0 }}
