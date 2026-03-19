@@ -21,11 +21,11 @@ export async function generateMetadata({
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  // No auth check here — generateMetadata cannot access Clerk session.
-  // The page itself enforces auth + ownership; metadata just needs the
-  // destination name and editorial text for social previews.
+  // Auth + ownership check — prevents unauthenticated users from reading
+  // trip destination / editorial via OG metadata before the page auth fires.
+  const { userId } = await auth();
   const trip = await prisma.trip.findUnique({ where: { id: params.id } });
-  if (!trip) return { title: "Itinerary Not Found" };
+  if (!trip || trip.userId !== userId) return { title: "Itinerary Not Found" };
 
   const itinerary = trip.itineraryData as unknown as ItineraryResponse;
 

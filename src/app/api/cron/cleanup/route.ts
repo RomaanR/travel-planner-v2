@@ -4,8 +4,12 @@ import { prisma } from "@/lib/db";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    console.error("[cron/cleanup] CRON_SECRET env var is not configured");
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
