@@ -483,6 +483,20 @@ type RecommendedStay = {
 };
 ```
 
+### PlaceCache — `photoReference` Migration (2026-03-18)
+
+The `photoUrl` column is deprecated. A new `photoReference String?` column stores the raw `photo_reference` token from Google Places instead of a full constructed URL. The photo URL is rebuilt at serve time using the current `MAPS_SERVER_KEY`, making all cached photo data resilient to API key rotation.
+
+Old-format records (where `photoUrl` is set and `photoReference` is null) are detected via an `isOldFormat` flag and treated as expired — they self-refresh on the next cache miss with no manual data migration required.
+
+A database index has been added to `PlaceCache.updatedAt` to optimise the nightly cron cleanup query:
+
+```prisma
+@@index([updatedAt]) // deleteMany({ where: { updatedAt: { lt: 14daysAgo } } }) — O(log n) not O(n)
+```
+
+Schema synced to Supabase production via `npx prisma db push` (Prisma v5.22.0).
+
 ---
 
 ## 8. Data Pipeline (`src/app/api/itinerary/route.ts`)
@@ -639,6 +653,25 @@ Cache: `next: { revalidate: 86400 }`. Timeout: `AbortSignal.timeout(4000)`. Retu
 
 **Phase 2 — `JSON_REPAIR_PROMPT`** — if `sanitizeJson()` + `JSON.parse()` still throws, a second Anthropic call repairs the malformed string. If both phases fail → clean `500`. Claude's own output is never shown raw to users even if partially malformed.
 
+### `exactHotelAddress` — Prompt Injection Hardening (2026-03-18)
+
+`exactHotelAddress` is injected directly into the AI prompt as the spatial anchor (`baseCamp` variable). It now carries the same blocklist regex as `hotelName` in `ItinerarySchema`:
+
+```ts
+exactHotelAddress: z.string().max(300).regex(/^[^<>{}`$;\\|]+$/, "Invalid address").optional(),
+```
+
+The blocklist strategy is intentional — a whitelist approach would break valid international address characters (CJK, Arabic script, accented Latin characters, e.g. `Árpád fejedelem útja 1`).
+
+### Transit Display — UI Mode-Aware (2026-03-18)
+
+`TransitHeader` (inside `ItineraryViewer.tsx`) now accepts a `transportMode` prop threaded from `sessionStorage` → `ItineraryViewer` → `DaySection` → `TransitHeader`. It renders only the contextually relevant time:
+
+- `walking-transit` → walking minutes displayed only
+- `car-driver` → driving minutes displayed only
+
+Both values are always computed by the Haversine function — only the display is filtered by mode. This fixed a UX issue where car-centric cities (e.g. Dubai) displayed 300+ minute walk times between stops that were designed to be reached by car.
+
 ---
 
 ## 9. Security Architecture
@@ -656,6 +689,18 @@ Cache: `next: { revalidate: 86400 }`. Timeout: `AbortSignal.timeout(4000)`. Retu
 | **`/api/trips` Guard** | Clerk `userId` required | `401` if absent; data always scoped to `{ where: { userId } }` |
 
 > No `Content-Security-Policy` — would break Google Maps JS SDK + Clerk. No `Strict-Transport-Security` — Vercel enforces HTTPS at the edge.
+
+### Security Audit Baseline — 2026-03-18
+
+A 33-point system audit was completed confirming all 9 security fixes are intact. Additional hardening applied in the same session:
+
+| Layer | Mechanism | Protection |
+|-------|-----------|-----------|
+| **Delete Ownership** | `findUnique` + `deleteMany({ id, userId })` | Neutral 404 for missing AND wrong-owner; atomic DB-level enforcement eliminates TOCTOU window between read-check and delete |
+| **Address Injection** | Blocklist regex on `exactHotelAddress` | Prevents prompt injection via Google Places-sourced address strings injected into AI prompt |
+| **Duplicate Logging** | Consolidated outer `catch` discriminator | Single structured log per error event; removed unconditional pre-discriminator `console.error` |
+
+All 9 original findings verified as resolved across 33 audited feature points. No regressions introduced by subsequent changes.
 
 ---
 
@@ -795,6 +840,8 @@ await prisma.placeCache.deleteMany({ where: { updatedAt: { lt: fourteenDaysAgo }
 ```
 
 `PlaceCache.updatedAt` uses Prisma `@updatedAt` — auto-refreshed on every upsert. Recently accessed records (cache hits) stay alive.
+
+> **Performance (2026-03-18):** `@@index([updatedAt])` has been added to `PlaceCache` in `schema.prisma` and synced to Supabase. The nightly `deleteMany` query is now an indexed range scan — O(log n) — rather than a sequential full-table scan — O(n).
 
 ---
 
@@ -959,6 +1006,21 @@ export default clerkMiddleware()
 | `saveTrip` server action | `auth()` + throws if no userId |
 | `/itinerary` | Save button gated by `<SignedIn>`; page itself is public |
 | `/shared/[id]` | **Intentionally public — no auth** |
+| `DELETE /api/trips/[id]` | `auth()` + neutral-404 ownership check + `deleteMany({ id, userId })` | `401` if unauthenticated; `404` (identical for missing AND wrong-owner, no info leak); `200 { success: true }` on confirmed deletion |
+
+### `DELETE /api/trips/[id]` — Ownership Enforcement Detail (2026-03-18)
+
+**File:** `src/app/api/trips/[id]/route.ts`
+
+Three-layer security model enforced in sequence:
+
+1. `await auth()` → 401 if no `userId`
+2. `prisma.trip.findUnique({ where: { id } })` → neutral `404` if missing OR `trip.userId !== userId` (identical response — no existence leak)
+3. `prisma.trip.deleteMany({ where: { id, userId } })` → atomic DB-enforced ownership; a compound constraint means ownership is verified at the database layer even if the read in step 2 were somehow stale (eliminates TOCTOU race window)
+
+**Client-side state sync:** `useOfflineTrips.deleteTrip(id)` filters the trip from React state and writes the updated array to `localStorage("seek_wander_archive")` atomically inside the `setTrips` callback — no divergence window between in-memory state and the cache.
+
+**Detail-page deletion (`DeleteTripButton.tsx`):** After confirmed deletion, proactively prunes the localStorage archive, then calls `router.push("/trips")` — preventing a server-side `notFound()` if the user stays on the now-deleted route.
 
 ---
 
@@ -1015,3 +1077,87 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 11 — Mobile, Offline & Resilience | ✅ Complete | useOfflineTrips + TripsClient (localStorage seek_wander_archive); /api/trips GET; Upstash rate limiting (10/hr); AI JSON self-healing; dynamic OG metadata |
 | 12 — Interactive Stays + Spatial AI | ✅ Complete | InteractiveStays slider (6-hotel pool, 3 tiers, offline-capable); Neighbourhood Lock / Transit Reality / Curated Pacing rules (transport-mode branching) in buildPrompt(); semantic SVG activity icons in ItineraryMap (getIconSvg/buildSvgMarker); hotel Places Autocomplete + exactHotelAddress spatial anchor; transportMode selector (TrainFront/Car); TimelineCard extracted to dedicated component |
 | 13 — Stripe Paywall | 🔜 Next | $4.99 paywall — free tier: 1 generation; paid: unlimited |
+| 14 — Security Hardening & Trip Deletion | ✅ Complete | 33-point security audit (all 9 findings resolved); PlaceCache `photoReference` migration (API key rotation resilience); `exactHotelAddress` blocklist regex (prompt injection hardening); `DELETE /api/trips/[id]` with neutral-404 IDOR guard and atomic `deleteMany({ id, userId })`; `DeleteDialog` Framer Motion portal with Escape/backdrop dismiss; `useOfflineTrips.deleteTrip()` with atomic localStorage sync; transit `TransitHeader` UI mode-aware display (fixes car-centric cities e.g. Dubai); `PlaceCache @@index([updatedAt])` for O(log n) cron cleanup; duplicate logging consolidated |
+
+---
+
+## 22. Engineering Changelog
+
+### 2026-03-18 — Security Hardening & Trip Deletion
+
+**Commit:** `b93b421` · **Branch:** `main`
+
+---
+
+#### Security Audit — 33-Point Baseline
+
+A comprehensive line-by-line audit of all 33 codebase features was completed. All 9 security findings (CRITICAL through LOW) confirmed resolved. The full audit is documented in `SeekWander_SecurityAudit_2026-03-19.pdf` (architect handover).
+
+---
+
+#### PlaceCache — `photoReference` Architecture
+
+**Problem:** `PlaceCache.photoUrl` stored full Google Places photo URLs including `key=<MAPS_SERVER_KEY>`. API key rotation immediately invalidated all cached images, causing 403 errors site-wide.
+
+**Fix:**
+- New `photoReference String?` column stores the raw `photo_reference` token (key-independent).
+- Photo URL is constructed fresh at serve time: `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${ref}&key=${currentKey}`.
+- Old-format detection: `isOldFormat = !cached?.photoReference && !!cached?.photoUrl` — stale records expire naturally on next cache miss; no manual migration.
+- `@@index([updatedAt])` added — nightly cron `deleteMany` is now an indexed range scan.
+- Schema synced: `export $(grep -v '^#' .env.local | xargs) && npx prisma db push` (Prisma v5.22.0, Supabase PostgreSQL).
+
+---
+
+#### Input Validation Hardening
+
+- `exactHotelAddress` validated with blocklist regex `/^[^<>{}`$;\\|]+$/` in `ItinerarySchema` — identical strategy to `hotelName`. Blocks shell metacharacters and prompt-injection control chars; permits all valid international address characters.
+- Whitelist approach tested and rejected: `\w` is ASCII-only, breaking Arabic script, accented Latin characters, and curly quotes returned by Google Places.
+
+---
+
+#### Destination Name Fix
+
+`CurationForm.onPlaceChanged` priority changed from `formatted_address || name` to `name || formatted_address`. Google Places `formatted_address` returns bilingual strings for non-Latin cities (e.g. `"Istanbul, İstanbul, Türkiye"`). Using `name` returns the clean, unambiguous city name.
+
+---
+
+#### Transit Display — UI Mode-Aware
+
+`TransitHeader` component updated to accept `transportMode?: "walking-transit" | "car-driver"` prop, threaded through the component tree: `sessionStorage` → `itinerary/page.tsx` → `ItineraryViewer` → `DaySection` → `TransitHeader`.
+
+- `walking-transit`: walking minutes displayed, driving minutes hidden.
+- `car-driver`: driving minutes displayed, walking minutes hidden.
+
+Root cause: Dubai itineraries displayed 300+ minute walk times between stops deliberately planned for private car travel. Both time values are always Haversine-computed — only the display is mode-filtered.
+
+---
+
+#### Logging Consolidation
+
+Removed unconditional `console.error("[itinerary/route]", e)` from the outer `catch` block in `api/itinerary/route.ts`. Every error was being logged twice — once raw at line 634, then again with a structured label at lines 637 or 639. The discriminated `if (e instanceof SyntaxError)` block now handles all logging with a single, structured event per error.
+
+---
+
+#### Secure Trip Deletion — Full Stack
+
+**New file:** `src/app/api/trips/[id]/route.ts`
+
+Security model (three layers):
+1. `await auth()` → 401 if unauthenticated
+2. `findUnique` + `trip.userId !== userId` → neutral 404 (identical for missing and wrong-owner — no existence leak)
+3. `deleteMany({ where: { id, userId } })` → DB-level ownership enforcement, eliminates TOCTOU window
+
+**`useOfflineTrips` hook:**
+- `readCache()` / `writeCache()` promoted from closure scope to module scope — required for `deleteTrip` to access them outside `useEffect`.
+- `deleteTrip(id: string): Promise<void>` — calls `DELETE /api/trips/${id}`, filters state via `setTrips(prev => prev.filter(...))`, writes updated array to localStorage atomically inside the `setTrips` callback (prevents cache/state divergence race).
+
+**`TripsClient.tsx`:**
+- Each trip card gains a `Trash2` "Remove" action alongside "View Itinerary" and "Share".
+- `DeleteDialog` — `createPortal(…, document.body)` Framer Motion overlay. Features: Escape key close, backdrop click dismiss, `disabled` button during in-flight request, `Loader2` spinner, `AnimatePresence` enter/exit animations.
+- Trip cards upgraded to `motion.article` with `exit={{ opacity: 0, scale: 0.98 }}` for smooth removal from the grid.
+
+**`DeleteTripButton.tsx` (new standalone component):**
+- Used on `/trips/[id]` detail page header strip, alongside `ExportPdfButton`.
+- Shares the same `DeleteDialog` design pattern.
+- On success: proactively prunes `seek_wander_archive` from localStorage, then `router.push("/trips")` — prevents the user landing on a server-side `notFound()` after deletion.
+- `print:hidden` — excluded from PDF export.
