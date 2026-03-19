@@ -28,7 +28,10 @@ const ItinerarySchema = z.object({
   dietary:       z.array(z.enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten-free", "dairy-free"])).max(7),
   interests:           z.array(z.enum(["sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife", "culture-history", "adventure-sports", "relaxation-wellness", "photography"])).max(10),
   accommodationStatus:  z.enum(["needed", "booked"]).optional(),
-  hotelName:            z.string().max(200).regex(/^[\w\s\-&',.()]+$/, "Invalid hotel name").optional(),
+  // Blocklist approach: reject prompt-injection chars (<, >, {, }, $, `, ;, \, |)
+  // rather than a whitelist — whitelists break on valid Unicode hotel names (Arabic,
+  // accented Latin, curly quotes, etc.).
+  hotelName:            z.string().max(200).regex(/^[^<>{}`$;\\|]+$/, "Invalid hotel name").optional(),
   exactHotelAddress:    z.string().max(300).optional(),
   transportMode:        z.enum(["walking-transit", "car-driver"]).optional(),
 });

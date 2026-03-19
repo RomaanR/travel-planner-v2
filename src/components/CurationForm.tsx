@@ -265,8 +265,9 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
       ...(form as ItineraryRequest),
       duration,
       accommodationStatus,
-      hotelName:          accommodationStatus === "booked" ? hotelName.trim() : "",
-      exactHotelAddress:  accommodationStatus === "booked" ? exactHotelAddress.trim() : "",
+      // Send undefined (not "") when not booked — empty string fails Zod's optional() validator
+      hotelName:          accommodationStatus === "booked" ? hotelName.trim()         : undefined,
+      exactHotelAddress:  accommodationStatus === "booked" ? exactHotelAddress.trim() : undefined,
       transportMode,
     });
   }
