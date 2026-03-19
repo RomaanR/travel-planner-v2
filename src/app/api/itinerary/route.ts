@@ -507,7 +507,7 @@ export async function POST(req: Request) {
       max_tokens: 8192,
       system:     dynamicSystemPrompt,
       messages:   [{ role: "user", content: buildPrompt(safeBody) }],
-    });
+    }, { signal: req.signal });
 
     // ── Step 2: Extract + sanitize raw LLM text ──────────────────────────────
     const rawText =
@@ -641,6 +641,11 @@ export async function POST(req: Request) {
 
     return Response.json(itinerary);
   } catch (e) {
+    // Client disconnected (navigated away) — no response needed
+    if (e instanceof DOMException && e.name === "AbortError") {
+      console.log("[itinerary] Request aborted — client disconnected");
+      return new Response(null, { status: 499 });
+    }
     if (e instanceof SyntaxError) {
       console.error("[itinerary] Outer catch: malformed JSON survived self-heal —", (e as Error).message);
     } else {

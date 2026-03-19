@@ -52,7 +52,7 @@ import GenerationLoader from "@/components/GenerationLoader";
 
 export default function ItineraryPage() {
   const router = useRouter();
-  const { itinerary, loading, error, generateItinerary } = useItinerary();
+  const { itinerary, loading, error, generateItinerary, abort } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
@@ -97,6 +97,9 @@ export default function ItineraryPage() {
     setMapCenter({ lat: data.lat, lng: data.lng });
     if (data.transportMode) setTransportMode(data.transportMode);
     generateItinerary(data);
+
+    // Abort in-flight generation if user navigates away
+    return () => abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

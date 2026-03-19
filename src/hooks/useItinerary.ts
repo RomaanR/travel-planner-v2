@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import type { ItineraryRequest, ItineraryResponse } from "@/types/itinerary";
 
@@ -8,8 +8,20 @@ export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const abort = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, []);
 
   async function generateItinerary(data: ItineraryRequest) {
+    // Cancel any in-flight request
+    abort();
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     toast.loading("Consulting the concierge\u2026", { id: "curate-task" });
@@ -18,6 +30,7 @@ export function useItinerary() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const err = await res.json();
@@ -31,6 +44,12 @@ export function useItinerary() {
       });
       return result;
     } catch (e) {
+      // User navigated away or manually cancelled — silent dismiss
+      if (e instanceof DOMException && e.name === "AbortError") {
+        toast.dismiss("curate-task");
+        setLoading(false);
+        return null;
+      }
       setError(e instanceof Error ? e.message : "Unknown error");
       toast.error("Concierge Busy", {
         id: "curate-task",
@@ -42,5 +61,5 @@ export function useItinerary() {
     }
   }
 
-  return { itinerary, loading, error, generateItinerary };
+  return { itinerary, loading, error, generateItinerary, abort };
 }
