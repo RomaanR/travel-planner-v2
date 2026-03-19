@@ -20,6 +20,26 @@ export type CachedTrip = {
 
 const CACHE_KEY = "seek_wander_archive";
 
+// ── Cache helpers (module-level so deleteTrip can access them) ────────────────
+
+function readCache(): CachedTrip[] {
+  const raw = localStorage.getItem(CACHE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error("Cache is not an array");
+    return parsed as CachedTrip[];
+  } catch {
+    // Corrupt or tampered cache — purge so it doesn't persist
+    localStorage.removeItem(CACHE_KEY);
+    return [];
+  }
+}
+
+function writeCache(trips: CachedTrip[]): void {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(trips));
+}
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useOfflineTrips() {
@@ -29,21 +49,6 @@ export function useOfflineTrips() {
 
   useEffect(() => {
     async function load() {
-      // ── Reads and validates the localStorage cache, purging on corruption ──
-      function readCache(): CachedTrip[] {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return [];
-        try {
-          const parsed = JSON.parse(raw);
-          if (!Array.isArray(parsed)) throw new Error("Cache is not an array");
-          return parsed as CachedTrip[];
-        } catch {
-          // Corrupt or tampered cache — purge so it doesn't persist
-          localStorage.removeItem(CACHE_KEY);
-          return [];
-        }
-      }
-
       // 1. Short-circuit if the browser reports no connectivity
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         setTrips(readCache());
@@ -59,7 +64,7 @@ export function useOfflineTrips() {
         const { trips: fresh } = (await res.json()) as { trips: CachedTrip[] };
 
         // 3. Persist to cache on success
-        localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
+        writeCache(fresh);
         setTrips(fresh);
         setIsOffline(false);
       } catch {
@@ -74,5 +79,25 @@ export function useOfflineTrips() {
     load();
   }, []);
 
-  return { trips, isOffline, loading };
+  // ── deleteTrip ──────────────────────────────────────────────────────────────
+  // Calls DELETE /api/trips/[id], then removes the trip from local React state
+  // and syncs the localStorage archive. Throws on API failure so callers can
+  // surface an error toast without needing to manage their own fetch state.
+  async function deleteTrip(id: string): Promise<void> {
+    const res = await fetch(`/api/trips/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      throw new Error(`Delete failed: HTTP ${res.status}`);
+    }
+
+    // Remove from React state
+    setTrips((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
+      // Sync localStorage — use the filtered array, not a stale readCache() call,
+      // so there is no race between React state and the localStorage write.
+      writeCache(updated);
+      return updated;
+    });
+  }
+
+  return { trips, isOffline, loading, deleteTrip };
 }

@@ -28,6 +28,8 @@ model PlaceCache {
   priceLevel       Int?
   fetchedAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
+
+  @@index([updatedAt]) // Cron cleanup: deleteMany({ where: { updatedAt: { lt: 14daysAgo } } }) — O(log n) with index
 }
 
 model CostLog {

@@ -10,6 +10,7 @@ import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import ExportPdfButton from "@/components/ExportPdfButton";
+import DeleteTripButton from "@/components/DeleteTripButton";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
 import { computeMapPoints, normalizeDayPlan } from "@/lib/itineraryUtils";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
@@ -158,8 +159,11 @@ export default async function TripViewPage({
               {trip.destination}
             </h1>
           </div>
-          {/* Export button — print:hidden is handled inside the component */}
-          <ExportPdfButton />
+          {/* Header actions — both are print:hidden internally */}
+          <div className="flex items-center gap-3">
+            <DeleteTripButton tripId={trip.id} destination={trip.destination} />
+            <ExportPdfButton />
+          </div>
         </div>
       </div>
 

@@ -32,7 +32,10 @@ const ItinerarySchema = z.object({
   // rather than a whitelist — whitelists break on valid Unicode hotel names (Arabic,
   // accented Latin, curly quotes, etc.).
   hotelName:            z.string().max(200).regex(/^[^<>{}`$;\\|]+$/, "Invalid hotel name").optional(),
-  exactHotelAddress:    z.string().max(300).optional(),
+  // Same blocklist strategy as hotelName — permits all international address
+  // characters (CJK, Arabic, accented Latin, commas, slashes) while blocking
+  // shell metacharacters and prompt-injection control chars.
+  exactHotelAddress:    z.string().max(300).regex(/^[^<>{}`$;\\|]+$/, "Invalid address").optional(),
   transportMode:        z.enum(["walking-transit", "car-driver"]).optional(),
 });
 
@@ -631,10 +634,8 @@ export async function POST(req: Request) {
 
     return Response.json(itinerary);
   } catch (e) {
-    console.error("[itinerary/route]", e);
-    const isParseError = e instanceof SyntaxError;
-    if (isParseError) {
-      console.error("[itinerary] Outer catch: AI returned malformed JSON that survived self-heal —", (e as Error).message);
+    if (e instanceof SyntaxError) {
+      console.error("[itinerary] Outer catch: malformed JSON survived self-heal —", (e as Error).message);
     } else {
       console.error("[itinerary] Outer catch: unexpected error —", e);
     }
