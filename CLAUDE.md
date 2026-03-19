@@ -102,6 +102,31 @@ Markers are keyed by **day number**, not activity type. Legend shows only days p
 
 Polyline: `strokeColor: #0A0A0A`, `strokeOpacity: 0.08`, `strokeWeight: 1`
 
+### Map Marker — Semantic Activity Icons (`ItineraryMap.tsx`)
+
+Each marker overlays a **semantic SVG icon** on top of the day-colored circle, keyed by `TimelineItem.type`. Implemented in `getIconSvg(type: string): string` — returns a 16×16 SVG element string rendered inside a 32×32 data URI marker.
+
+| Type | Icon | SVG Description |
+|------|------|----------------|
+| `breakfast` | Coffee mug | Mug body + handle + steam lines |
+| `lunch` | Fork + knife | Two parallel utensils |
+| `dinner` / `drinks` | Wine glass | Funnel bowl + stem + base |
+| `activity` | Camera | Body + lens circle + notch |
+| `accommodation` / `hotel` | Bed | Headboard + mattress + pillow rectangle |
+| default | Map pin | Teardrop shape + centre dot |
+
+All icons use `stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"` for visibility on all day-color backgrounds.
+
+**`buildSvgMarker(day: number, type: string): string`** — composes the 32×32 SVG:
+```ts
+// Circle background (day color) + semantic icon centered at (8,8)
+<circle cx="16" cy="16" r="14" fill="{dayFill}" stroke="white" stroke-width="2"/>
+<g transform="translate(8,8)">{getIconSvg(type)}</g>
+```
+Returns a `data:image/svg+xml;charset=UTF-8,...` URI. Used as `Marker icon.url` with `scaledSize: Size(32,32)`, `anchor: Point(16,16)`.
+
+> **Critical:** `FootprintsIcon` does **not** exist in lucide-react — never reference it. Use `TrainFront` for the walking/transit selector in forms.
+
 ---
 
 ## 4. Environment Variables
@@ -205,7 +230,7 @@ src/
 │   ├── TimelineCard.tsx        # Pure display card — activity + meal unified, photo + enriched data
 │   ├── InteractiveStays.tsx    # "use client" — hotel tier slider, AnimatePresence cross-fade, offline-capable
 │   ├── StayCard.tsx            # Booking.com affiliate card — motion.a, whileHover y:-2, AID 4013143
-│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers + polyline + legend
+│   ├── ItineraryMap.tsx        # Google Map — day-centric SVG markers with semantic activity type icons (getIconSvg/buildSvgMarker) + polyline + legend
 │   ├── SearchBar.tsx           # Google Places Autocomplete (legacy, not in main flow)
 │   └── BentoGrid.tsx           # 12-col editorial grid
 ├── middleware.ts               # Clerk middleware — all routes public
@@ -438,6 +463,11 @@ type ItineraryRequest = {
   budgetTier: 'premium' | 'luxury' | 'ultra-luxury'
   dietary: DietaryOption[]   // max 7 items
   interests: Interest[]      // max 10 items
+  // Accommodation & transport (optional — sent when user fills accommodation stage)
+  accommodationStatus?: 'needed' | 'booked'
+  hotelName?: string           // place name from Google Places (e.g. "The Ritz-Carlton")
+  exactHotelAddress?: string   // Places-verified formatted_address — used as spatial anchor in prompt
+  transportMode?: 'walking-transit' | 'car-driver'  // controls Neighbourhood Lock strictness
 }
 ```
 
@@ -484,8 +514,12 @@ const ItinerarySchema = z.object({
   travelParty:   z.enum(["solo", "couple", "family", "group"]),
   pace:          z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
-  dietary:       z.array(z.enum([...])).max(7),
-  interests:     z.array(z.enum([...])).max(10),
+  dietary:             z.array(z.enum([...])).max(7),
+  interests:           z.array(z.enum([...])).max(10),
+  accommodationStatus: z.enum(["needed", "booked"]).optional(),
+  hotelName:           z.string().max(200).optional(),
+  exactHotelAddress:   z.string().max(300).optional(),
+  transportMode:       z.enum(["walking-transit", "car-driver"]).optional(),
 });
 type ItineraryRequest = z.infer<typeof ItinerarySchema>; // local to route.ts
 ```
@@ -527,9 +561,24 @@ These rules exist to prevent geographically incoherent schedules. They are **non
 
 | Rule | Behaviour Enforced |
 |------|-------------------|
-| **11. ANTI-TELEPORTATION** | Morning stops cluster in one neighbourhood; afternoon in a neighbouring area. Never cross the entire city without a meal break. |
-| **12. TRANSIT REALITY** | If any activity is >15km from the previous, the `startTime` gap must reflect real travel time. A 09:00 breakfast and a 09:30 activity an hour away is a hard failure. |
+| **11. THE NEIGHBOURHOOD LOCK** | Branches on `transportMode`. **Walking/transit:** ALL activities for the ENTIRE TRIP must stay within the exact same city. Named counter-examples prevent hallucination (e.g. "central Antalya → do NOT suggest Aspendos, Perge, Side"). **Car/driver:** Regional day trips allowed, but consecutive stops within a day must be ≤40km apart. |
+| **12. TRANSIT TIME REALITY** | Branches on `transportMode`. **Walking:** No two consecutive stops more than 20 min walk apart — replace, don't schedule. **Car:** Consecutive stops within a day must be reachable in ≤30 min by car; widen `startTime` gap if not. |
 | **13. CURATED PACING** | 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. |
+
+### `buildPrompt()` — Accommodation & Transport Injection
+
+The prompt's CLIENT PROFILE block includes two additional lines when `accommodationStatus === "booked"`:
+
+```
+- Base Camp: {exactHotelAddress || hotelName} — use this as the geographic anchor for all activity clustering
+- Mobility: {mobilityLabel}  // "Walking & Public Transit" | "Private Car / Driver"
+```
+
+Variables constructed before the prompt string:
+- `baseCamp` = `exactHotelAddress ?? hotelName ?? ""` — prefers the Places-verified address over the raw name
+- `mobilityLabel` = `transportMode === "car-driver" ? "Private Car / Driver" : "Walking & Public Transit"`
+- `neighborhoodLockRule` — ternary string injected at Rule 11 (walking vs car wording, see table above)
+- `transitTimeRule` — ternary string injected at Rule 12 (20-min walk vs 30-min car wording, see table above)
 
 ### `enrichPlace()` — PlaceCache-First Enrichment
 
@@ -656,9 +705,18 @@ All hotel links must use this utility — **never construct Booking.com URLs man
 
 ### Accommodation Branching
 
-`CurationForm` collects `accommodationStatus: "needed" | "booked"` and optional `hotelName`:
-- **`"needed"`** → Claude generates `recommendedStays[]` (6 hotels across 3 tiers)
-- **`"booked"`** → Claude uses provided `hotelName` as base, skips hotel recommendations entirely
+`CurationForm` collects `accommodationStatus: "needed" | "booked"`, `hotelName`, `exactHotelAddress`, and `transportMode`:
+
+- **`"needed"`** → Claude generates `recommendedStays[]` (6 hotels across 3 tiers). No hotel anchor injected into prompt.
+- **`"booked"`** → Hotel input (Google Places Autocomplete, `types: ["lodging"]`) captures two values:
+  - `hotelName` — the place name (e.g. "The Ritz-Carlton, Tokyo")
+  - `exactHotelAddress` — Places-verified `formatted_address` (e.g. "1-9-1 Akasaka, Minato City, Tokyo") — used as the geographic spatial anchor in the AI prompt (`baseCamp` variable)
+
+**"Getting Around" selector** (shown only when `accommodationStatus === "booked"`):
+- `TrainFront` icon → `"walking-transit"` — triggers strict Neighbourhood Lock (city boundary only, 20-min walk max between stops)
+- `Car` icon → `"car-driver"` — allows regional day trips; consecutive stops within a day must be ≤40km / ≤30 min drive
+
+> **Icon note:** `FootprintsIcon` does **not** exist in lucide-react. Always use `TrainFront` for the walking option — using any other icon name will cause a compile error.
 
 ---
 
@@ -921,7 +979,7 @@ Response is **always pure JSON** — no markdown, no preamble. Never mention AI 
 
 ---
 
-## 20. CurationForm Fields (7 total)
+## 20. CurationForm Fields (10 total)
 
 Staged inline expansion — each stage unlocks after the previous is completed.
 
@@ -934,6 +992,9 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 5 | Budget Tier | Premium $$ / Luxury $$$ / Ultra-Luxury $$$$ cards | |
 | 6 | Dietary | 7 options (None / Vegetarian / Vegan / Halal / Kosher / Gluten-Free / Dairy-Free) | Halal, Kosher, GF require detailed dietaryNote in prompt |
 | 7 | Interests | 10 options, no max cap | |
+| 8 | Accommodation Status | "Need a hotel" / "Already booked" pills | Unlocks fields 9 & 10 when "booked" |
+| 9 | Hotel Name | Google Places Autocomplete (`types: ["lodging"]`) | Captures `hotelName` (place name) + `exactHotelAddress` (Places-verified `formatted_address`) |
+| 10 | Getting Around | `TrainFront` icon = walking-transit / `Car` icon = car-driver | Controls Neighbourhood Lock strictness in AI prompt; `FootprintsIcon` does **not** exist in lucide-react |
 
 ---
 
@@ -952,5 +1013,5 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 9 — Affiliate Monetization | ✅ Complete | Booking.com AID 4013143; createAffiliateUrl(); StayCard; accommodation branching (needed/booked); recommendedStays[] in ItineraryResponse |
 | 10 — UX & Polish | ✅ Complete | GenerationLoader; Sonner toast layer; UnauthenticatedState "Velvet Rope"; EmptyTripsState Inspiration Hub; MobileMenu createPortal fix |
 | 11 — Mobile, Offline & Resilience | ✅ Complete | useOfflineTrips + TripsClient (localStorage seek_wander_archive); /api/trips GET; Upstash rate limiting (10/hr); AI JSON self-healing; dynamic OG metadata |
-| 12 — Interactive Stays + Spatial AI | ✅ Complete | InteractiveStays slider (6-hotel pool, 3 tiers, offline-capable); Anti-Teleportation / Transit Reality / Curated Pacing rules in buildPrompt(); TimelineCard extracted to dedicated component |
+| 12 — Interactive Stays + Spatial AI | ✅ Complete | InteractiveStays slider (6-hotel pool, 3 tiers, offline-capable); Neighbourhood Lock / Transit Reality / Curated Pacing rules (transport-mode branching) in buildPrompt(); semantic SVG activity icons in ItineraryMap (getIconSvg/buildSvgMarker); hotel Places Autocomplete + exactHotelAddress spatial anchor; transportMode selector (TrainFront/Car); TimelineCard extracted to dedicated component |
 | 13 — Stripe Paywall | 🔜 Next | $4.99 paywall — free tier: 1 generation; paid: unlimited |
