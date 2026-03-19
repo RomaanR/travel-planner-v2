@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import {
   Loader2,
   ArrowLeft,
@@ -17,6 +18,29 @@ import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { useItinerary } from "@/hooks/useItinerary";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
+
+// ─── sessionStorage re-validation schema ──────────────────────────────────────
+// Guards against tampered or malformed data injected by browser extensions.
+// Mirrors the server-side ItinerarySchema in api/itinerary/route.ts.
+
+const StoredRequestSchema = z.object({
+  destination:         z.string().min(1).max(100),
+  placeId:             z.string().min(1).max(300),
+  lat:                 z.number().finite(),
+  lng:                 z.number().finite(),
+  departureDate:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  returnDate:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  duration:            z.number().int().min(1).max(5),
+  travelParty:         z.enum(["solo", "couple", "family", "group"]),
+  pace:                z.enum(["relaxed", "moderate", "packed"]),
+  budgetTier:          z.enum(["premium", "luxury", "ultra-luxury"]),
+  dietary:             z.array(z.string()).max(7),
+  interests:           z.array(z.string()).max(10),
+  accommodationStatus: z.enum(["needed", "booked"]).optional(),
+  hotelName:           z.string().max(200).optional(),
+  exactHotelAddress:   z.string().max(300).optional(),
+  transportMode:       z.enum(["walking-transit", "car-driver"]).optional(),
+});
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
@@ -53,7 +77,20 @@ export default function ItineraryPage() {
   useEffect(() => {
     const stored = sessionStorage.getItem("itineraryRequest");
     if (!stored) { router.push("/"); return; }
-    const data: ItineraryRequest = JSON.parse(stored);
+
+    // Re-validate before use — guards against tampered sessionStorage data
+    // (e.g. malicious browser extensions injecting arbitrary payloads).
+    let raw: unknown;
+    try { raw = JSON.parse(stored); } catch { router.push("/"); return; }
+
+    const result = StoredRequestSchema.safeParse(raw);
+    if (!result.success) {
+      console.warn("[itinerary] sessionStorage data failed validation — redirecting", result.error.flatten());
+      router.push("/");
+      return;
+    }
+
+    const data = result.data as ItineraryRequest;
     setDestination(data.destination);
     setMapCenter({ lat: data.lat, lng: data.lng });
     generateItinerary(data);

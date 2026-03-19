@@ -29,10 +29,24 @@ export function useOfflineTrips() {
 
   useEffect(() => {
     async function load() {
+      // ── Reads and validates the localStorage cache, purging on corruption ──
+      function readCache(): CachedTrip[] {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return [];
+        try {
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) throw new Error("Cache is not an array");
+          return parsed as CachedTrip[];
+        } catch {
+          // Corrupt or tampered cache — purge so it doesn't persist
+          localStorage.removeItem(CACHE_KEY);
+          return [];
+        }
+      }
+
       // 1. Short-circuit if the browser reports no connectivity
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        const raw = localStorage.getItem(CACHE_KEY);
-        setTrips(raw ? (JSON.parse(raw) as CachedTrip[]) : []);
+        setTrips(readCache());
         setIsOffline(true);
         setLoading(false);
         return;
@@ -50,8 +64,7 @@ export function useOfflineTrips() {
         setIsOffline(false);
       } catch {
         // 4. Fall back to last-known cache
-        const raw = localStorage.getItem(CACHE_KEY);
-        setTrips(raw ? (JSON.parse(raw) as CachedTrip[]) : []);
+        setTrips(readCache());
         setIsOffline(true);
       } finally {
         setLoading(false);

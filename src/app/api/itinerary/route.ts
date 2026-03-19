@@ -28,7 +28,7 @@ const ItinerarySchema = z.object({
   dietary:       z.array(z.enum(["none", "vegetarian", "vegan", "halal", "kosher", "gluten-free", "dairy-free"])).max(7),
   interests:           z.array(z.enum(["sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife", "culture-history", "adventure-sports", "relaxation-wellness", "photography"])).max(10),
   accommodationStatus:  z.enum(["needed", "booked"]).optional(),
-  hotelName:            z.string().max(200).optional(),
+  hotelName:            z.string().max(200).regex(/^[\w\s\-&',.()]+$/, "Invalid hotel name").optional(),
   exactHotelAddress:    z.string().max(300).optional(),
   transportMode:        z.enum(["walking-transit", "car-driver"]).optional(),
 });
@@ -436,11 +436,19 @@ export async function POST(req: Request) {
     // Unauthenticated users are keyed by IP (x-forwarded-for, set by Vercel edge).
     const { userId } = await auth();
     const rateLimitKey = userId ?? req.headers.get("x-forwarded-for") ?? "anonymous";
-    const { success } = await ratelimit.limit(rateLimitKey);
+    const { success, limit, remaining, reset } = await ratelimit.limit(rateLimitKey);
     if (!success) {
       return Response.json(
         { error: "You have reached the maximum number of luxury curations for this hour. Please try again later." },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit":     limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset":     reset.toString(),
+            "Retry-After":           Math.ceil((reset - Date.now()) / 1000).toString(),
+          },
+        }
       );
     }
 
@@ -605,12 +613,13 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error("[itinerary/route]", e);
     const isParseError = e instanceof SyntaxError;
+    if (isParseError) {
+      console.error("[itinerary] Outer catch: AI returned malformed JSON that survived self-heal —", (e as Error).message);
+    } else {
+      console.error("[itinerary] Outer catch: unexpected error —", e);
+    }
     return Response.json(
-      {
-        error: isParseError
-          ? "AI returned malformed JSON — please try again"
-          : "Failed to generate itinerary",
-      },
+      { error: "Unable to generate itinerary. Please try again or refine your request." },
       { status: 500 }
     );
   }

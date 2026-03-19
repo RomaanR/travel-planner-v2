@@ -173,7 +173,7 @@ export default async function AdminMetricsPage() {
                         {/* User */}
                         <td className="px-4 py-3 micro-copy text-ink-light font-mono whitespace-nowrap">
                           {log.userId
-                            ? log.userId.slice(0, 18) + "&hellip;"
+                            ? `···${log.userId.slice(-8)}`
                             : <span className="text-ink-light/40">anon</span>
                           }
                         </td>
