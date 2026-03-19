@@ -15,7 +15,17 @@ function fmtDate(date: Date): string {
     day:   "numeric",
     month: "short",
     year:  "numeric",
+    timeZone: "UTC",
   });
+}
+
+function fmtTime(date: Date): string {
+  return date.toLocaleTimeString("en-AU", {
+    hour:     "2-digit",
+    minute:   "2-digit",
+    timeZone: "UTC",
+    hour12:   false,
+  }) + " UTC";
 }
 
 function costColour(total: number): string {
@@ -163,6 +173,8 @@ export default async function AdminMetricsPage() {
                         {/* Date */}
                         <td className="px-4 py-3 micro-copy text-ink-light whitespace-nowrap">
                           {fmtDate(log.createdAt)}
+                          <br />
+                          <span className="text-ink-light/50">{fmtTime(log.createdAt)}</span>
                         </td>
 
                         {/* Destination */}
