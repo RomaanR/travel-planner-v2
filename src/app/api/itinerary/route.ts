@@ -503,7 +503,7 @@ export async function POST(req: Request) {
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
     const message = await client.messages.create({
-      model:      "claude-3-5-haiku-20241022",
+      model:      "claude-sonnet-4-6",
       max_tokens: 8192,
       system:     dynamicSystemPrompt,
       messages:   [{ role: "user", content: buildPrompt(safeBody) }],
@@ -527,7 +527,7 @@ export async function POST(req: Request) {
 
       try {
         const healMessage = await client.messages.create({
-          model:      "claude-3-5-haiku-20241022",
+          model:      "claude-sonnet-4-6",
           max_tokens: 8192,
           system:     "You are a JSON repair specialist. Your sole task is to fix malformed JSON. Return ONLY the raw, valid JSON object — no markdown, no preamble, no explanation whatsoever.",
           messages: [{
