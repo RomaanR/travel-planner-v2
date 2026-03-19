@@ -6,11 +6,11 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-// 10 itinerary generations per user per sliding 1-hour window.
+// 20 itinerary generations per user per sliding 1-hour window.
 // Keyed by Clerk userId (authenticated) or IP address (unauthenticated).
 export const ratelimit = new Ratelimit({
   redis,
-  limiter:   Ratelimit.slidingWindow(10, "1 h"),
+  limiter:   Ratelimit.slidingWindow(20, "1 h"),
   analytics: true,                       // surfaces usage in Upstash dashboard
   prefix:    "seek-wander:itinerary",    // namespaced — clean Redis keyspace
 });
