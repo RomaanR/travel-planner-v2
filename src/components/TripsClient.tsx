@@ -288,7 +288,7 @@ export default function TripsClient() {
                           fill
                           unoptimized
                           sizes="176px"
-                          className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="absolute inset-0 bg-paper-dark flex items-center justify-center">

@@ -35,13 +35,8 @@ body {
   font-size: 0.7rem;
 }
 
-/* Grayscale-to-color image transition */
+/* Images — full color by default */
 .img-grayscale {
-  filter: grayscale(100%);
-  transition: filter 0.7s ease;
-}
-
-.img-grayscale:hover {
   filter: grayscale(0%);
 }
 
