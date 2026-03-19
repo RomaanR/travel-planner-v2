@@ -20,7 +20,8 @@ model Trip {
 model PlaceCache {
   id               String   @id @default(uuid())
   cacheKey         String   @unique  // "{normalized-name}|{normalized-city}"
-  photoUrl         String?
+  photoUrl         String?           // DEPRECATED — use photoReference; kept for backward compat during natural expiry
+  photoReference   String?           // raw photo_reference from Google Places (key-independent; URL constructed fresh at serve time)
   rating           Float?
   userRatingsTotal Int?
   hoursOpen        String?

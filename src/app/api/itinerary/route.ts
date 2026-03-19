@@ -271,10 +271,22 @@ async function enrichPlace(
   // ── 1. Check PlaceCache ────────────────────────────────────────────────────
   try {
     const cached = await prisma.placeCache.findUnique({ where: { cacheKey } });
-    if (cached && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
+
+    // Treat old-format records (photoUrl stored with embedded key, no photoReference)
+    // as expired so they refresh automatically and pick up the current key.
+    const isOldFormat = !cached?.photoReference && !!cached?.photoUrl;
+
+    if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
       counters.cacheHits++;
+
+      // Construct photo URL fresh from the raw reference + current API key —
+      // never use the stored photoUrl (which may contain a rotated/revoked key).
+      const photoUrl = cached.photoReference
+        ? `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${cached.photoReference}&key=${apiKey}`
+        : undefined;
+
       return {
-        photoUrl:         cached.photoUrl         ?? undefined,
+        photoUrl,
         rating:           cached.rating           ?? undefined,
         userRatingsTotal: cached.userRatingsTotal ?? undefined,
         hoursOpen:        cached.hoursOpen        ?? undefined,
@@ -336,10 +348,14 @@ async function enrichPlace(
     };
 
     // ── 4. Write to cache (fire-and-forget — never blocks response) ──────────
+    // Store the raw photo_reference (key-independent), not the full photo URL.
+    // The URL is constructed fresh at serve time using the current MAPS_SERVER_KEY,
+    // so key rotation never invalidates cached photo data.
     prisma.placeCache.upsert({
       where: { cacheKey },
       update: {
-        photoUrl:         enrichment.photoUrl         ?? null,
+        photoReference:   photoRef                    ?? null,
+        photoUrl:         null,   // clear any legacy full-URL value
         rating:           enrichment.rating           ?? null,
         userRatingsTotal: enrichment.userRatingsTotal ?? null,
         hoursOpen:        enrichment.hoursOpen        ?? null,
@@ -348,7 +364,8 @@ async function enrichPlace(
       },
       create: {
         cacheKey,
-        photoUrl:         enrichment.photoUrl         ?? null,
+        photoReference:   photoRef                    ?? null,
+        photoUrl:         null,
         rating:           enrichment.rating           ?? null,
         userRatingsTotal: enrichment.userRatingsTotal ?? null,
         hoursOpen:        enrichment.hoursOpen        ?? null,

@@ -168,7 +168,10 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     if (!place.geometry?.location || !place.place_id) return;
 
     const update = {
-      destination: place.formatted_address || place.name || inputValue,
+      // Use place.name ("Istanbul") not formatted_address ("Istanbul, İstanbul, Türkiye")
+      // — Google Places returns both romanised + native spellings in formatted_address
+      // for many cities, creating duplicated/mangled destination headings.
+      destination: place.name || place.formatted_address || inputValue,
       placeId: place.place_id,
       lat: place.geometry.location.lat(),
       lng: place.geometry.location.lng(),
