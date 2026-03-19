@@ -41,6 +41,7 @@ export type ItineraryRequest = {
   hotelName?: string;
   exactHotelAddress?: string;  // Places-verified formatted_address — captured when accommodationStatus === "booked"
   transportMode?: string;      // "walking-transit" | "car-driver"
+  walkingTolerance?: "strict" | "relaxed"; // walking-transit only — "strict" ≤20 min/1.5km, "relaxed" ≤45 min/4km; defaults to "strict"
 };
 
 // ─── Response ─────────────────────────────────────────────────────────────────

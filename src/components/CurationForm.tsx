@@ -147,6 +147,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const [hotelInputValue, setHotelInputValue] = useState("");
   const [exactHotelAddress, setExactHotelAddress] = useState("");
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
+  const [walkingTolerance, setWalkingTolerance] = useState<"strict" | "relaxed">("strict");
   const localToday = useMemo(getLocalToday, []);
 
   const [form, setForm] = useState<Partial<ItineraryRequest>>({
@@ -269,6 +270,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
       hotelName:          accommodationStatus === "booked" ? hotelName.trim()         : undefined,
       exactHotelAddress:  accommodationStatus === "booked" ? exactHotelAddress.trim() : undefined,
       transportMode,
+      // Only send when walking — car-driver ignores this value entirely on the server.
+      walkingTolerance:   transportMode === "walking-transit" ? walkingTolerance : undefined,
     });
   }
 
@@ -501,7 +504,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 {/* Rental Car / Private Driver */}
                 <button
                   type="button"
-                  onClick={() => setTransportMode("car-driver")}
+                  onClick={() => { setTransportMode("car-driver"); setWalkingTolerance("strict"); }}
                   className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
                     ${transportMode === "car-driver"
                       ? "border-ink bg-ink text-paper"
@@ -521,6 +524,65 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   </span>
                 </button>
               </div>
+
+              {/* ── Walking Tolerance sub-option ── */}
+              {/* Visible only when Walking & Transit is selected. */}
+              <AnimatePresence>
+                {transportMode === "walking-transit" && (
+                  <motion.div
+                    key="walking-tolerance"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="overflow-hidden mt-3"
+                  >
+                    <div className="grid grid-cols-2 gap-2">
+
+                      {/* Short walks (strict) */}
+                      <button
+                        type="button"
+                        onClick={() => setWalkingTolerance("strict")}
+                        className={`flex flex-col gap-1 px-4 py-3 border text-left transition-all duration-200
+                          ${walkingTolerance === "strict"
+                            ? "border-ink bg-ink text-paper"
+                            : "border-ink/10 text-ink hover:border-ink/30"
+                          }`}
+                      >
+                        <span className="micro-copy leading-none">Short walks</span>
+                        <span className={`font-sans text-xs leading-tight ${
+                          walkingTolerance === "strict" ? "text-paper/70" : "text-ink-light"
+                        }`}>
+                          Max 20 min between stops
+                        </span>
+                      </button>
+
+                      {/* Explorer pace (relaxed) */}
+                      <button
+                        type="button"
+                        onClick={() => setWalkingTolerance("relaxed")}
+                        className={`flex flex-col gap-1 px-4 py-3 border text-left transition-all duration-200
+                          ${walkingTolerance === "relaxed"
+                            ? "border-ink bg-ink text-paper"
+                            : "border-ink/10 text-ink hover:border-ink/30"
+                          }`}
+                      >
+                        <span className="micro-copy leading-none">Explorer pace</span>
+                        <span className={`font-sans text-xs leading-tight ${
+                          walkingTolerance === "relaxed" ? "text-paper/70" : "text-ink-light"
+                        }`}>
+                          Up to 45 min between stops
+                        </span>
+                      </button>
+
+                    </div>
+                    <p className="font-sans text-xs text-ink-light mt-2">
+                      Controls how far apart your stops can be within a day.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
 
             {/* ── Row 2: Travel Party ── */}

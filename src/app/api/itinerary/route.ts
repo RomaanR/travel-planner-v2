@@ -37,6 +37,11 @@ const ItinerarySchema = z.object({
   // shell metacharacters and prompt-injection control chars.
   exactHotelAddress:    z.string().max(300).regex(/^[^<>{}`$;\\|]+$/, "Invalid address").optional(),
   transportMode:        z.enum(["walking-transit", "car-driver"]).optional(),
+  // Only meaningful when transportMode === "walking-transit".
+  // "strict"  → max 1.5km / 20-min walk between consecutive stops (default, safe-by-omission).
+  // "relaxed" → up to 4km / 45-min walk; allows adjacent-neighbourhood exploration.
+  // Ignored entirely when transportMode === "car-driver".
+  walkingTolerance:     z.enum(["strict", "relaxed"]).optional(),
 });
 
 type ItineraryRequest = z.infer<typeof ItinerarySchema>;
@@ -154,7 +159,7 @@ function buildPrompt(data: ItineraryRequest): string {
   const needsHotel = data.accommodationStatus !== "booked";
   const {
     destination, duration, travelParty, pace, budgetTier, dietary, interests,
-    departureDate, returnDate, exactHotelAddress, transportMode,
+    departureDate, returnDate, exactHotelAddress, transportMode, walkingTolerance,
   } = data;
 
   const baseCamp = exactHotelAddress
@@ -171,7 +176,9 @@ function buildPrompt(data: ItineraryRequest): string {
 
   const transitTimeRule = transportMode === "car-driver"
     ? "Verify that consecutive stops within a day are reachable within 30 minutes by car. If a pair of stops would take longer, widen the startTime gap to reflect reality."
-    : "No two consecutive stops can be more than a 20-minute walk apart. If a location would require more than 20 minutes of walking from the previous stop, do NOT include it — replace it with a closer alternative in the same neighbourhood.";
+    : walkingTolerance === "relaxed"
+      ? "You may place consecutive stops up to 4km / 45 minutes walking distance apart, allowing the itinerary to span adjacent neighbourhoods within the city. This is the user's explicit preference — do not artificially over-cluster stops. The city-boundary rule (Rule 11) still applies."
+      : "No two consecutive stops can be more than 1.5km / 20 minutes walking distance apart. If a location would require more than 20 minutes of walking from the previous stop, do NOT include it — replace it with a closer alternative in the same neighbourhood.";
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
     ? "No dietary restrictions"

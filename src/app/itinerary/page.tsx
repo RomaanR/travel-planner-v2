@@ -40,6 +40,7 @@ const StoredRequestSchema = z.object({
   hotelName:           z.string().max(200).optional(),
   exactHotelAddress:   z.string().max(300).optional(),
   transportMode:       z.enum(["walking-transit", "car-driver"]).optional(),
+  walkingTolerance:    z.enum(["strict", "relaxed"]).optional(),
 });
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";

@@ -534,11 +534,14 @@ const ItinerarySchema = z.object({
   hotelName:           z.string().max(200).optional(),
   exactHotelAddress:   z.string().max(300).optional(),
   transportMode:       z.enum(["walking-transit", "car-driver"]).optional(),
+  walkingTolerance:    z.enum(["strict", "relaxed"]).optional(),
 });
 type ItineraryRequest = z.infer<typeof ItinerarySchema>; // local to route.ts
 ```
 
 `safeParse` is used — never `parse` — so errors are handled gracefully without try/catch.
+
+> **`walkingTolerance` behaviour:** Only injected into the prompt when `transportMode !== "car-driver"`. `undefined` and `"strict"` are treated identically — safe-by-default. Rule 11 (Neighbourhood Lock — city boundary) is unchanged in both modes; only Rule 12 (consecutive stop distance) is affected.
 
 ### AI JSON Schema (current — timeline shape)
 
@@ -1057,6 +1060,7 @@ Staged inline expansion — each stage unlocks after the previous is completed.
 | 8 | Accommodation Status | "Need a hotel" / "Already booked" pills | Unlocks fields 9 & 10 when "booked" |
 | 9 | Hotel Name | Google Places Autocomplete (`types: ["lodging"]`) | Captures `hotelName` (place name) + `exactHotelAddress` (Places-verified `formatted_address`) |
 | 10 | Getting Around | `TrainFront` icon = walking-transit / `Car` icon = car-driver | Controls Neighbourhood Lock strictness in AI prompt; `FootprintsIcon` does **not** exist in lucide-react |
+| 10a | Walking Tolerance | Two pills: "Short walks" / "Explorer pace" — visible only when walking-transit is selected | `AnimatePresence` fade-in below Field 10; resets to `"strict"` when user switches to Car; omitted from POST body when `transportMode === "car-driver"` |
 
 ---
 
@@ -1161,3 +1165,37 @@ Security model (three layers):
 - Shares the same `DeleteDialog` design pattern.
 - On success: proactively prunes `seek_wander_archive` from localStorage, then `router.push("/trips")` — prevents the user landing on a server-side `notFound()` after deletion.
 - `print:hidden` — excluded from PDF export.
+
+---
+
+### 2026-03-19 — `walkingTolerance` Field
+
+**Commit:** pending · **Branch:** `main`
+
+#### Problem
+
+The Neighbourhood Lock applied a single hard-coded 20-minute walking rule to all walking-transit users. Urban explorers who are happy to cover more ground within the city had no way to express that preference, leading to itineraries that were artificially compressed into a single neighbourhood.
+
+#### Solution
+
+A new optional enum field `walkingTolerance: "strict" | "relaxed"` branches Rule 12 (Transit Time Reality) in `buildPrompt()`. Rule 11 (city boundary) is unchanged in both modes.
+
+| Value | Rule 12 injected into prompt | Default? |
+|-------|------------------------------|----------|
+| `"strict"` (or `undefined`) | Max 1.5km / 20-min walk between consecutive stops | ✅ Yes |
+| `"relaxed"` | Up to 4km / 45-min walk; adjacent-neighbourhood exploration permitted | No |
+
+#### Files changed
+
+| File | Change |
+|------|--------|
+| `src/types/itinerary.ts` | Added `walkingTolerance?: "strict" \| "relaxed"` to `ItineraryRequest` |
+| `src/app/api/itinerary/route.ts` | Added `walkingTolerance` to `ItinerarySchema`; updated `transitTimeRule` ternary in `buildPrompt()` |
+| `src/app/itinerary/page.tsx` | Added `walkingTolerance` to `StoredRequestSchema` (client-side re-validation) |
+| `src/components/CurationForm.tsx` | Added `walkingTolerance` state (default `"strict"`); added `AnimatePresence` sub-option below Field 10; Car button resets tolerance to `"strict"`; field omitted from POST when `transportMode === "car-driver"` |
+
+#### Security
+
+- Validated by Zod enum before reaching `buildPrompt()` — invalid values return `400` before any AI call.
+- Field is an enum, not free-text — prompt injection impossible.
+- Security fixes #1–#9 unaffected — no changes to auth, ownership, rate limiting, or PlaceCache.
