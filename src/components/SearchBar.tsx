@@ -108,7 +108,7 @@ export default function SearchBar({ onGenerate, loading }: SearchBarProps) {
 
       {/* Caption */}
       <p className="mt-3 micro-copy text-ink-light text-center">
-        AI-curated 3-day itinerary — hidden gems, dining, pace
+        Curated 3-day itinerary &mdash; hidden gems, dining, pace
       </p>
     </motion.div>
   );

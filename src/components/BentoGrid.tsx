@@ -88,7 +88,7 @@ export default function BentoGrid() {
             />
             <p className="micro-copy text-paper/50 mb-3">Palate First</p>
             <h3 className="font-serif italic text-4xl text-paper leading-tight">
-              Reservations<br />Hand-Picked by AI
+              Reservations<br />Hand-Picked for You
             </h3>
             <p className="mt-4 text-paper/60 text-sm leading-relaxed font-sans">
               No Yelp. No TripAdvisor. Only chef-driven tables, hidden izakayas, and legendary tasting menus sourced from local intelligence.

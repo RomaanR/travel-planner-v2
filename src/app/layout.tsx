@@ -21,13 +21,13 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Seek Wander | Bespoke AI Travel Curation",
+    default: "Seek Wander | Bespoke Travel Curation",
     template: "%s | Seek Wander",
   },
   description:
     "High-fidelity, geographically-aware itineraries for the discerning traveler.",
   openGraph: {
-    title: "Seek Wander | Bespoke AI Travel Curation",
+    title: "Seek Wander | Bespoke Travel Curation",
     description:
       "High-fidelity, geographically-aware itineraries for the discerning traveler.",
     type: "website",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Seek Wander | Bespoke AI Travel Curation",
+    title: "Seek Wander | Bespoke Travel Curation",
     description:
       "High-fidelity, geographically-aware itineraries for the discerning traveler.",
   },

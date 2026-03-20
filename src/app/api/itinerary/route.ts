@@ -545,7 +545,7 @@ export async function POST(req: Request) {
         // Both attempts failed — return a user-friendly error, do not expose internals
         console.error("[itinerary] Self-heal also failed:", (secondError as Error).message);
         return NextResponse.json(
-          { error: "Our AI concierge experienced a formatting issue. Please try generating your itinerary again." },
+          { error: "Our concierge experienced a formatting issue. Please try generating your itinerary again." },
           { status: 500 }
         );
       }

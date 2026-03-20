@@ -47,7 +47,7 @@ export default function HomePage() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="micro-copy text-white/60 mb-6"
           >
-            AI-Powered Luxury Travel Curation
+            Curated Luxury Journeys
           </motion.p>
 
           {/* Main heading */}
@@ -85,7 +85,7 @@ export default function HomePage() {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.7 }}
             className="font-sans text-white/70 text-lg mb-16 max-w-md leading-relaxed"
           >
-            Your private AI concierge crafts ultra-curated itineraries — hidden gems, Michelin-worthy tables, and the moments between.
+            Ultra-curated itineraries crafted around you &mdash; hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
 
           {/* Curation Form */}
@@ -141,7 +141,7 @@ export default function HomePage() {
               Seek Wander
             </p>
             <p className="micro-copy text-ink-light">
-              Luxury AI Travel Curation
+              Curated Luxury Journeys
             </p>
           </div>
           <div className="flex items-center gap-8">
