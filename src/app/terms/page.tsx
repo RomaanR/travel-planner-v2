@@ -210,12 +210,18 @@ export default function TermsPage() {
             </section>
           </div>
 
-          <div className="mt-16 pt-8 border-t border-ink/5">
+          <div className="mt-16 pt-8 border-t border-ink/5 flex flex-wrap gap-6">
+            <Link
+              href="/refunds"
+              className="micro-copy text-ink-light hover:text-ink transition-colors"
+            >
+              Refund Policy
+            </Link>
             <Link
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              &larr; Back to Seek Wander
+              Back to Seek Wander
             </Link>
           </div>
         </div>
