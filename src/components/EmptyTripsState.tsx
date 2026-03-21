@@ -59,22 +59,22 @@ export default function EmptyTripsState() {
 
         {/* Headline */}
         <h2 className="font-serif italic text-4xl md:text-5xl text-ink leading-tight mb-6 max-w-md">
-          Your passport is<br />currently blank.
+          Your first journey<br />awaits.
         </h2>
 
         {/* Body */}
-        <p className="font-sans text-sm text-ink-light mb-10 max-w-xs leading-relaxed">
-          Every remarkable journey begins with a single destination.
-          Let&apos;s curate yours.
+        <p className="font-sans text-sm text-ink-light mb-10 max-w-sm leading-relaxed">
+          Tell us where you&apos;re dreaming of and we&apos;ll craft a bespoke
+          itinerary &mdash; hidden gems, curated dining, and every detail handled.
         </p>
 
-        {/* CTA — inverted: bg-ink / text-paper */}
+        {/* CTA — high-contrast burnt-orange */}
         <Link
           href="/"
-          className="inline-flex items-center gap-3 bg-ink text-paper micro-copy px-8 py-4
-                     hover:bg-burnt-orange transition-colors duration-300"
+          className="inline-flex items-center gap-3 bg-burnt-orange text-white micro-copy px-10 py-4
+                     hover:bg-ink transition-colors duration-300"
         >
-          Curate a Journey
+          Start Your First Journey
           <ArrowRight size={13} strokeWidth={1.5} />
         </Link>
       </motion.div>
