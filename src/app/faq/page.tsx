@@ -130,9 +130,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <p className="font-sans text-sm text-ink-light leading-relaxed pb-5 pr-8">
-              {a}
-            </p>
+            <p
+              className="font-sans text-sm text-ink-light leading-relaxed pb-5 pr-8"
+              dangerouslySetInnerHTML={{ __html: a }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
