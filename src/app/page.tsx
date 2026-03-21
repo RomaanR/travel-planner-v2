@@ -202,6 +202,9 @@ export default function HomePage() {
             </p>
           </div>
           <div className="flex items-center gap-8">
+            <Link href="/faq" className="micro-copy text-ink-light hover:text-ink transition-colors">
+              FAQ
+            </Link>
             <Link href="/privacy" className="micro-copy text-ink-light hover:text-ink transition-colors">
               Privacy
             </Link>

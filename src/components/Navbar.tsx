@@ -38,6 +38,12 @@ export default function Navbar() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-8">
           <Link
+            href="/faq"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            FAQ
+          </Link>
+          <Link
             href="/trips"
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >

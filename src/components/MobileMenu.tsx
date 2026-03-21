@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { label: "Home",             href: "/" },
   { label: "Curate a Journey", href: "/" },
   { label: "My Passport",      href: "/trips" },
+  { label: "FAQ",              href: "/faq" },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
