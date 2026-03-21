@@ -65,9 +65,9 @@ const PACE_OPTIONS: { value: Pace; label: string; sub: string; icon: React.React
 ];
 
 const BUDGET_OPTIONS: { value: BudgetTier; label: string; symbol: string; sub: string }[] = [
-  { value: "premium",      label: "Premium",      symbol: "$$",   sub: "Refined & Considered" },
-  { value: "luxury",       label: "Luxury",       symbol: "$$$",  sub: "Effortlessly Elevated" },
-  { value: "ultra-luxury", label: "Ultra-Luxury", symbol: "$$$$", sub: "Without Compromise" },
+  { value: "premium",      label: "Economic",  symbol: "$$",   sub: "Refined & Considered" },
+  { value: "luxury",       label: "Premium",   symbol: "$$$",  sub: "Effortlessly Elevated" },
+  { value: "ultra-luxury", label: "Luxury",    symbol: "$$$$", sub: "Without Compromise" },
 ];
 
 const DIETARY_OPTIONS: { value: DietaryOption; label: string }[] = [
