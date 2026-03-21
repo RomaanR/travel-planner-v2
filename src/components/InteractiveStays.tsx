@@ -16,9 +16,9 @@ interface InteractiveStaysProps {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const TIER_LABELS: Record<number, string> = {
-  3: "Boutique (3\u2605)",
-  4: "Premium (4\u2605)",
-  5: "Luxury (5\u2605)",
+  3: "Economic",
+  4: "Premium",
+  5: "Luxury",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -60,9 +60,9 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
           />
           {/* Tier labels — flush with slider endpoints */}
           <div className="flex justify-between mt-2">
-            <span className="micro-copy text-ink-light">Boutique (3\u2605)</span>
-            <span className="micro-copy text-ink-light">Premium (4\u2605)</span>
-            <span className="micro-copy text-ink-light">Luxury (5\u2605)</span>
+            <span className="micro-copy text-ink-light">Economic</span>
+            <span className="micro-copy text-ink-light">Premium</span>
+            <span className="micro-copy text-ink-light">Luxury</span>
           </div>
         </div>
       )}
@@ -70,7 +70,7 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
       {/* Active tier label */}
       {hasRatings && (
         <p className="font-sans text-xs text-ink-light mb-4 tracking-widest uppercase">
-          Showing: {TIER_LABELS[minRating] ?? `${minRating}\u2605`}
+          Showing: {TIER_LABELS[minRating] ?? "Unknown Tier"}
         </p>
       )}
 
