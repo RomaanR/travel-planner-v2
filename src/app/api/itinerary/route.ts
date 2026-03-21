@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
 import { ratelimit } from "@/lib/ratelimit";
+import type { PlaceCache } from "@prisma/client";
 import type {
   ItineraryResponse,
   DayPlan,
@@ -255,9 +256,14 @@ function buildCacheKey(name: string, city: string): string {
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-// ─── Categories that skip Place Details (no meaningful opening hours) ─────────
+// ─── Categories / types that skip Place Details (no meaningful opening hours) ──
 
 const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
+
+// Meal-type timeline items skip the Details API call — restaurants already
+// expose open_now from the Text Search response, and pricePoint comes from the
+// AI. Saving one Details call per meal item roughly halves the total API calls.
+const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner", "snack", "drinks"]);
 
 // ─── Google Places enrichment ─────────────────────────────────────────────────
 
@@ -279,44 +285,56 @@ async function enrichPlace(
   apiKey: string,
   skipDetails: boolean,
   counters: ApiCounters,
-  destinationLng: number
+  destinationLng: number,
+  // Pre-loaded from the batch findMany done before the enrichment loop.
+  // null  = batch ran, this key wasn't in the cache (skip findUnique).
+  // undefined = no batch (fall back to individual findUnique — dev/test only).
+  preloaded: PlaceCache | null | undefined = undefined
 ): Promise<PlacesEnrichment | null> {
   const cacheKey = buildCacheKey(name, city);
 
   // ── 1. Check PlaceCache ────────────────────────────────────────────────────
-  try {
-    const cached = await prisma.placeCache.findUnique({ where: { cacheKey } });
-
-    // Treat old-format records (photoUrl stored with embedded key, no photoReference)
-    // as expired so they refresh automatically and pick up the current key.
-    const isOldFormat = !cached?.photoReference && !!cached?.photoUrl;
-
-    if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
-      counters.cacheHits++;
-
-      // Return the raw reference token — the client renders via /api/photo proxy.
-      // The server key never leaves the server; URL is reconstructed at request time.
-      return {
-        photoReference:   cached.photoReference   ?? undefined,
-        photoUrl:         undefined,               // never send key to client
-        rating:           cached.rating           ?? undefined,
-        userRatingsTotal: cached.userRatingsTotal ?? undefined,
-        hoursOpen:        cached.hoursOpen        ?? undefined,
-        priceLevel:       cached.priceLevel       ?? undefined,
-        // openNow computed locally — zero API calls
-        openNow: cached.hoursOpen
-          ? parseOpenNow(cached.hoursOpen, destinationLng)
-          : undefined,
-      };
+  // Use the batch-loaded row when available; individual lookup only as fallback.
+  let cached: PlaceCache | null;
+  if (preloaded !== undefined) {
+    cached = preloaded; // null = verified cache miss — skip DB round-trip
+  } else {
+    try {
+      cached = await prisma.placeCache.findUnique({ where: { cacheKey } });
+    } catch {
+      cached = null;
     }
-  } catch { /* DB unavailable — fall through to live fetch */ }
+  }
+
+  // Treat old-format records (photoUrl stored with embedded key, no photoReference)
+  // as expired so they refresh automatically and pick up the current key.
+  const isOldFormat = !cached?.photoReference && !!cached?.photoUrl;
+
+  if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
+    counters.cacheHits++;
+
+    // Return the raw reference token — the client renders via /api/photo proxy.
+    // The server key never leaves the server; URL is reconstructed at request time.
+    return {
+      photoReference:   cached.photoReference   ?? undefined,
+      photoUrl:         undefined,               // never send key to client
+      rating:           cached.rating           ?? undefined,
+      userRatingsTotal: cached.userRatingsTotal ?? undefined,
+      hoursOpen:        cached.hoursOpen        ?? undefined,
+      priceLevel:       cached.priceLevel       ?? undefined,
+      // openNow computed locally — zero API calls
+      openNow: cached.hoursOpen
+        ? parseOpenNow(cached.hoursOpen, destinationLng)
+        : undefined,
+    };
+  }
 
   // ── 2. Fresh fetch from Google Places ─────────────────────────────────────
   try {
     const query = encodeURIComponent(`${name} ${city}`);
     const res = await fetch(
       `${PLACES_BASE}/textsearch/json?query=${query}&key=${apiKey}`,
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(3000) }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -333,7 +351,7 @@ async function enrichPlace(
       try {
         const det = await fetch(
           `${PLACES_BASE}/details/json?place_id=${place.place_id}&fields=opening_hours&key=${apiKey}`,
-          { signal: AbortSignal.timeout(4000) }
+          { signal: AbortSignal.timeout(2500) }
         );
         if (det.ok) {
           const dj = await det.json();
@@ -549,12 +567,17 @@ export async function POST(req: Request) {
         : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 6 accommodation options in a "recommendedStays" array at the root of your JSON response — two 5-star ultra-luxury hotels (rating: 5, priceTier: '$$$$$'), two 4-star premium hotels (rating: 4, priceTier: '$$$$'), and two 3-star highly-rated boutique hotels (rating: 3, priceTier: '$$$'). The rating integer MUST strictly be 3, 4, or 5 — no other values. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch), rating (integer 3/4/5), priceTier (string). Select properties that match the destination vibe across all three tiers.`;
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
+    const t0Claude = Date.now();
     const message = await client.messages.create({
       model:      "claude-sonnet-4-6",
       max_tokens: 8192,
       system:     dynamicSystemPrompt,
       messages:   [{ role: "user", content: buildPrompt(safeBody) }],
     }, { signal: req.signal });
+    console.info(
+      `[itinerary] Claude generation: ${Date.now() - t0Claude}ms | ` +
+      `in=${message.usage.input_tokens} out=${message.usage.output_tokens} tokens`
+    );
 
     // Accumulates extra tokens if a spatial retry fires — added to cost at Step 5.
     let retryInputTokens  = 0;
@@ -653,11 +676,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Step 2: Build flat work list (includes category for selective enrichment)
+    // ── Step 2: Build flat work list (includes category + type for selective enrichment)
     type WorkItem = {
       obj: Record<string, unknown>;
       name: string;
       category?: string;
+      type: string;
     };
 
     const workItems: WorkItem[] = itinerary.days.flatMap((day) =>
@@ -665,16 +689,35 @@ export async function POST(req: Request) {
         obj: item as unknown as Record<string, unknown>,
         name: item.title,
         category: item.category,
+        type: item.type,
       }))
     );
 
     // ── Step 3: Parallel Places enrichment (cache-first, selective details) ──
+    const t0Enrich = Date.now();
     const apiCounters: ApiCounters = { textSearch: 0, details: 0, cacheHits: 0 };
+
+    // ONE batch PlaceCache lookup for all items → replaces N individual findUnique
+    // calls. Reduces Supabase round-trips from ~25 to 1, saving 2–10 s on cold DBs.
+    const allCacheKeys = workItems.map((w) => buildCacheKey(w.name, safeBody.destination));
+    const batchCacheRows = await prisma.placeCache
+      .findMany({ where: { cacheKey: { in: allCacheKeys } } })
+      .catch(() => [] as PlaceCache[]);
+    const cacheMap = new Map(batchCacheRows.map((r) => [r.cacheKey, r]));
 
     const enrichResults = await Promise.allSettled(
       workItems.map((w) => {
-        const skipDetails = SKIP_DETAILS_CATEGORIES.has(w.category ?? "");
-        return enrichPlace(w.name, safeBody.destination, apiKey, skipDetails, apiCounters, safeBody.lng);
+        // Skip Place Details for: NATURE/ADVENTURE categories AND meal-type items.
+        // Meals get open_now from Text Search; pricePoint comes from the AI already.
+        // This halves Details API calls vs. enriching every item.
+        const skipDetails =
+          SKIP_DETAILS_CATEGORIES.has(w.category ?? "") || MEAL_TYPES.has(w.type);
+        const cacheKey = buildCacheKey(w.name, safeBody.destination);
+        return enrichPlace(
+          w.name, safeBody.destination, apiKey,
+          skipDetails, apiCounters, safeBody.lng,
+          cacheMap.has(cacheKey) ? (cacheMap.get(cacheKey) ?? null) : null
+        );
       })
     );
 
@@ -683,6 +726,11 @@ export async function POST(req: Request) {
         Object.assign(workItems[i].obj, result.value);
       }
     });
+
+    console.info(
+      `[itinerary] Enrichment complete: ${Date.now() - t0Enrich}ms | ` +
+      `hits=${apiCounters.cacheHits} textSearch=${apiCounters.textSearch} details=${apiCounters.details}`
+    );
 
     // ── Step 4: Transit — pure Haversine (zero API calls) ────────────────────
     itinerary.days.forEach((day) => {
