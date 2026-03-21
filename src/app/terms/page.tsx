@@ -52,8 +52,8 @@ export default function TermsPage() {
               <p className="mb-3">
                 Seek Wander generates personalised travel itineraries based on
                 your preferences. The Service utilises third-party artificial
-                intelligence (&quot;AI&quot;) &mdash; specifically Anthropic&apos;s
-                Claude &mdash; to produce these itineraries.
+                intelligence (&quot;AI&quot;), specifically Anthropic&apos;s
+                Claude, to produce these itineraries.
               </p>
               <p className="mb-3">
                 <strong className="text-ink">

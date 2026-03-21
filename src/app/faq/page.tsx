@@ -12,11 +12,11 @@ const FAQS = [
     items: [
       {
         q: "What exactly is Seek Wander?",
-        a: "Seek Wander is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests &mdash; we produce a complete, day-by-day itinerary in around 30 seconds. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
+        a: "Seek Wander is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 30 seconds. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
       },
       {
         q: "How long does it take to generate an itinerary?",
-        a: "Typically 15–30 seconds. Everything &mdash; activities, meals, maps, transit estimates, hotel recommendations &mdash; is generated and enriched in a single pass. There are no follow-up loading states or second requests.",
+        a: "Typically 15–30 seconds. Everything, including activities, meals, maps, transit estimates, and hotel recommendations, is generated and enriched in a single pass. There are no follow-up loading states or second requests.",
       },
       {
         q: "What destinations are supported?",
@@ -24,11 +24,11 @@ const FAQS = [
       },
       {
         q: "Can I customise the itinerary after it's generated?",
-        a: "Not within the app &mdash; itineraries are generated holistically. Each day is planned as a geographically coherent unit, so swapping a single activity without re-generating the full day would break the spatial logic and the map. If the result isn't right, regenerate with adjusted preferences &mdash; it only takes 30 seconds.",
+        a: "Not within the app. Itineraries are generated holistically. Each day is planned as a geographically coherent unit, so swapping a single activity without re-generating the full day would break the spatial logic and the map. If the result isn't right, regenerate with adjusted preferences: it only takes 30 seconds.",
       },
       {
         q: "How accurate is the information?",
-        a: "Place names, coordinates, and ratings are sourced from Google Places in real time and cached for freshness. Opening hours are computed locally. That said, venues change &mdash; we always recommend verifying reservations and hours directly before you travel. Our Terms of Service cover this in detail.",
+        a: "Place names, coordinates, and ratings are sourced from Google Places in real time and cached for freshness. Opening hours are computed locally. That said, venues change, so we always recommend verifying reservations and hours directly before you travel. Our Terms of Service cover this in detail.",
       },
     ],
   },
@@ -37,11 +37,11 @@ const FAQS = [
     items: [
       {
         q: "Does it work offline?",
-        a: "Yes. Once an itinerary is generated and saved, it is stored locally in your browser. Your archive at /trips is fully accessible without an internet connection &mdash; maps, transit times, hotel cards, and all. Seek Wander is a Progressive Web App (PWA) and can be installed to your home screen.",
+        a: "Yes. Once an itinerary is generated and saved, it is stored locally in your browser. Your archive at /trips is fully accessible without an internet connection: maps, transit times, hotel cards, and all. Seek Wander is a Progressive Web App (PWA) and can be installed to your home screen.",
       },
       {
         q: "Can I save my itineraries?",
-        a: "Yes &mdash; create a free account and hit Save after generation. Your itineraries are stored in your private archive at /trips and synced across devices. They're also cached locally for offline access.",
+        a: "Yes. Create a free account and hit Save after generation. Your itineraries are stored in your private archive at /trips and synced across devices. They're also cached locally for offline access.",
       },
       {
         q: "Can I share my itinerary with someone?",
@@ -49,15 +49,15 @@ const FAQS = [
       },
       {
         q: "Can I export to PDF?",
-        a: "Yes. Open any saved itinerary and hit Export PDF. The full itinerary &mdash; all days, timeline, activities, meals, and transit &mdash; prints cleanly with your browser's native print dialog. Maps, affiliate cards, and interactive elements are excluded from the print output.",
+        a: "Yes. Open any saved itinerary and hit Export PDF. The full itinerary, including all days, timeline, activities, meals, and transit, prints cleanly with your browser's native print dialog. Maps, affiliate cards, and interactive elements are excluded from the print output.",
       },
       {
         q: "What is the hidden gem?",
-        a: "Each day ends with a hidden gem &mdash; a locally beloved spot, viewpoint, neighbourhood, or experience that rarely appears in mainstream travel guides. These are deliberately obscure: think a ceramics workshop in a residential alley, a rooftop bar known only to regulars, or a temple reachable only by a 10-minute walk off the tourist trail.",
+        a: "Each day ends with a hidden gem: a locally beloved spot, viewpoint, neighbourhood, or experience that rarely appears in mainstream travel guides. These are deliberately obscure: think a ceramics workshop in a residential alley, a rooftop bar known only to regulars, or a temple reachable only by a 10-minute walk off the tourist trail.",
       },
       {
         q: "How do the hotel recommendations work?",
-        a: "When you indicate you need accommodation, we recommend six hotels across three tiers &mdash; Boutique, Premium, and Luxury &mdash; each with a neighbourhood description and Booking.com affiliate link. You can filter by tier using the slider. If you already have a hotel booked, you can enter it and we'll use it as the geographic anchor for all activity clustering.",
+        a: "When you indicate you need accommodation, we recommend six hotels across three tiers: Boutique, Premium, and Luxury, each with a neighbourhood description and Booking.com affiliate link. You can filter by tier using the slider. If you already have a hotel booked, you can enter it and we'll use it as the geographic anchor for all activity clustering.",
       },
     ],
   },
@@ -66,7 +66,7 @@ const FAQS = [
     items: [
       {
         q: "Is there a free tier?",
-        a: "Yes. Your first itinerary curation is completely free &mdash; no credit card required. Sign up to save it to your archive.",
+        a: "Yes. Your first itinerary curation is completely free, no credit card required. Sign up to save it to your archive.",
       },
       {
         q: "What does the paid plan include?",

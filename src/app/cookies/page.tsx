@@ -57,7 +57,7 @@ export default function CookiePolicyPage() {
               <div className="space-y-6">
                 <div className="border-l-2 border-burnt-orange pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Authentication Cookies &mdash; Clerk
+                    Authentication Cookies: Clerk
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Strictly
@@ -68,7 +68,7 @@ export default function CookiePolicyPage() {
                   <p>
                     When you sign in, our authentication provider (Clerk) sets
                     a secure, HttpOnly session cookie to keep you logged in.
-                    This cookie is essential for the service to function &mdash;
+                    This cookie is essential for the service to function:
                     without it, we cannot associate your saved itineraries with
                     your account. It cannot be disabled while you are signed in.
                     No personal data beyond your session token is stored in this
@@ -78,7 +78,7 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Offline Itinerary Cache &mdash; localStorage
+                    Offline Itinerary Cache: localStorage
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Functional
@@ -101,7 +101,7 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Itinerary Request Cache &mdash; sessionStorage
+                    Itinerary Request Cache: sessionStorage
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Functional
@@ -122,7 +122,7 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Analytics &mdash; Vercel Analytics
+                    Analytics: Vercel Analytics
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Analytics
@@ -131,8 +131,8 @@ export default function CookiePolicyPage() {
                   </p>
                   <p>
                     We use Vercel Analytics to understand page traffic and
-                    visitor counts. Vercel Analytics is privacy-first by design
-                    &mdash; it does not use cookies, does not fingerprint
+                    visitor counts. Vercel Analytics is privacy-first by design:
+                    it does not use cookies, does not fingerprint
                     devices, and does not track users across sites. Data is
                     aggregated and anonymised. It is fully compliant with GDPR
                     and CCPA without requiring a consent banner.

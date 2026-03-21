@@ -86,7 +86,7 @@ export default function HomePage() {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.7 }}
             className="font-sans text-white/70 text-lg mb-16 max-w-md leading-relaxed"
           >
-            Ultra-curated itineraries crafted around you &mdash; hidden gems, Michelin-worthy tables, and the moments between.
+            Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
 
           {/* Curation Form */}
@@ -156,7 +156,7 @@ export default function HomePage() {
             {
               step: "02",
               title: "We Curate Every Detail",
-              body: "Hidden gems, Michelin-worthy restaurants, and geographically coherent routes &mdash; crafted in seconds.",
+              body: "Hidden gems, Michelin-worthy restaurants, and geographically coherent routes, crafted in seconds.",
             },
             {
               step: "03",

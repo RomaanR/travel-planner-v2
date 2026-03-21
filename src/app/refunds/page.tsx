@@ -32,7 +32,7 @@ export default function RefundPolicyPage() {
               This Refund Policy applies to all paid subscriptions and one-time
               purchases made through Seek Wander (&quot;we&quot;,
               &quot;us&quot;, or &quot;our&quot;). We want you to feel
-              confident purchasing &mdash; if something is not right, we will
+              confident purchasing: if something is not right, we will
               make it right.
             </p>
 
@@ -47,7 +47,7 @@ export default function RefundPolicyPage() {
                 the core service is consumed upon delivery. We do not sell
                 physical goods and there is nothing to &quot;return&quot; in
                 the traditional sense. This policy is designed with that in
-                mind &mdash; we err on the side of generosity.
+                mind, and we err on the side of generosity.
               </p>
             </section>
 
@@ -134,7 +134,7 @@ export default function RefundPolicyPage() {
                 Our itineraries are curated suggestions and should be verified
                 independently before making travel arrangements. We do not
                 guarantee the real-time accuracy of venue hours, availability,
-                or pricing &mdash; this is disclosed in our{" "}
+                or pricing, as disclosed in our{" "}
                 <Link
                   href="/terms"
                   className="text-emerald-accent hover:text-ink transition-colors"
@@ -144,7 +144,7 @@ export default function RefundPolicyPage() {
                 . A subjective preference for a different style of itinerary
                 does not constitute a service failure and is not grounds for a
                 refund. That said, if you feel your result was genuinely poor
-                quality, reach out &mdash; we take this seriously.
+                quality, reach out: we take this seriously.
               </p>
             </section>
 

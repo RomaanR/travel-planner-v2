@@ -69,7 +69,7 @@ export default function BentoGrid() {
               Slow Mornings<br />vs. High Octane
             </h3>
             <p className="mt-4 text-ink-light text-sm leading-relaxed font-sans">
-              Every itinerary is calibrated to your rhythm &mdash; restorative silence or culturally immersive density.
+              Every itinerary is calibrated to your rhythm: restorative silence or culturally immersive density.
             </p>
           </div>
         </motion.div>
@@ -115,7 +115,7 @@ export default function BentoGrid() {
               </span>
             </blockquote>
             <p className="mt-6 micro-copy text-ink-light">
-              Seek Wander &mdash; Est. 2024
+              Seek Wander &middot; Est. 2024
             </p>
           </div>
         </motion.div>

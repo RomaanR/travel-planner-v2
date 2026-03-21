@@ -50,8 +50,8 @@ export default function PrivacyPage() {
               <p>
                 <strong className="text-ink">Log Data &amp; Telemetry:</strong>{" "}
                 Our infrastructure providers (Vercel, Clerk) automatically
-                collect basic log data &mdash; including IP addresses, browser
-                types, device identifiers, and request timestamps &mdash;
+                collect basic log data, including IP addresses, browser
+                types, device identifiers, and request timestamps,
                 strictly for security, rate-limiting, and operational purposes.
                 This data is processed by those providers in accordance with
                 their own privacy policies and is not used for advertising or
@@ -100,8 +100,8 @@ export default function PrivacyPage() {
               <p className="mb-3">We use the following third-party services:</p>
               <ul className="list-disc pl-5 space-y-3">
                 <li>
-                  <strong className="text-ink">Anthropic (Claude)</strong>{" "}
-                  &mdash; our AI provider used to generate your travel
+                  <strong className="text-ink">Anthropic (Claude)</strong>
+                  {" "}is our AI provider used to generate your travel
                   itinerary. When you submit a request, your travel preferences
                   (destination, dates, pace, dietary needs, interests) are
                   securely transmitted to Anthropic solely for the purpose of
@@ -114,22 +114,22 @@ export default function PrivacyPage() {
                   prohibit training on API inputs by default.
                 </li>
                 <li>
-                  <strong className="text-ink">Google Maps Platform</strong>{" "}
-                  &mdash; for destination search, maps, and place information
+                  <strong className="text-ink">Google Maps Platform</strong>
+                  {" "}for destination search, maps, and place information
                 </li>
                 <li>
-                  <strong className="text-ink">Clerk</strong> &mdash; for user
-                  authentication and identity management
+                  <strong className="text-ink">Clerk</strong>
+                  {" "}for user authentication and identity management
                 </li>
                 <li>
-                  <strong className="text-ink">Booking.com</strong> &mdash;
-                  affiliate hotel links. We may earn a commission if you
+                  <strong className="text-ink">Booking.com</strong>
+                  {" "}affiliate hotel links. We may earn a commission if you
                   complete a booking. Clicking these links is subject to
                   Booking.com&apos;s own privacy policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Vercel</strong> &mdash;
-                  application hosting and edge delivery
+                  <strong className="text-ink">Vercel</strong>
+                  {" "}application hosting and edge delivery
                 </li>
               </ul>
             </section>
