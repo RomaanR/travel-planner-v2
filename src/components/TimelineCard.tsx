@@ -87,10 +87,10 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay }}
-      className="flex border border-ink/8 bg-paper overflow-hidden print:break-inside-avoid print:opacity-100"
+      className="flex flex-col md:flex-row -mx-6 md:mx-0 border-y md:border border-ink/8 bg-paper overflow-hidden print:border print:mx-0 print:flex-row print:break-inside-avoid print:opacity-100"
     >
       {/* Left: Photo */}
-      <div className="w-24 sm:w-36 md:w-48 shrink-0 relative self-stretch min-h-[140px] overflow-hidden bg-paper-dark print:w-28">
+      <div className="w-full md:w-48 md:shrink-0 relative self-stretch min-h-[200px] md:min-h-[140px] overflow-hidden bg-paper-dark print:w-28 print:min-h-[140px]">
         {/* photoReference (new) → /api/photo proxy → Vercel CDN cached, key never reaches browser.
             photoUrl (legacy) → direct Google URL on old saved trips — backward compat only. */}
         {(item.photoReference || item.photoUrl) ? (
@@ -101,7 +101,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
             loading="lazy"
             quality={95}
             className="object-cover img-grayscale"
-            sizes="(max-width: 640px) 96px, (max-width: 768px) 144px, 192px"
+            sizes="(max-width: 768px) 100vw, 192px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -114,7 +114,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
       </div>
 
       {/* Right: Content */}
-      <div className="flex flex-col flex-1 min-w-0 p-4 md:p-5">
+      <div className="flex flex-col flex-1 min-w-0 px-6 py-4 md:p-5">
 
         {/* Time + Type badge */}
         <div className="flex items-start justify-between gap-2 mb-2">
