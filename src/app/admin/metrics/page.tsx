@@ -10,48 +10,37 @@ function fmt(value: number, decimals = 4): string {
   return value.toFixed(decimals);
 }
 
-function fmtDate(date: Date): string {
-  return date.toLocaleDateString("en-AU", {
-    day:   "numeric",
-    month: "short",
-    year:  "numeric",
-    timeZone: "UTC",
-  });
-}
+// Returns [{ label, datetime }] for UTC, Pacific, and Eastern —
+// each with its own correct local date so cross-midnight shifts display accurately.
+function fmtTzRows(date: Date): { label: string; datetime: string }[] {
+  function row(tz: string, labelFallback: string) {
+    const label =
+      new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
+        .formatToParts(date)
+        .find((p) => p.type === "timeZoneName")?.value ?? labelFallback;
 
-function fmtTime(date: Date): string {
-  const utc = date.toLocaleTimeString("en-US", {
-    hour:     "2-digit",
-    minute:   "2-digit",
-    timeZone: "UTC",
-    hour12:   false,
-  });
+    const localDate = date.toLocaleDateString("en-US", {
+      day:      "numeric",
+      month:    "short",
+      year:     "numeric",
+      timeZone: tz,
+    });
 
-  // America/Los_Angeles = PST (UTC-8) / PDT (UTC-7) — auto-handles DST
-  const ptLabel = new Intl.DateTimeFormat("en-US", {
-    timeZone:       "America/Los_Angeles",
-    timeZoneName:   "short",
-  }).formatToParts(date).find((p) => p.type === "timeZoneName")?.value ?? "PT";
-  const ptTime = date.toLocaleTimeString("en-US", {
-    hour:     "2-digit",
-    minute:   "2-digit",
-    timeZone: "America/Los_Angeles",
-    hour12:   false,
-  });
+    const localTime = date.toLocaleTimeString("en-US", {
+      hour:     "2-digit",
+      minute:   "2-digit",
+      timeZone: tz,
+      hour12:   false,
+    });
 
-  // America/New_York = EST (UTC-5) / EDT (UTC-4) — auto-handles DST
-  const etLabel = new Intl.DateTimeFormat("en-US", {
-    timeZone:       "America/New_York",
-    timeZoneName:   "short",
-  }).formatToParts(date).find((p) => p.type === "timeZoneName")?.value ?? "ET";
-  const etTime = date.toLocaleTimeString("en-US", {
-    hour:     "2-digit",
-    minute:   "2-digit",
-    timeZone: "America/New_York",
-    hour12:   false,
-  });
+    return { label, datetime: `${localDate}, ${localTime}` };
+  }
 
-  return `${utc} UTC · ${ptTime} ${ptLabel} · ${etTime} ${etLabel}`;
+  return [
+    row("UTC",                 "UTC"),
+    row("America/Los_Angeles", "PT"),   // auto PDT / PST
+    row("America/New_York",    "ET"),   // auto EDT / EST
+  ];
 }
 
 function costColour(total: number): string {
@@ -198,9 +187,11 @@ export default async function AdminMetricsPage() {
                       >
                         {/* Date */}
                         <td className="px-4 py-3 micro-copy text-ink-light whitespace-nowrap">
-                          {fmtDate(log.createdAt)}
-                          {fmtTime(log.createdAt).split(" · ").map((tz) => (
-                            <div key={tz} className="text-ink-light/50">{tz}</div>
+                          {fmtTzRows(log.createdAt).map(({ label, datetime }) => (
+                            <div key={label} className={label === "UTC" ? "text-ink-light" : "text-ink-light/50"}>
+                              {datetime}{" "}
+                              <span className="text-ink-light/30">{label}</span>
+                            </div>
                           ))}
                         </td>
 
