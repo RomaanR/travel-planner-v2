@@ -101,7 +101,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
             loading="lazy"
             quality={95}
             className="object-cover img-grayscale"
-            sizes="(max-width: 768px) 400px, 400px"
+            sizes="(max-width: 640px) 96px, (max-width: 768px) 144px, 192px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -128,7 +128,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
         </div>
 
         {/* Title */}
-        <h4 className="font-serif italic text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
+        <h4 className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
           {displayName}
         </h4>
 
@@ -150,7 +150,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
         )}
 
         {/* Description */}
-        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed flex-1 mb-3 print:text-black print:text-xs">
+        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed line-clamp-3 flex-1 mb-3 print:text-black print:text-xs">
           {displayDesc}
         </p>
 

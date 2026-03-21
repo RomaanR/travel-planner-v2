@@ -89,7 +89,7 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
       <div className="flex items-start justify-between mb-4 pb-4 border-b border-ink/8 print:border-black/15">
         <div>
           <p className="micro-copy text-ink-light mb-1 print:text-black/50">Day {day.day}</p>
-          <h3 className="font-serif italic text-2xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
+          <h3 className="font-serif italic text-xl sm:text-2xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
             {day.theme}
           </h3>
         </div>
@@ -187,7 +187,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         className="mb-8 print:opacity-100"
       >
         <div className="w-8 h-px bg-burnt-orange mb-4 print:bg-black" />
-        <blockquote className="font-serif italic text-xl md:text-2xl text-ink leading-relaxed print:text-black">
+        <blockquote className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-relaxed print:text-black">
           &quot;{itinerary.editorial}&quot;
         </blockquote>
       </motion.div>

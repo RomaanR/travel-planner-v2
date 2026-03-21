@@ -150,12 +150,12 @@ export default async function TripViewPage({
           <ArrowLeft size={13} />
           Back to Archive
         </Link>
-        <div className="flex items-end justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div className="min-w-0">
             <p className="micro-copy text-ink-light mb-1">
               Saved Journey&ensp;&middot;&ensp;{formatDate(trip.createdAt)}
             </p>
-            <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
+            <h1 className="font-serif italic text-3xl sm:text-4xl md:text-6xl text-ink leading-none">
               {trip.destination}
             </h1>
           </div>

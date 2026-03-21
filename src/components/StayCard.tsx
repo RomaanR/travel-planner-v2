@@ -24,7 +24,7 @@ export default function StayCard({ name, description, neighborhood, affiliateUrl
       <p className="micro-copy text-ink-light mb-3">{neighborhood}</p>
 
       {/* Middle: hotel name */}
-      <h3 className="font-serif italic text-2xl text-ink leading-tight mb-3">
+      <h3 className="font-serif italic text-xl sm:text-2xl text-ink leading-tight mb-3">
         {name}
       </h3>
 

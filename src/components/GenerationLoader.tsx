@@ -50,7 +50,7 @@ export default function GenerationLoader() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="font-serif italic text-2xl text-ink leading-tight max-w-xs"
+            className="font-serif italic text-lg sm:text-2xl text-ink leading-tight max-w-xs"
           >
             {STEPS[stepIndex]}
           </motion.p>
