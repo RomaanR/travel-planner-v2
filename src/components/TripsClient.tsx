@@ -158,7 +158,7 @@ export default function TripsClient() {
   // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="px-8 md:px-16 py-14 md:py-20">
+      <div className="px-4 md:px-16 py-8 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-px bg-ink/5">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -166,7 +166,7 @@ export default function TripsClient() {
               className="bg-paper flex overflow-hidden animate-pulse"
             >
               {/* Text skeleton */}
-              <div className="flex flex-col p-8 md:p-10 flex-1 min-w-0">
+              <div className="flex flex-col p-5 sm:p-8 md:p-10 flex-1 min-w-0">
                 <div className="h-8 w-3/4 bg-ink/5 mb-5" />
                 <div className="w-8 h-px bg-ink/10 mb-5" />
                 <div className="h-4 w-full bg-ink/5 mb-2" />
@@ -179,7 +179,7 @@ export default function TripsClient() {
                 <div className="h-3 w-32 bg-ink/5" />
               </div>
               {/* Photo skeleton */}
-              <div className="relative w-36 md:w-44 shrink-0 self-stretch min-h-[220px] bg-paper-dark" />
+              <div className="relative w-24 sm:w-36 md:w-44 shrink-0 self-stretch min-h-[160px] sm:min-h-[220px] bg-paper-dark" />
             </div>
           ))}
         </div>
@@ -212,7 +212,7 @@ export default function TripsClient() {
 
       {/* ── Count strip (only when trips exist) ─────────────────────────── */}
       {trips.length > 0 && (
-        <div className="px-8 md:px-16 pb-0 pt-4 border-b border-ink/5">
+        <div className="px-4 md:px-16 pb-0 pt-4 border-b border-ink/5">
           <p className="micro-copy text-ink-light pb-4">
             {trips.length}&ensp;{trips.length === 1 ? "Itinerary" : "Itineraries"}
             &ensp;&middot;&ensp;Sorted by date
@@ -222,7 +222,7 @@ export default function TripsClient() {
       )}
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <div className="px-8 md:px-16 py-14 md:py-20">
+      <div className="px-4 md:px-16 py-8 md:py-20">
 
         {/* Empty state */}
         {trips.length === 0 && <EmptyTripsState />}
@@ -251,7 +251,7 @@ export default function TripsClient() {
                     className="bg-paper flex overflow-hidden hover:bg-paper-dark transition-colors duration-300 group"
                   >
                     {/* ── Left: Text content ── */}
-                    <div className="flex flex-col p-8 md:p-10 flex-1 min-w-0">
+                    <div className="flex flex-col p-5 sm:p-8 md:p-10 flex-1 min-w-0">
 
                       <h2 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight mb-5">
                         {trip.destination}
@@ -302,7 +302,7 @@ export default function TripsClient() {
                     </div>
 
                     {/* ── Right: Destination photo ── */}
-                    <div className="relative w-36 md:w-44 shrink-0 self-stretch min-h-[220px] overflow-hidden">
+                    <div className="relative w-24 sm:w-36 md:w-44 shrink-0 self-stretch min-h-[160px] sm:min-h-[220px] overflow-hidden">
                       {trip.photoUrl ? (
                         <Image
                           src={trip.photoUrl}

@@ -89,7 +89,7 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
       <div className="flex items-start justify-between mb-4 pb-4 border-b border-ink/8 print:border-black/15">
         <div>
           <p className="micro-copy text-ink-light mb-1 print:text-black/50">Day {day.day}</p>
-          <h3 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
+          <h3 className="font-serif italic text-2xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
             {day.theme}
           </h3>
         </div>
@@ -211,7 +211,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
           <button
             key={day.day}
             onClick={() => setActiveDay(i)}
-            className={`shrink-0 flex flex-col items-start pr-8 pb-3 pt-1 transition-all ${
+            className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all ${
               activeDay === i
                 ? "border-b-2 border-burnt-orange"
                 : "border-b-2 border-transparent hover:border-ink/20"
@@ -221,7 +221,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
               DAY {day.day}
             </span>
             <span
-              className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[140px] truncate ${
+              className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[100px] sm:max-w-[140px] truncate ${
                 activeDay === i ? "text-ink" : "text-ink-light"
               }`}
             >

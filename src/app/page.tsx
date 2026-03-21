@@ -57,7 +57,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
             className="font-serif italic text-white leading-none mb-2"
-            style={{ fontSize: "clamp(5rem, 15vw, 14rem)" }}
+            style={{ fontSize: "clamp(3.5rem, 15vw, 14rem)" }}
           >
             Seek
           </motion.h1>
@@ -66,7 +66,7 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.45 }}
             className="font-serif italic text-white leading-none mb-12"
-            style={{ fontSize: "clamp(5rem, 15vw, 14rem)" }}
+            style={{ fontSize: "clamp(3.5rem, 15vw, 14rem)" }}
           >
             Wander
           </motion.h1>
@@ -84,7 +84,7 @@ export default function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.7 }}
-            className="font-sans text-white/70 text-lg mb-16 max-w-md leading-relaxed"
+            className="font-sans text-white/70 text-base md:text-lg mb-16 max-w-md leading-relaxed"
           >
             Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
@@ -107,7 +107,7 @@ export default function HomePage() {
 
       {/* ── Stats Strip ──────────────────────────────────── */}
       <section className="border-b border-ink/5 bg-paper-dark">
-        <div className="max-w-screen-xl mx-auto px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-screen-xl mx-auto px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
             { value: "30s", label: "Average Curation Time" },
             { value: "120+", label: "Destinations Worldwide" },
@@ -141,7 +141,7 @@ export default function HomePage() {
           className="mb-12"
         >
           <p className="micro-copy text-ink-light mb-3">How It Works</p>
-          <h2 className="font-serif italic text-5xl md:text-7xl text-ink leading-none">
+          <h2 className="font-serif italic text-4xl md:text-7xl text-ink leading-none">
             Three Steps.<br />One Perfect Trip.
           </h2>
         </motion.div>
@@ -170,7 +170,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.1 }}
-              className="bg-paper p-8 md:p-10 border border-ink/5"
+              className="bg-paper p-6 md:p-10 border border-ink/5"
             >
               <span className="micro-copy text-burnt-orange mb-4 block">
                 {item.step}
@@ -201,7 +201,7 @@ export default function HomePage() {
               Curated Luxury Journeys
             </p>
           </div>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
             <Link href="/faq" className="micro-copy text-ink-light hover:text-ink transition-colors">
               FAQ
             </Link>

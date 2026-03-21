@@ -17,7 +17,7 @@ export default function BentoGrid() {
       {/* Section header */}
       <motion.div {...fadeUp(0)} className="mb-12">
         <p className="micro-copy text-ink-light mb-3">The Philosophy</p>
-        <h2 className="font-serif italic text-6xl md:text-8xl text-ink leading-none">
+        <h2 className="font-serif italic text-4xl md:text-8xl text-ink leading-none">
           The Soul<br />of a Journey
         </h2>
       </motion.div>
@@ -28,7 +28,7 @@ export default function BentoGrid() {
         {/* Cell 01 — Hidden Gems (col 8) */}
         <motion.div
           {...fadeUp(0.1)}
-          className="col-span-12 md:col-span-8 relative overflow-hidden bg-ink min-h-[480px] group"
+          className="col-span-12 md:col-span-8 relative overflow-hidden bg-ink min-h-[300px] md:min-h-[480px] group"
         >
           <Image
             src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80"
@@ -42,11 +42,11 @@ export default function BentoGrid() {
             01
           </span>
           {/* Content overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent">
             <p className="micro-copy text-white/60 mb-2">
               Hidden Gems
             </p>
-            <h3 className="font-serif italic text-4xl md:text-5xl text-white leading-tight">
+            <h3 className="font-serif italic text-3xl md:text-5xl text-white leading-tight">
               Places 95% of<br />Travelers Never Find
             </h3>
           </div>
@@ -55,7 +55,7 @@ export default function BentoGrid() {
         {/* Cell 02 — Pace Control (col 4) */}
         <motion.div
           {...fadeUp(0.2)}
-          className="col-span-12 md:col-span-4 bg-paper-dark p-10 flex flex-col justify-between min-h-[240px]"
+          className="col-span-12 md:col-span-4 bg-paper-dark p-6 md:p-10 flex flex-col justify-between min-h-[180px] md:min-h-[240px]"
         >
           <span className="micro-copy text-ink-light">02</span>
           <div>
@@ -77,7 +77,7 @@ export default function BentoGrid() {
         {/* Cell 03 — Palate First (col 6) */}
         <motion.div
           {...fadeUp(0.3)}
-          className="col-span-12 md:col-span-6 bg-ink text-paper p-10 flex flex-col justify-between min-h-[300px]"
+          className="col-span-12 md:col-span-6 bg-ink text-paper p-6 md:p-10 flex flex-col justify-between min-h-[220px] md:min-h-[300px]"
         >
           <span className="micro-copy text-paper/40">03</span>
           <div>
@@ -87,7 +87,7 @@ export default function BentoGrid() {
               className="text-emerald-accent mb-6"
             />
             <p className="micro-copy text-paper/50 mb-3">Palate First</p>
-            <h3 className="font-serif italic text-4xl text-paper leading-tight">
+            <h3 className="font-serif italic text-2xl md:text-4xl text-paper leading-tight">
               Reservations<br />Hand-Picked for You
             </h3>
             <p className="mt-4 text-paper/60 text-sm leading-relaxed font-sans">
@@ -99,7 +99,7 @@ export default function BentoGrid() {
         {/* Cell 04 — Editorial CTA (col 6) */}
         <motion.div
           {...fadeUp(0.4)}
-          className="col-span-12 md:col-span-6 bg-paper p-10 flex flex-col justify-between border border-ink/5 min-h-[300px]"
+          className="col-span-12 md:col-span-6 bg-paper p-6 md:p-10 flex flex-col justify-between border border-ink/5 min-h-[220px] md:min-h-[300px]"
         >
           <span className="micro-copy text-ink-light">04</span>
           <div>
@@ -108,7 +108,7 @@ export default function BentoGrid() {
               strokeWidth={1}
               className="text-ink-light mb-6"
             />
-            <blockquote className="font-serif italic text-4xl text-ink leading-tight">
+            <blockquote className="font-serif italic text-2xl md:text-4xl text-ink leading-tight">
               &quot;Travel is not about destinations.
               <span className="block mt-2 border-b-2 border-burnt-orange pb-1 inline-block">
                 It is about becoming.&quot;

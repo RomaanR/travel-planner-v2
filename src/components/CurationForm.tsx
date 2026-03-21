@@ -644,7 +644,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     key={opt.value}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, pace: opt.value }))}
-                    className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                    className={`flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border text-left transition-all duration-200
                       ${form.pace === opt.value
                         ? "border-ink bg-ink text-paper"
                         : "border-ink/10 text-ink hover:border-ink/30"
@@ -671,13 +671,13 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     key={opt.value}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, budgetTier: opt.value }))}
-                    className={`flex flex-col gap-2 p-4 border text-left transition-all duration-200
+                    className={`flex flex-col gap-2 p-3 sm:p-4 border text-left transition-all duration-200
                       ${form.budgetTier === opt.value
                         ? "border-ink bg-ink text-paper"
                         : "border-ink/10 text-ink hover:border-ink/30"
                       }`}
                   >
-                    <span className={`font-serif italic text-3xl leading-none ${form.budgetTier === opt.value ? "text-paper" : "text-ink"}`}>
+                    <span className={`font-serif italic text-2xl sm:text-3xl leading-none ${form.budgetTier === opt.value ? "text-paper" : "text-ink"}`}>
                       {opt.symbol}
                     </span>
                     <span className="micro-copy leading-none">{opt.label}</span>

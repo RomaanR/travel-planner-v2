@@ -25,7 +25,7 @@ export default function UnauthenticatedState() {
       </p>
 
       {/* Headline */}
-      <h2 className="font-serif italic text-4xl md:text-5xl text-ink leading-tight mb-4">
+      <h2 className="font-serif italic text-3xl md:text-5xl text-ink leading-tight mb-4">
         Your passport awaits.
       </h2>
 

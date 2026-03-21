@@ -58,7 +58,7 @@ export default function EmptyTripsState() {
         </p>
 
         {/* Headline */}
-        <h2 className="font-serif italic text-4xl md:text-5xl text-ink leading-tight mb-6 max-w-md">
+        <h2 className="font-serif italic text-3xl md:text-5xl text-ink leading-tight mb-6 max-w-md">
           Your first journey<br />awaits.
         </h2>
 
@@ -110,7 +110,7 @@ export default function EmptyTripsState() {
                 </p>
 
                 {/* Card title */}
-                <h3 className="font-serif italic text-2xl md:text-3xl text-ink leading-tight mb-3 flex-1">
+                <h3 className="font-serif italic text-xl md:text-3xl text-ink leading-tight mb-3 flex-1">
                   {card.destination}
                 </h3>
 
