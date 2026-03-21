@@ -208,6 +208,9 @@ export default function HomePage() {
             <Link href="/terms" className="micro-copy text-ink-light hover:text-ink transition-colors">
               Terms
             </Link>
+            <Link href="/cookies" className="micro-copy text-ink-light hover:text-ink transition-colors">
+              Cookies
+            </Link>
             <a href="mailto:hello@seekwander.com" className="micro-copy text-ink-light hover:text-ink transition-colors">
               Contact
             </a>
