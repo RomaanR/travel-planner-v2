@@ -18,7 +18,7 @@ export default function TermsPage() {
           </h1>
           <div className="w-12 h-px bg-burnt-orange mb-10" />
 
-          <div className="prose-sw space-y-8 font-sans text-sm text-ink-light leading-relaxed">
+          <div className="space-y-8 font-sans text-sm text-ink-light leading-relaxed">
             <p>
               <strong className="text-ink">Last updated:</strong>{" "}
               {new Date().toLocaleDateString("en-US", {
@@ -26,6 +26,12 @@ export default function TermsPage() {
                 day: "numeric",
                 year: "numeric",
               })}
+            </p>
+
+            <p>
+              Please read these Terms of Service carefully before using Seek
+              Wander. By accessing or using the Service, you agree to be bound
+              by these Terms.
             </p>
 
             <section>
@@ -41,15 +47,32 @@ export default function TermsPage() {
 
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                2. Description of Service
+                2. Description of Service &amp; AI Disclaimer
               </h2>
-              <p>
+              <p className="mb-3">
                 Seek Wander generates personalised travel itineraries based on
-                your preferences. Itineraries are curated suggestions and
-                should be verified independently before making travel
-                arrangements. We do not guarantee the accuracy, availability,
-                or suitability of any recommended venue, restaurant, or
-                accommodation.
+                your preferences. The Service utilises third-party artificial
+                intelligence (&quot;AI&quot;) &mdash; specifically Anthropic&apos;s
+                Claude &mdash; to produce these itineraries.
+              </p>
+              <p className="mb-3">
+                <strong className="text-ink">
+                  Important: AI outputs may be unpredictable, incomplete, or
+                  inaccurate.
+                </strong>{" "}
+                AI-generated content may suggest venues, restaurants, or
+                attractions that are closed, non-existent, or misrepresented.
+                All itineraries are curated suggestions only and must be
+                independently verified before making any travel arrangements,
+                bookings, or commitments.
+              </p>
+              <p>
+                <strong className="text-ink">
+                  You assume all risk for relying on AI-generated content.
+                </strong>{" "}
+                Seek Wander does not guarantee the accuracy, availability,
+                safety, or suitability of any recommended venue, restaurant,
+                accommodation, or activity.
               </p>
             </section>
 
@@ -58,10 +81,11 @@ export default function TermsPage() {
                 3. User Accounts
               </h2>
               <p>
-                You may create an account to save and manage itineraries.
-                You are responsible for maintaining the confidentiality of
-                your account credentials. You must be at least 16 years old
-                to use the Service.
+                You may create an account to save and manage itineraries. You
+                are responsible for maintaining the confidentiality of your
+                account credentials and for all activity that occurs under your
+                account. You must be at least 16 years old (or 13 outside the
+                EEA) to use the Service.
               </p>
             </section>
 
@@ -69,20 +93,36 @@ export default function TermsPage() {
               <h2 className="font-serif italic text-2xl text-ink mb-3">
                 4. Acceptable Use
               </h2>
-              <p>You agree not to:</p>
+              <p className="mb-3">You agree not to:</p>
               <ul className="list-disc pl-5 space-y-2">
+                <li>Use the Service for any unlawful purpose</li>
                 <li>
-                  Use the Service for any unlawful purpose
+                  Attempt to circumvent rate limits, security measures, or
+                  access controls
                 </li>
-                <li>
-                  Attempt to circumvent rate limits or security measures
-                </li>
-                <li>
-                  Scrape, crawl, or automate access to the Service
-                </li>
+                <li>Scrape, crawl, or automate access to the Service</li>
                 <li>
                   Resell or redistribute generated itineraries commercially
-                  without permission
+                  without prior written permission
+                </li>
+                <li>
+                  Submit inputs designed to generate content that is illegal,
+                  violent, hateful, sexually explicit, or otherwise in
+                  violation of the usage policies of our AI providers
+                  (including{" "}
+                  <a
+                    href="https://www.anthropic.com/legal/aup"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-accent hover:text-ink transition-colors"
+                  >
+                    Anthropic&apos;s Acceptable Use Policy
+                  </a>
+                  )
+                </li>
+                <li>
+                  Use the Service in any manner that could damage, disable,
+                  overburden, or impair our infrastructure
                 </li>
               </ul>
             </section>
@@ -92,10 +132,10 @@ export default function TermsPage() {
                 5. Affiliate Links
               </h2>
               <p>
-                The Service may include affiliate links to third-party
-                booking platforms (e.g. Booking.com). We may earn a commission
-                from qualifying purchases. These links do not affect the
-                price you pay.
+                The Service may include affiliate links to third-party booking
+                platforms (e.g. Booking.com). We may earn a commission from
+                qualifying purchases made through these links. The price you
+                pay is not affected by our affiliate relationship.
               </p>
             </section>
 
@@ -104,12 +144,14 @@ export default function TermsPage() {
                 6. Limitation of Liability
               </h2>
               <p>
-                The Service is provided &quot;as is&quot; without warranties
-                of any kind. Seek Wander shall not be liable for any
-                direct, indirect, incidental, or consequential damages
-                arising from your use of the Service, including but not
-                limited to travel disruptions, venue closures, or inaccurate
-                information.
+                The Service is provided &quot;as is&quot; and &quot;as
+                available&quot; without warranties of any kind, express or
+                implied. To the fullest extent permitted by law, Seek Wander
+                shall not be liable for any direct, indirect, incidental,
+                special, or consequential damages arising from your use of the
+                Service, including but not limited to travel disruptions, venue
+                closures, inaccurate AI-generated information, or losses
+                arising from reliance on itinerary content.
               </p>
             </section>
 
@@ -118,9 +160,11 @@ export default function TermsPage() {
                 7. Intellectual Property
               </h2>
               <p>
-                Generated itineraries are provided for your personal use.
-                The Seek Wander brand, design, and underlying technology
-                remain the intellectual property of Seek Wander.
+                Generated itineraries are provided for your personal,
+                non-commercial use. The Seek Wander brand, design system,
+                software, and underlying technology remain the exclusive
+                intellectual property of Seek Wander. Unauthorised
+                reproduction or commercial use is prohibited.
               </p>
             </section>
 
@@ -129,9 +173,10 @@ export default function TermsPage() {
                 8. Changes to Terms
               </h2>
               <p>
-                We may update these Terms at any time. Continued use of the
-                Service after changes constitutes acceptance of the revised
-                Terms.
+                We may update these Terms at any time. The &quot;Last
+                updated&quot; date at the top of this page reflects the most
+                recent revision. Continued use of the Service after changes are
+                posted constitutes your acceptance of the revised Terms.
               </p>
             </section>
 
@@ -147,6 +192,20 @@ export default function TermsPage() {
                 >
                   hello@seekwander.com
                 </a>
+              </p>
+            </section>
+
+            <section>
+              <h2 className="font-serif italic text-2xl text-ink mb-3">
+                10. Governing Law
+              </h2>
+              <p>
+                These Terms of Service shall be governed by and construed in
+                accordance with the laws of the State of{" "}
+                <strong className="text-ink">New Jersey</strong>, without
+                regard to its conflict of law provisions. Any disputes arising
+                under or in connection with these Terms shall be subject to the
+                exclusive jurisdiction of the courts located in New Jersey.
               </p>
             </section>
           </div>
