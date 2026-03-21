@@ -260,11 +260,6 @@ const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
 
-// Meal-type timeline items skip the Details API call — restaurants already
-// expose open_now from the Text Search response, and pricePoint comes from the
-// AI. Saving one Details call per meal item roughly halves the total API calls.
-const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner", "snack", "drinks"]);
-
 // ─── Google Places enrichment ─────────────────────────────────────────────────
 
 type PlacesEnrichment = {
@@ -721,11 +716,10 @@ export async function POST(req: Request) {
 
     const enrichResults = await Promise.allSettled(
       workItems.map((w) => {
-        // Skip Place Details for: NATURE/ADVENTURE categories AND meal-type items.
-        // Meals get open_now from Text Search; pricePoint comes from the AI already.
-        // This halves Details API calls vs. enriching every item.
-        const skipDetails =
-          SKIP_DETAILS_CATEGORIES.has(w.category ?? "") || MEAL_TYPES.has(w.type);
+        // Skip Place Details for NATURE/ADVENTURE only — outdoor places have no
+        // meaningful opening hours. All other items (including restaurants) call
+        // Details to get hoursOpen, enabling reliable parseOpenNow() on cache hits.
+        const skipDetails = SKIP_DETAILS_CATEGORIES.has(w.category ?? "");
         const cacheKey = buildCacheKey(w.name, safeBody.destination);
         return enrichPlace(
           w.name, safeBody.destination, apiKey,
