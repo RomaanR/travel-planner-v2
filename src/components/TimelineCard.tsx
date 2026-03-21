@@ -99,8 +99,9 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
             alt={displayName}
             fill
             loading="lazy"
+            quality={95}
             className="object-cover img-grayscale"
-            sizes="(max-width: 768px) 144px, 192px"
+            sizes="(max-width: 768px) 400px, 400px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
