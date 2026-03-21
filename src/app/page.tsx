@@ -156,7 +156,7 @@ export default function HomePage() {
             </span>
           </div>
           <p className="micro-copy text-ink-light">
-            © 2024 Seek Wander. All rights reserved.
+            © {new Date().getFullYear()} Seek Wander. All rights reserved.
           </p>
         </div>
       </footer>
