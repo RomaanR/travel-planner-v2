@@ -16,7 +16,7 @@ type Props = {
 
 // ── Confirmation Dialog ───────────────────────────────────────────────────────
 
-function DeleteDialog({
+export function DeleteDialog({
   destination,
   onCancel,
   onConfirm,

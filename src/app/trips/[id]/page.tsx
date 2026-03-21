@@ -9,8 +9,7 @@ import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import ItineraryViewer from "@/components/ItineraryViewer";
-import ExportPdfButton from "@/components/ExportPdfButton";
-import DeleteTripButton from "@/components/DeleteTripButton";
+import TripHeaderActions from "@/components/TripHeaderActions";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
 import { computeMapPoints, normalizeDayPlan } from "@/lib/itineraryUtils";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
@@ -142,7 +141,7 @@ export default async function TripViewPage({
       </div>
 
       {/* ── Screen header strip — hidden in print (replaced by dossier header) ── */}
-      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
+      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
         <Link
           href="/trips"
           className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
@@ -159,11 +158,8 @@ export default async function TripViewPage({
               {trip.destination}
             </h1>
           </div>
-          {/* Header actions — both are print:hidden internally */}
-          <div className="flex items-center gap-3">
-            <DeleteTripButton tripId={trip.id} destination={trip.destination} />
-            <ExportPdfButton />
-          </div>
+          {/* Header actions — kebab on mobile, full buttons on desktop */}
+          <TripHeaderActions tripId={trip.id} destination={trip.destination} />
         </div>
       </div>
 
