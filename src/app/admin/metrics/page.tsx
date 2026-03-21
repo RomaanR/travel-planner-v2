@@ -20,12 +20,38 @@ function fmtDate(date: Date): string {
 }
 
 function fmtTime(date: Date): string {
-  return date.toLocaleTimeString("en-AU", {
+  const utc = date.toLocaleTimeString("en-US", {
     hour:     "2-digit",
     minute:   "2-digit",
     timeZone: "UTC",
     hour12:   false,
-  }) + " UTC";
+  });
+
+  // America/Los_Angeles = PST (UTC-8) / PDT (UTC-7) — auto-handles DST
+  const ptLabel = new Intl.DateTimeFormat("en-US", {
+    timeZone:       "America/Los_Angeles",
+    timeZoneName:   "short",
+  }).formatToParts(date).find((p) => p.type === "timeZoneName")?.value ?? "PT";
+  const ptTime = date.toLocaleTimeString("en-US", {
+    hour:     "2-digit",
+    minute:   "2-digit",
+    timeZone: "America/Los_Angeles",
+    hour12:   false,
+  });
+
+  // America/New_York = EST (UTC-5) / EDT (UTC-4) — auto-handles DST
+  const etLabel = new Intl.DateTimeFormat("en-US", {
+    timeZone:       "America/New_York",
+    timeZoneName:   "short",
+  }).formatToParts(date).find((p) => p.type === "timeZoneName")?.value ?? "ET";
+  const etTime = date.toLocaleTimeString("en-US", {
+    hour:     "2-digit",
+    minute:   "2-digit",
+    timeZone: "America/New_York",
+    hour12:   false,
+  });
+
+  return `${utc} UTC · ${ptTime} ${ptLabel} · ${etTime} ${etLabel}`;
 }
 
 function costColour(total: number): string {
@@ -173,8 +199,9 @@ export default async function AdminMetricsPage() {
                         {/* Date */}
                         <td className="px-4 py-3 micro-copy text-ink-light whitespace-nowrap">
                           {fmtDate(log.createdAt)}
-                          <br />
-                          <span className="text-ink-light/50">{fmtTime(log.createdAt)}</span>
+                          {fmtTime(log.createdAt).split(" · ").map((tz) => (
+                            <div key={tz} className="text-ink-light/50">{tz}</div>
+                          ))}
                         </td>
 
                         {/* Destination */}
