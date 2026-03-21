@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useMemo, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -164,11 +163,11 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   });
 
   // ── Pre-fill from ?destination= query param ───────────────────────────────
-  const searchParams = useSearchParams();
   useEffect(() => {
-    const dest = searchParams.get("destination");
-    if (dest) setInputValue(decodeURIComponent(dest));
-  }, [searchParams]);
+    const params = new URLSearchParams(window.location.search);
+    const dest = params.get("destination");
+    if (dest) setInputValue(dest);
+  }, []);
 
   // ── Destination ──────────────────────────────────────────────────────────────
   function onPlaceChanged() {
