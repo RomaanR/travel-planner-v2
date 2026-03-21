@@ -60,18 +60,19 @@ export default async function SharedTripPage({
   const bottomCta = (
     <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-20 md:pb-10">
       <div className="w-8 h-px bg-burnt-orange mx-auto mb-8" />
+      <p className="micro-copy text-ink-light mb-4">Trusted by discerning travelers</p>
       <p className="font-serif italic text-3xl text-ink mb-3">
         Inspired by this journey?
       </p>
-      <p className="font-sans text-sm text-ink-light mb-8 max-w-xs mx-auto leading-relaxed">
-        Seek Wander crafts bespoke luxury itineraries tailored to your pace,
-        taste, and travel party &mdash; in seconds.
+      <p className="font-sans text-sm text-ink-light mb-8 max-w-sm mx-auto leading-relaxed">
+        Every itinerary is bespoke &mdash; tailored to your pace, palate,
+        and travel party. Hidden gems, curated dining, and every detail handled in under 30 seconds.
       </p>
       <Link
         href="/"
         className="micro-copy bg-burnt-orange text-white px-10 py-4 hover:bg-ink transition-colors duration-300 inline-block"
       >
-        Curate Your Own Journey &rarr;
+        Create Your Free Itinerary &rarr;
       </Link>
     </div>
   );

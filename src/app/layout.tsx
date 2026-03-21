@@ -25,11 +25,11 @@ export const metadata: Metadata = {
     template: "%s | Seek Wander",
   },
   description:
-    "High-fidelity, geographically-aware itineraries for the discerning traveler.",
+    "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
   openGraph: {
     title: "Seek Wander | Bespoke Travel Curation",
     description:
-      "High-fidelity, geographically-aware itineraries for the discerning traveler.",
+      "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
     type: "website",
     siteName: "Seek Wander",
   },
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Seek Wander | Bespoke Travel Curation",
     description:
-      "High-fidelity, geographically-aware itineraries for the discerning traveler.",
+      "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
   },
   appleWebApp: {
     capable: true,
