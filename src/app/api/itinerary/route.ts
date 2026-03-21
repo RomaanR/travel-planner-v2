@@ -7,6 +7,7 @@ import { parseOpenNow } from "@/lib/itineraryUtils";
 import { ratelimit } from "@/lib/ratelimit";
 import type {
   ItineraryResponse,
+  DayPlan,
   Coordinate,
   TransitInfo,
   GenerationMeta,
@@ -178,7 +179,7 @@ function buildPrompt(data: ItineraryRequest): string {
     ? "Verify that consecutive stops within a day are reachable within 30 minutes by car. If a pair of stops would take longer, widen the startTime gap to reflect reality."
     : walkingTolerance === "relaxed"
       ? "You may place consecutive stops up to 4km / 45 minutes walking distance apart, allowing the itinerary to span adjacent neighbourhoods within the city. This is the user's explicit preference — do not artificially over-cluster stops. The city-boundary rule (Rule 11) still applies."
-      : "No two consecutive stops can be more than 1.5km / 20 minutes walking distance apart. If a location would require more than 20 minutes of walking from the previous stop, do NOT include it — replace it with a closer alternative in the same neighbourhood.";
+      : "HARD CONSTRAINT — WALKING ONLY: You MUST select places for each day that are within a strict 1.5 km radius of each other. Do NOT suggest any place that requires more than 20 minutes of walking from the previous location. This is non-negotiable. If a landmark is famous but farther than 1.5 km from the previous stop, exclude it and choose a closer alternative in the same neighbourhood. Violating this rule makes the itinerary unusable for the user.";
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
     ? "No dietary restrictions"
@@ -416,6 +417,46 @@ function getDayTransits(stops: Coordinate[]): TransitInfo[] {
   return transits;
 }
 
+// ─── Post-generation walking distance validator ───────────────────────────────
+// Reuses haversineKm() to check that no two consecutive timeline items exceed
+// the user's selected walking threshold. Only runs for walking-transit mode.
+
+type WalkingViolation = {
+  day:       number;
+  fromTitle: string;
+  toTitle:   string;
+  actualKm:  number;
+  maxKm:     number;
+};
+
+function validateWalkingDistances(
+  days: DayPlan[],
+  walkingTolerance: string | undefined
+): WalkingViolation[] {
+  const maxKm = walkingTolerance === "relaxed" ? 4.0 : 1.5;
+  const violations: WalkingViolation[] = [];
+
+  for (const day of days) {
+    const items = day.timeline ?? [];
+    for (let i = 1; i < items.length; i++) {
+      const prev = items[i - 1];
+      const curr = items[i];
+      if (!prev.coordinates?.lat || !curr.coordinates?.lat) continue;
+      const km = haversineKm(prev.coordinates, curr.coordinates);
+      if (km > maxKm) {
+        violations.push({
+          day:       day.day,
+          fromTitle: prev.title,
+          toTitle:   curr.title,
+          actualKm:  Math.round(km * 100) / 100,
+          maxKm,
+        });
+      }
+    }
+  }
+  return violations;
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 // Pricing constants (per unit)
@@ -515,6 +556,10 @@ export async function POST(req: Request) {
       messages:   [{ role: "user", content: buildPrompt(safeBody) }],
     }, { signal: req.signal });
 
+    // Accumulates extra tokens if a spatial retry fires — added to cost at Step 5.
+    let retryInputTokens  = 0;
+    let retryOutputTokens = 0;
+
     // ── Step 2: Extract + sanitize raw LLM text ──────────────────────────────
     const rawText =
       message.content[0].type === "text" ? message.content[0].text : "";
@@ -554,6 +599,57 @@ export async function POST(req: Request) {
           { error: "Our concierge experienced a formatting issue. Please try generating your itinerary again." },
           { status: 500 }
         );
+      }
+    }
+
+    // ── Step 3b: Spatial walking distance validation + retry ─────────────────
+    // Only fires for walking-transit mode. If the LLM ignored Rule 12 and placed
+    // stops too far apart, retry once with the exact violations listed in the prompt.
+    // Retry tokens are tracked for accurate cost logging. Car-driver skips entirely.
+    if (safeBody.transportMode === "walking-transit") {
+      const violations = validateWalkingDistances(itinerary.days, safeBody.walkingTolerance);
+
+      if (violations.length > 0) {
+        const maxKm = safeBody.walkingTolerance === "relaxed" ? 4.0 : 1.5;
+        const violationList = violations
+          .map((v) => `  - Day ${v.day}: "${v.fromTitle}" to "${v.toTitle}" = ${v.actualKm} km (max allowed: ${v.maxKm} km)`)
+          .join("\n");
+
+        console.warn(
+          `[itinerary] Walking distance violations detected (${violations.length}) — retrying with spatial correction.`
+        );
+
+        const retryUserMessage =
+          buildPrompt(safeBody) +
+          `\n\n---\nSPATIAL VALIDATION FAILURE — REGENERATE REQUIRED:\n` +
+          `Your previous response violated the ${maxKm} km walking constraint between these consecutive stops:\n` +
+          violationList +
+          `\n\nYou MUST regenerate the complete itinerary from scratch. ` +
+          `Every consecutive stop pair must be within ${maxKm} km of each other. ` +
+          `Replace each violating stop with a closer alternative in the same neighbourhood. ` +
+          `Do not repeat any of the listed violations.`;
+
+        try {
+          const retryMsg = await client.messages.create({
+            model:      "claude-sonnet-4-6",
+            max_tokens: 8192,
+            system:     dynamicSystemPrompt,
+            messages:   [{ role: "user", content: retryUserMessage }],
+          });
+
+          const retryRaw    = retryMsg.content[0].type === "text" ? retryMsg.content[0].text : "";
+          const retryParsed = JSON.parse(sanitizeJson(retryRaw)) as ItineraryResponse;
+
+          if (retryParsed?.days?.length) {
+            itinerary = retryParsed;
+            retryInputTokens  = retryMsg.usage.input_tokens;
+            retryOutputTokens = retryMsg.usage.output_tokens;
+            console.info("[itinerary] Spatial retry succeeded.");
+          }
+        } catch {
+          // Retry failed — gracefully use the original itinerary
+          console.error("[itinerary] Spatial retry failed — using original itinerary.");
+        }
       }
     }
 
@@ -604,17 +700,21 @@ export async function POST(req: Request) {
     });
 
     // ── Step 5: Calculate generation cost ────────────────────────────────────
+    // retryInputTokens / retryOutputTokens are non-zero only when a spatial retry fired.
+    const totalInputTokens  = message.usage.input_tokens  + retryInputTokens;
+    const totalOutputTokens = message.usage.output_tokens + retryOutputTokens;
+
     const claudeCostUsd =
-      message.usage.input_tokens  * CLAUDE_INPUT_COST +
-      message.usage.output_tokens * CLAUDE_OUTPUT_COST;
+      totalInputTokens  * CLAUDE_INPUT_COST +
+      totalOutputTokens * CLAUDE_OUTPUT_COST;
 
     const googleCostUsd =
       apiCounters.textSearch * GOOGLE_TEXT_SEARCH +
       apiCounters.details    * GOOGLE_DETAILS;
 
     const meta: GenerationMeta = {
-      claudeInputTokens:      message.usage.input_tokens,
-      claudeOutputTokens:     message.usage.output_tokens,
+      claudeInputTokens:      totalInputTokens,
+      claudeOutputTokens:     totalOutputTokens,
       estimatedClaudeCostUsd: parseFloat(claudeCostUsd.toFixed(4)),
       googleTextSearchCalls:  apiCounters.textSearch,
       googleDetailsCalls:     apiCounters.details,
