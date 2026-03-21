@@ -10,17 +10,17 @@ const CARDS = [
   {
     destination: "A Weekend in Kyoto",
     subtext:     "Zen gardens, kaiseki dining, and hidden teahouses.",
-    href:        "/",
+    href:        "/?destination=Kyoto",
   },
   {
     destination: "Summer on the Amalfi Coast",
     subtext:     "Cliffside villas, private boat charters, and Michelin seafood.",
-    href:        "/",
+    href:        "/?destination=Amalfi+Coast",
   },
   {
     destination: "Wellness in Tulum",
     subtext:     "Jungle sanctuaries, holistic spas, and private cenotes.",
-    href:        "/",
+    href:        "/?destination=Tulum",
   },
 ];
 

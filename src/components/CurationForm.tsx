@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -161,6 +162,13 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries: LIBRARIES,
   });
+
+  // ── Pre-fill from ?destination= query param ───────────────────────────────
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const dest = searchParams.get("destination");
+    if (dest) setInputValue(decodeURIComponent(dest));
+  }, [searchParams]);
 
   // ── Destination ──────────────────────────────────────────────────────────────
   function onPlaceChanged() {
