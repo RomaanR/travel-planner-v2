@@ -398,7 +398,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     setExactHotelAddress("");
                     setHotelInputValue("");
                   }}
-                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
                     ${accommodationStatus === "needed"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -409,7 +409,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none">I need recommendations</span>
+                  <span className="micro-copy leading-none break-words">I need recommendations</span>
                   <span className={`font-sans text-xs leading-tight ${
                     accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"
                   }`}>
@@ -421,7 +421,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => setAccommodationStatus("booked")}
-                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
                     ${accommodationStatus === "booked"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -432,7 +432,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none">I have a reservation</span>
+                  <span className="micro-copy leading-none break-words">I have a reservation</span>
                   <span className={`font-sans text-xs leading-tight ${
                     accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"
                   }`}>
@@ -489,7 +489,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => setTransportMode("walking-transit")}
-                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
                     ${transportMode === "walking-transit"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -512,7 +512,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => { setTransportMode("car-driver"); setWalkingTolerance("strict"); }}
-                  className={`flex flex-col gap-3 p-4 border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
                     ${transportMode === "car-driver"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -644,7 +644,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     key={opt.value}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, pace: opt.value }))}
-                    className={`flex flex-col gap-2 sm:gap-3 p-3 sm:p-4 border text-left transition-all duration-200
+                    className={`flex flex-col gap-2 p-2 sm:p-3 md:p-4 overflow-hidden border text-left transition-all duration-200
                       ${form.pace === opt.value
                         ? "border-ink bg-ink text-paper"
                         : "border-ink/10 text-ink hover:border-ink/30"
@@ -671,7 +671,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     key={opt.value}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, budgetTier: opt.value }))}
-                    className={`flex flex-col gap-2 p-3 sm:p-4 border text-left transition-all duration-200
+                    className={`flex flex-col gap-2 p-2 sm:p-3 md:p-4 overflow-hidden border text-left transition-all duration-200
                       ${form.budgetTier === opt.value
                         ? "border-ink bg-ink text-paper"
                         : "border-ink/10 text-ink hover:border-ink/30"
