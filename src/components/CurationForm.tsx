@@ -590,6 +590,32 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 )}
               </AnimatePresence>
 
+              {/* ── Transit mode contextual note ── */}
+              {/* Slides in once a mode is chosen. Key changes between strict-walk and
+                  city-wide so AnimatePresence cross-fades the copy when tolerance changes. */}
+              <AnimatePresence mode="wait">
+                {transportMode && (
+                  <motion.div
+                    key={transportMode === "walking-transit" && walkingTolerance === "strict"
+                      ? "neighbourhood"
+                      : "city-wide"
+                    }
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <p className="font-sans text-xs text-ink-light border-l-2 border-ink/15 pl-3 mt-3 leading-relaxed">
+                      {transportMode === "walking-transit" && walkingTolerance === "strict"
+                        ? "Immerses you in a single neighbourhood. To guarantee short walks, distant major landmarks may be excluded."
+                        : "Unlocks the entire city. Prioritises top-tier landmarks across different neighbourhoods, requiring local transport."
+                      }
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </div>
 
             {/* ── Row 2: Travel Party ── */}
