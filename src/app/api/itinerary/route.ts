@@ -261,7 +261,8 @@ const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
 // ─── Google Places enrichment ─────────────────────────────────────────────────
 
 type PlacesEnrichment = {
-  photoUrl?: string;
+  photoUrl?: string;        // legacy — not constructed for new enrichments
+  photoReference?: string;  // new — raw token sent to client; URL rebuilt by /api/photo proxy
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
@@ -292,14 +293,11 @@ async function enrichPlace(
     if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
       counters.cacheHits++;
 
-      // Construct photo URL fresh from the raw reference + current API key —
-      // never use the stored photoUrl (which may contain a rotated/revoked key).
-      const photoUrl = cached.photoReference
-        ? `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${cached.photoReference}&key=${apiKey}`
-        : undefined;
-
+      // Return the raw reference token — the client renders via /api/photo proxy.
+      // The server key never leaves the server; URL is reconstructed at request time.
       return {
-        photoUrl,
+        photoReference:   cached.photoReference   ?? undefined,
+        photoUrl:         undefined,               // never send key to client
         rating:           cached.rating           ?? undefined,
         userRatingsTotal: cached.userRatingsTotal ?? undefined,
         hoursOpen:        cached.hoursOpen        ?? undefined,
@@ -350,9 +348,8 @@ async function enrichPlace(
     }
 
     const enrichment: PlacesEnrichment = {
-      photoUrl: photoRef
-        ? `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
-        : undefined,
+      photoReference:   photoRef ?? undefined,  // raw token only — URL built by /api/photo proxy
+      photoUrl:         undefined,              // never send MAPS_SERVER_KEY to the client
       rating:           place.rating,
       userRatingsTotal: place.user_ratings_total,
       openNow:          place.opening_hours?.open_now,
@@ -464,8 +461,17 @@ export async function POST(req: Request) {
     // Must run before any expensive I/O (AI generation, Google Places, DB writes).
     // Authenticated users are keyed by Clerk userId (persists across devices/IPs).
     // Unauthenticated users are keyed by IP (x-forwarded-for, set by Vercel edge).
+    // Requests with no identifiable key are rejected — prevents all anonymous users
+    // sharing a single "anonymous" Redis bucket (which would allow one caller to
+    // exhaust the quota for everyone, or lock out all anonymous users globally).
     const { userId } = await auth();
-    const rateLimitKey = userId ?? req.headers.get("x-forwarded-for") ?? "anonymous";
+    const rateLimitKey = userId ?? req.headers.get("x-forwarded-for");
+    if (!rateLimitKey) {
+      return Response.json(
+        { error: "Unable to process request" },
+        { status: 400 }
+      );
+    }
     const { success, limit, remaining, reset } = await ratelimit.limit(rateLimitKey);
     if (!success) {
       return Response.json(

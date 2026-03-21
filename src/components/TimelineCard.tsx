@@ -91,14 +91,16 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
     >
       {/* Left: Photo */}
       <div className="w-36 md:w-48 shrink-0 relative self-stretch min-h-[140px] overflow-hidden bg-paper-dark print:w-28">
-        {item.photoUrl ? (
+        {/* photoReference (new) → /api/photo proxy → Vercel CDN cached, key never reaches browser.
+            photoUrl (legacy) → direct Google URL on old saved trips — backward compat only. */}
+        {(item.photoReference || item.photoUrl) ? (
           <Image
-            src={item.photoUrl}
+            src={item.photoReference ? `/api/photo?ref=${item.photoReference}` : item.photoUrl!}
             alt={displayName}
             fill
-            unoptimized
+            loading="lazy"
             className="object-cover img-grayscale"
-            sizes="192px"
+            sizes="(max-width: 768px) 144px, 192px"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
