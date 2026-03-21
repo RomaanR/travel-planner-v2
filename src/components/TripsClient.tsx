@@ -158,9 +158,31 @@ export default function TripsClient() {
   // ── Loading skeleton ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="px-8 md:px-16 py-20 flex items-center justify-center gap-3">
-        <Loader2 size={16} strokeWidth={1.5} className="animate-spin text-ink-light" />
-        <p className="micro-copy text-ink-light">Loading your archive&hellip;</p>
+      <div className="px-8 md:px-16 py-14 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-px bg-ink/5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-paper flex overflow-hidden animate-pulse"
+            >
+              {/* Text skeleton */}
+              <div className="flex flex-col p-8 md:p-10 flex-1 min-w-0">
+                <div className="h-8 w-3/4 bg-ink/5 mb-5" />
+                <div className="w-8 h-px bg-ink/10 mb-5" />
+                <div className="h-4 w-full bg-ink/5 mb-2" />
+                <div className="h-4 w-2/3 bg-ink/5 mb-6" />
+                <div className="flex-1" />
+                <div className="flex items-center gap-3 pt-5 border-t border-ink/5 mb-5">
+                  <div className="h-3 w-12 bg-ink/5" />
+                  <div className="h-3 w-24 bg-ink/5" />
+                </div>
+                <div className="h-3 w-32 bg-ink/5" />
+              </div>
+              {/* Photo skeleton */}
+              <div className="relative w-36 md:w-44 shrink-0 self-stretch min-h-[220px] bg-paper-dark" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
