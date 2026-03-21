@@ -334,7 +334,7 @@ async function enrichPlace(
     const query = encodeURIComponent(`${name} ${city}`);
     const res = await fetch(
       `${PLACES_BASE}/textsearch/json?query=${query}&key=${apiKey}`,
-      { signal: AbortSignal.timeout(3000) }
+      { signal: AbortSignal.timeout(2000) }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -351,7 +351,7 @@ async function enrichPlace(
       try {
         const det = await fetch(
           `${PLACES_BASE}/details/json?place_id=${place.place_id}&fields=opening_hours&key=${apiKey}`,
-          { signal: AbortSignal.timeout(2500) }
+          { signal: AbortSignal.timeout(1500) }
         );
         if (det.ok) {
           const dj = await det.json();
@@ -625,53 +625,67 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Step 3b: Spatial walking distance validation + retry ─────────────────
-    // Only fires for walking-transit mode. If the LLM ignored Rule 12 and placed
-    // stops too far apart, retry once with the exact violations listed in the prompt.
-    // Retry tokens are tracked for accurate cost logging. Car-driver skips entirely.
+    // ── Step 3b: Spatial walking distance validation + day-level repair ───────
+    // Only fires for walking-transit mode. Instead of regenerating the full
+    // itinerary, we repair only the violating days in parallel — each repair call
+    // targets a single day at max_tokens:2048, cutting retry cost by ~70%.
     if (safeBody.transportMode === "walking-transit") {
       const violations = validateWalkingDistances(itinerary.days, safeBody.walkingTolerance);
 
       if (violations.length > 0) {
         const maxKm = safeBody.walkingTolerance === "relaxed" ? 4.0 : 1.5;
-        const violationList = violations
-          .map((v) => `  - Day ${v.day}: "${v.fromTitle}" to "${v.toTitle}" = ${v.actualKm} km (max allowed: ${v.maxKm} km)`)
-          .join("\n");
+
+        // Group violations by day so we fire one repair call per day (not per violation).
+        const violatingDayNums = [...new Set(violations.map((v) => v.day))];
 
         console.warn(
-          `[itinerary] Walking distance violations detected (${violations.length}) — retrying with spatial correction.`
+          `[itinerary] Walking violations on day(s) ${violatingDayNums.join(", ")} — repairing ${violatingDayNums.length} day(s) in parallel.`
         );
 
-        const retryUserMessage =
-          buildPrompt(safeBody) +
-          `\n\n---\nSPATIAL VALIDATION FAILURE — REGENERATE REQUIRED:\n` +
-          `Your previous response violated the ${maxKm} km walking constraint between these consecutive stops:\n` +
-          violationList +
-          `\n\nYou MUST regenerate the complete itinerary from scratch. ` +
-          `Every consecutive stop pair must be within ${maxKm} km of each other. ` +
-          `Replace each violating stop with a closer alternative in the same neighbourhood. ` +
-          `Do not repeat any of the listed violations.`;
+        const DAY_SCHEMA = `{"day":number,"theme":"string","pace":"relaxed|moderate|packed","timeline":[/* same schema as original */],"hiddenGem":"string","hiddenGemCoordinates":{"lat":number,"lng":number}}`;
 
-        try {
-          const retryMsg = await client.messages.create({
-            model:      "claude-sonnet-4-6",
-            max_tokens: 8192,
-            system:     dynamicSystemPrompt,
-            messages:   [{ role: "user", content: retryUserMessage }],
-          });
+        const repairResults = await Promise.allSettled(
+          violatingDayNums.map(async (dayNum) => {
+            const dayViolations = violations.filter((v) => v.day === dayNum);
+            const violationList = dayViolations
+              .map((v) => `  - "${v.fromTitle}" → "${v.toTitle}" = ${v.actualKm} km (max: ${maxKm} km)`)
+              .join("\n");
 
-          const retryRaw    = retryMsg.content[0].type === "text" ? retryMsg.content[0].text : "";
-          const retryParsed = JSON.parse(sanitizeJson(retryRaw)) as ItineraryResponse;
+            const repairMessage =
+              buildPrompt(safeBody) +
+              `\n\n---\nSPATIAL REPAIR — DAY ${dayNum} ONLY:\n` +
+              `Regenerate ONLY Day ${dayNum}. These consecutive stops violate the ${maxKm} km walking constraint:\n` +
+              violationList +
+              `\n\nReturn ONLY a single JSON day object (not the full itinerary) matching this schema:\n${DAY_SCHEMA}\n` +
+              `Replace each violating stop with a closer alternative in the same neighbourhood. Keep non-violating stops unchanged.`;
 
-          if (retryParsed?.days?.length) {
-            itinerary = retryParsed;
-            retryInputTokens  = retryMsg.usage.input_tokens;
-            retryOutputTokens = retryMsg.usage.output_tokens;
-            console.info("[itinerary] Spatial retry succeeded.");
+            const repairMsg = await client.messages.create({
+              model:      "claude-sonnet-4-6",
+              max_tokens: 2048,  // single day needs ~500–800 tokens
+              system:     dynamicSystemPrompt,
+              messages:   [{ role: "user", content: repairMessage }],
+            });
+
+            const raw     = repairMsg.content[0].type === "text" ? repairMsg.content[0].text : "";
+            const repaired = JSON.parse(sanitizeJson(raw)) as DayPlan;
+            return { dayNum, repaired, usage: repairMsg.usage };
+          })
+        );
+
+        // Splice repaired days back into the itinerary; accumulate tokens for cost log.
+        for (const result of repairResults) {
+          if (result.status === "fulfilled") {
+            const { dayNum, repaired, usage } = result.value;
+            const idx = itinerary.days.findIndex((d) => d.day === dayNum);
+            if (idx !== -1 && repaired?.timeline?.length) {
+              itinerary.days[idx] = repaired;
+              retryInputTokens  += usage.input_tokens;
+              retryOutputTokens += usage.output_tokens;
+              console.info(`[itinerary] Day ${dayNum} spatial repair succeeded.`);
+            }
+          } else {
+            console.error(`[itinerary] Day repair failed — keeping original:`, result.reason);
           }
-        } catch {
-          // Retry failed — gracefully use the original itinerary
-          console.error("[itinerary] Spatial retry failed — using original itinerary.");
         }
       }
     }
