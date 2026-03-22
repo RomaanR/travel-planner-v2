@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -47,22 +46,17 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 // ── Burnt-orange SVG pin marker ────────────────────────────────────────────────
+// Built inside the component after isLoaded is true so google.maps.Size/Point
+// are guaranteed to exist. Never reference these at module scope.
 
-function buildPinMarker(): string {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-      <circle cx="14" cy="14" r="7" fill="#C2410C" stroke="#F5F0E8" stroke-width="2.5"/>
-      <circle cx="14" cy="14" r="3" fill="#F5F0E8"/>
-    </svg>
-  `.trim();
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
-const PIN_ICON = {
-  url:        buildPinMarker(),
-  scaledSize: typeof window !== "undefined" ? new window.google.maps.Size(28, 28) : undefined,
-  anchor:     typeof window !== "undefined" ? new window.google.maps.Point(14, 14) : undefined,
-} as google.maps.Icon;
+const PIN_SVG_URL =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">` +
+    `<circle cx="14" cy="14" r="7" fill="#C2410C" stroke="#F5F0E8" stroke-width="2.5"/>` +
+    `<circle cx="14" cy="14" r="3" fill="#F5F0E8"/>` +
+    `</svg>`
+  );
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -82,6 +76,13 @@ export default function WorldMap({ pins }: WorldMapProps) {
     );
   }
 
+  // Safe to reference google.maps.* here — isLoaded guarantees SDK is ready
+  const pinIcon: google.maps.Icon = {
+    url:        PIN_SVG_URL,
+    scaledSize: new window.google.maps.Size(28, 28),
+    anchor:     new window.google.maps.Point(14, 14),
+  };
+
   return (
     <GoogleMap
       mapContainerStyle={{ width: "100%", height: "100%" }}
@@ -91,12 +92,8 @@ export default function WorldMap({ pins }: WorldMapProps) {
         <Marker
           key={pin.id}
           position={{ lat: pin.lat, lng: pin.lng }}
-          title={`${pin.destination} — ${pin.days}-day journey`}
-          icon={{
-            url: buildPinMarker(),
-            scaledSize: new window.google.maps.Size(28, 28),
-            anchor:     new window.google.maps.Point(14, 14),
-          }}
+          title={`${pin.destination} \u2014 ${pin.days}-day journey`}
+          icon={pinIcon}
         />
       ))}
     </GoogleMap>
