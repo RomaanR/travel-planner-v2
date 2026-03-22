@@ -4,6 +4,47 @@ import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import type { ItineraryRequest, ItineraryResponse } from "@/types/itinerary";
 
+// ─── Cache helpers ────────────────────────────────────────────────────────────
+// A fingerprint of the fields that determine the AI output. If all match the
+// cached request, we restore the cached result instead of calling the API again.
+
+const CACHE_KEY = "seek_wander_itinerary_cache";
+
+function buildFingerprint(data: ItineraryRequest): string {
+  return JSON.stringify({
+    destination:         data.destination,
+    duration:            data.duration,
+    departureDate:       data.departureDate,
+    returnDate:          data.returnDate,
+    travelParty:         data.travelParty,
+    pace:                data.pace,
+    budgetTier:          data.budgetTier,
+    dietary:             [...data.dietary].sort(),
+    interests:           [...data.interests].sort(),
+    accommodationStatus: data.accommodationStatus,
+    hotelName:           data.hotelName ?? null,
+    transportMode:       data.transportMode ?? null,
+    walkingTolerance:    data.walkingTolerance ?? null,
+  });
+}
+
+function saveCache(fingerprint: string, result: ItineraryResponse): void {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ fingerprint, result }));
+  } catch { /* non-fatal — sessionStorage quota exceeded or disabled */ }
+}
+
+function loadCache(fingerprint: string): ItineraryResponse | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { fingerprint: cachedFp, result } = JSON.parse(raw);
+    return cachedFp === fingerprint ? (result as ItineraryResponse) : null;
+  } catch { return null; }
+}
+
+// ─── Hook ────────────────────────────────────────────────────────────────────
+
 export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -15,7 +56,22 @@ export function useItinerary() {
     abortRef.current = null;
   }, []);
 
+  // Restore a cached itinerary without any API call (used on back-navigation).
+  function restoreItinerary(cached: ItineraryResponse): void {
+    setItinerary(cached);
+    setLoading(false);
+    setError(null);
+  }
+
   async function generateItinerary(data: ItineraryRequest) {
+    // ── Cache check — skip API call if result already exists for this request ──
+    const fingerprint = buildFingerprint(data);
+    const cached = loadCache(fingerprint);
+    if (cached) {
+      restoreItinerary(cached);
+      return cached;
+    }
+
     // Cancel any in-flight request
     abort();
 
@@ -38,6 +94,10 @@ export function useItinerary() {
       }
       const result: ItineraryResponse = await res.json();
       setItinerary(result);
+
+      // Persist result so back-navigation instantly restores it
+      saveCache(fingerprint, result);
+
       toast.success("Itinerary Prepared", {
         id: "curate-task",
         description: "Your bespoke journey is ready for review.",
@@ -61,5 +121,5 @@ export function useItinerary() {
     }
   }
 
-  return { itinerary, loading, error, generateItinerary, abort };
+  return { itinerary, loading, error, generateItinerary, abort, restoreItinerary };
 }
