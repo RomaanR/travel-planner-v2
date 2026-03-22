@@ -59,7 +59,7 @@ export default function GenerationLoader() {
 
       {/* Persistent sub-label */}
       <p className="micro-copy text-ink-light">
-        This takes around 15&ndash;20 seconds
+        This will take about 2 minutes
       </p>
 
     </div>
