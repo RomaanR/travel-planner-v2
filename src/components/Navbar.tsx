@@ -49,6 +49,12 @@ export default function Navbar() {
           >
             MY TRIPS
           </Link>
+          <Link
+            href="/dashboard"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            DASHBOARD
+          </Link>
         </div>
 
         {/* Auth — always visible (UserButton is compact on mobile) */}
