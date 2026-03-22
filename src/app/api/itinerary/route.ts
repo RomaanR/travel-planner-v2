@@ -66,9 +66,9 @@ const partyDescriptions: Record<string, string> = {
 };
 
 const paceDescriptions: Record<string, string> = {
-  relaxed:  "relaxed pace — 3–4 activities per day, late starts, unhurried meals, space for stillness",
-  moderate: "moderate rhythm — 4–5 activities per day, curated depth without exhaustion",
-  packed:   "packed schedule — 6–7 activities per day, culturally dense, every hour intentionally filled",
+  relaxed:  "relaxed pace — 3–4 total timeline items per day (including meals), late starts, unhurried, space for stillness",
+  moderate: "moderate rhythm — 4–5 total timeline items per day (including meals), curated depth without exhaustion",
+  packed:   "packed schedule — 5–6 total timeline items per day (including meals), culturally dense, every hour intentionally filled",
 };
 
 const budgetDescriptions: Record<string, string> = {
@@ -98,13 +98,13 @@ const SCHEMA = `{
   "days": [
     {
       "day": 1,
-      "theme": "string (poetic day title)",
+      "theme": "string (poetic day title, ≤6 words)",
       "pace": "relaxed | moderate | packed",
       "timeline": [
         {
           "type": "activity | breakfast | lunch | dinner | snack | drinks",
           "title": "string (place or activity name — real names only)",
-          "description": "string (exactly 2 sentences)",
+          "description": "string (exactly 2 concise sentences, each ≤15 words)",
           "duration": "string (e.g. '2 hours' for activities; '1 hour' for meals)",
           "startTime": "string (HH:MM — must be strictly sequential through the day)",
           "category": "string (SIGHTSEEING | MUSEUM | CULTURE | NATURE | WELLNESS | ADVENTURE | SHOPPING — activities only, omit for meals)",
@@ -128,7 +128,7 @@ const SCHEMA_WITH_STAYS = `{
   "recommendedStays": [
     {
       "name": "string (real hotel name — no fictional properties)",
-      "description": "string (exactly 2 sentences — restrained luxury editorial pitch)",
+      "description": "string (exactly 1 sentence — restrained luxury editorial pitch, ≤20 words)",
       "neighborhood": "string (area or district name, e.g. 'Omotesandō, Tokyo')",
       "rating": "integer — MUST be exactly 3, 4, or 5. No other values permitted.",
       "priceTier": "string — use '$$$' for 3-star, '$$$$' for 4-star, '$$$$$' for 5-star"
@@ -137,13 +137,13 @@ const SCHEMA_WITH_STAYS = `{
   "days": [
     {
       "day": 1,
-      "theme": "string (poetic day title)",
+      "theme": "string (poetic day title, ≤6 words)",
       "pace": "relaxed | moderate | packed",
       "timeline": [
         {
           "type": "activity | breakfast | lunch | dinner | snack | drinks",
           "title": "string (place or activity name — real names only)",
-          "description": "string (exactly 2 sentences)",
+          "description": "string (exactly 2 concise sentences, each ≤15 words)",
           "duration": "string (e.g. '2 hours' for activities; '1 hour' for meals)",
           "startTime": "string (HH:MM — must be strictly sequential through the day)",
           "category": "string (SIGHTSEEING | MUSEUM | CULTURE | NATURE | WELLNESS | ADVENTURE | SHOPPING — activities only, omit for meals)",
@@ -241,10 +241,10 @@ Travel dates: ${departureDate} to ${returnDate}
 7. category: Assign an uppercase category to every activity-type item (SIGHTSEEING, MUSEUM, CULTURE, NATURE, WELLNESS, ADVENTURE, SHOPPING). Omit for meals.
 8. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
 9. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
-10. Writing: restrained elegance, no hyperbole, exactly 2 sentences per description.
+10. Writing: restrained elegance, no hyperbole. Every description is exactly 2 sentences, each sentence ≤15 words. Brevity is luxury.
 11. THE NEIGHBOURHOOD LOCK: ${neighborhoodLockRule}
 12. TRANSIT TIME REALITY: ${transitTimeRule}
-13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
+13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. For trips of 4–5 days: cap total timeline items across ALL days at 25 maximum — quality always over quantity.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
@@ -564,7 +564,7 @@ export async function POST(req: Request) {
     const accommodationInstruction =
       safeBody.accommodationStatus === "booked"
         ? `\n\nACCOMMODATION — CONFIRMED RESERVATION: The user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}.  CRITICAL GEOGRAPHY RULE: You MUST anchor the start and end of every single day around this exact hotel.  - Breakfast and morning activities MUST be within a strict 15-minute walk or 5-minute taxi ride from ${safeBody.hotelName || "the hotel"}. - Do NOT suggest any location that is more than a 30-minute transit ride away unless it is a world-renowned landmark. - Cluster activities geographically to avoid zig-zagging across the city.  DO NOT recommend any new hotels to stay at.`
-        : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 6 accommodation options in a "recommendedStays" array at the root of your JSON response — two 5-star ultra-luxury hotels (rating: 5, priceTier: '$$$$$'), two 4-star premium hotels (rating: 4, priceTier: '$$$$'), and two 3-star highly-rated boutique hotels (rating: 3, priceTier: '$$$'). The rating integer MUST strictly be 3, 4, or 5 — no other values. Each entry must have: name (real property), neighborhood (district name), description (exactly 2 sentences, restrained editorial pitch), rating (integer 3/4/5), priceTier (string). Select properties that match the destination vibe across all three tiers.`;
+        : `\n\nACCOMMODATION — CURATION REQUIRED:\nThe user has not booked a hotel. You MUST include exactly 6 accommodation options in a "recommendedStays" array at the root of your JSON response — two 5-star ultra-luxury hotels (rating: 5, priceTier: '$$$$$'), two 4-star premium hotels (rating: 4, priceTier: '$$$$'), and two 3-star highly-rated boutique hotels (rating: 3, priceTier: '$$$'). The rating integer MUST strictly be 3, 4, or 5 — no other values. Each entry must have: name (real property), neighborhood (district name), description (exactly 1 sentence ≤20 words, restrained editorial pitch), rating (integer 3/4/5), priceTier (string). Select properties that match the destination vibe across all three tiers.`;
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
     const t0Claude = Date.now();
@@ -588,7 +588,7 @@ export async function POST(req: Request) {
     if (message.stop_reason === "max_tokens") {
       console.warn("[itinerary] Response truncated at max_tokens — returning actionable error.");
       return NextResponse.json(
-        { error: "Your itinerary is very detailed and exceeded our generation limit. Please try a shorter trip (1–3 days) or choose a Relaxed pace, then generate again." },
+        { error: "Our concierge ran out of space generating your itinerary. Please try again — reducing the trip length or choosing Relaxed pace will help." },
         { status: 500 }
       );
     }
