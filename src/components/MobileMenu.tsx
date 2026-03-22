@@ -12,6 +12,7 @@ import { Menu, X } from "lucide-react";
 const NAV_LINKS = [
   { label: "Home",             href: "/" },
   { label: "Curate a Journey", href: "/" },
+  { label: "Pricing",          href: "/pricing" },
   { label: "My Passport",      href: "/trips" },
   { label: "FAQ",              href: "/faq" },
 ];

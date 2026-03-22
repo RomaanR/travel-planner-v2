@@ -10,6 +10,7 @@ export const maxDuration = 290;
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
 import { ratelimit } from "@/lib/ratelimit";
+import { FREE_TIER_LIMIT } from "@/lib/stripe";
 import type { PlaceCache } from "@prisma/client";
 import type {
   ItineraryResponse,
@@ -547,6 +548,28 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── Paywall check ─────────────────────────────────────────────────────────
+    // Authenticated users on the free tier are capped at FREE_TIER_LIMIT lifetime
+    // generations. Anonymous users are not gated here — they hit the rate limiter
+    // above. Paid (pro) users skip this check entirely.
+    if (userId) {
+      const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
+      const isPro   = profile?.plan === "pro";
+      if (!isPro) {
+        const count = profile?.generationCount ?? 0;
+        if (count >= FREE_TIER_LIMIT) {
+          return Response.json(
+            {
+              error:    "free_tier_limit",
+              message:  "You have used your free itinerary. Upgrade to Pro for unlimited curations.",
+              upgradeUrl: "/pricing",
+            },
+            { status: 402 }
+          );
+        }
+      }
+    }
+
     const raw = await req.json();
     const parsed = ItinerarySchema.safeParse(raw);
     if (!parsed.success) {
@@ -819,6 +842,18 @@ export async function POST(req: Request) {
     }
 
     console.log("[itinerary] generation cost:", meta);
+
+    // ── Step 7: Increment generation counter ──────────────────────────────────
+    // Only for authenticated users — fire-and-forget is acceptable here because
+    // a missed increment simply gives the user one extra free generation rather
+    // than causing a financial loss. The CostLog above already captures the spend.
+    if (userId) {
+      prisma.userProfile.upsert({
+        where:  { id: userId },
+        create: { id: userId, generationCount: 1 },
+        update: { generationCount: { increment: 1 } },
+      }).catch(() => console.error("[itinerary] UserProfile increment failed"));
+    }
 
     return Response.json(itinerary);
   } catch (e) {

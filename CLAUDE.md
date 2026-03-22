@@ -1199,3 +1199,40 @@ A new optional enum field `walkingTolerance: "strict" | "relaxed"` branches Rule
 - Validated by Zod enum before reaching `buildPrompt()` — invalid values return `400` before any AI call.
 - Field is an enum, not free-text — prompt injection impossible.
 - Security fixes #1–#9 unaffected — no changes to auth, ownership, rate limiting, or PlaceCache.
+
+---
+
+### 2026-03-21 — Security, Legal & Model Architecture
+
+**Commit:** pending · **Branch:** `main`
+
+#### AI Model Architecture
+
+Tested Claude Haiku as a lower-cost alternative for JSON itinerary generation. Confirmed that `claude-sonnet-4-6` intelligence level is strictly required. Complex spatial reasoning tasks — specifically the Neighbourhood Lock (city boundary enforcement), Haversine-aware consecutive stop constraints, and negative constraint handling (e.g. "do NOT suggest Aspendos when in central Antalya") — produced incoherent or rule-violating output at Haiku tier. Model selection is non-negotiable for geographic integrity.
+
+#### Legal Infrastructure
+
+Finalized and deployed production-ready Privacy Policy and Terms of Service pages. Key additions beyond boilerplate:
+- Explicit AI provider disclosure (Anthropic as sub-processor) with data handling clauses
+- Data retention policy aligned with PlaceCache 14-day TTL and Trip storage model
+- User content restrictions protecting against API key abuse via prompt injection
+- Cookie and localStorage disclosure covering `seek_wander_archive` offline vault
+
+#### API Security — Google Maps Key Hardening
+
+Browser-facing `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` locked down in Google Cloud Console with two independent restriction layers:
+- **HTTP Referrer (Domain) restrictions:** Key only accepts requests from `https://travel-planner-v2-pearl.vercel.app/*` and `http://localhost:3000/*`. Any other origin receives a 403.
+- **API scope restrictions:** Key restricted to Maps JavaScript API and Places API only. All other Google APIs return a permission denied error even with a valid key.
+
+Server-side `MAPS_SERVER_KEY` confirmed separate, with no HTTP referrer restriction (servers have no referrer header) and Places API scope only.
+
+#### Security Hardening (Session)
+
+- Rate limit tightened from 20 to **5 requests per hour per user** across both `/api/itinerary` and `/api/trips`.
+- Confirmed anonymous rate limit fallback uses `x-forwarded-for` IP with hard `400` rejection when neither `userId` nor IP is available. No shared `"anonymous"` Redis bucket exists.
+- `npm audit` run: `flatted` prototype pollution + DoS vulnerability patched. Remaining 4 Next.js 14.x CVEs tracked; resolution blocked on Clerk v7 + Next.js 15 coordinated upgrade.
+- Full 8-test security verification suite run manually and passed (bundle inspection, curl auth tests, IDOR check, header audit, git history scan, Google Cloud Console config).
+
+#### Security Documentation
+
+Generated `SeekWander_Security_Architecture.pdf` — a branded 8-page security architecture document covering all implemented defences (IDOR prevention, rate limiting, header security, API key split, prompt injection hardening, cron auth, dependency audit) and the upcoming roadmap (Sentry integration, Next.js 15 upgrade). Document follows Seek Wander brand aesthetic (paper/ink/burnt-orange palette, dark cover page, editorial typography). Suitable for investor review, technical due diligence, and internal architecture handover.

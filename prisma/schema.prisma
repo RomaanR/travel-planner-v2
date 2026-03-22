@@ -32,6 +32,15 @@ model PlaceCache {
   @@index([updatedAt]) // Cron cleanup: deleteMany({ where: { updatedAt: { lt: 14daysAgo } } }) — O(log n) with index
 }
 
+model UserProfile {
+  id               String   @id                    // Clerk userId
+  plan             String   @default("free")        // "free" | "pro"
+  stripeCustomerId String?  @unique                 // Stripe customer ID (set after first checkout)
+  generationCount  Int      @default(0)             // lifetime generations — free tier capped at FREE_TIER_LIMIT
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model CostLog {
   id          String   @id @default(uuid())
   userId      String?                        // Clerk userId — null if unauthenticated

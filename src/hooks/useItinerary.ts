@@ -49,6 +49,7 @@ export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const abort = useCallback(() => {
@@ -90,6 +91,13 @@ export function useItinerary() {
       });
       if (!res.ok) {
         const err = await res.json();
+        // 402 = free tier exhausted — surface upgrade flow instead of generic error
+        if (res.status === 402 && err.error === "free_tier_limit") {
+          setPaywalled(true);
+          toast.dismiss("curate-task");
+          setLoading(false);
+          return null;
+        }
         throw new Error(err.error || "Failed to generate itinerary");
       }
       const result: ItineraryResponse = await res.json();
@@ -121,5 +129,5 @@ export function useItinerary() {
     }
   }
 
-  return { itinerary, loading, error, generateItinerary, abort, restoreItinerary };
+  return { itinerary, loading, error, paywalled, generateItinerary, abort, restoreItinerary };
 }

@@ -13,6 +13,7 @@ import {
   BookmarkPlus,
   AlertCircle,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
@@ -52,7 +53,7 @@ import GenerationLoader from "@/components/GenerationLoader";
 
 export default function ItineraryPage() {
   const router = useRouter();
-  const { itinerary, loading, error, generateItinerary, abort } = useItinerary();
+  const { itinerary, loading, error, paywalled, generateItinerary, abort } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
@@ -95,7 +96,9 @@ export default function ItineraryPage() {
     const data = result.data as ItineraryRequest;
     setDestination(data.destination);
     setMapCenter({ lat: data.lat, lng: data.lng });
-    if (data.transportMode) setTransportMode(data.transportMode);
+    if (data.transportMode === "walking-transit" || data.transportMode === "car-driver") {
+      setTransportMode(data.transportMode);
+    }
     generateItinerary(data);
 
     // Abort in-flight generation if user navigates away
@@ -193,6 +196,39 @@ export default function ItineraryPage() {
                       Try Again
                     </button>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Paywall — free tier exhausted */}
+            {paywalled && !loading && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="border border-burnt-orange/20 bg-burnt-orange/5 px-8 py-10 text-center"
+              >
+                <Sparkles size={28} className="text-burnt-orange mx-auto mb-5" strokeWidth={1.5} />
+                <p className="micro-copy text-burnt-orange mb-3">Free Itinerary Used</p>
+                <h2 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight mb-4">
+                  Your journey awaits.<br />Unlock unlimited curation.
+                </h2>
+                <p className="font-sans text-sm text-ink-light leading-relaxed max-w-sm mx-auto mb-8">
+                  You have used your complimentary itinerary. Upgrade to Pro for unlimited bespoke journeys, every destination, any time.
+                </p>
+                <a
+                  href="/pricing"
+                  className="inline-block micro-copy bg-burnt-orange text-white px-10 py-4 hover:bg-ink transition-colors mb-4"
+                >
+                  View Plans &amp; Upgrade
+                </a>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push("/")}
+                    className="micro-copy text-ink-light hover:text-ink transition-colors"
+                  >
+                    Back to Home
+                  </button>
                 </div>
               </motion.div>
             )}
