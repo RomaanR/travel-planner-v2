@@ -113,7 +113,7 @@ function PillButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-1.5 px-4 py-2 border micro-copy transition-all duration-200
+      className={`flex items-center gap-1.5 px-4 py-2 border micro-copy transition-all duration-200 cursor-pointer
         ${active
           ? accent
             ? "bg-burnt-orange text-white border-burnt-orange"
@@ -341,7 +341,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             {/* ── Row 1: Travel Dates ── */}
             <div className="mb-8">
               <p className="micro-copy text-ink-light mb-4">Travel Dates</p>
-              <div className="grid grid-cols-2 gap-4 items-end">
+              <div className="relative z-50 grid grid-cols-2 gap-4 items-end">
                 <div>
                   <label className="font-sans text-xs text-ink-light block mb-1.5">
                     Departure
@@ -353,6 +353,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                       min={localToday}
                       value={form.departureDate ?? ""}
                       onChange={(e) => handleDepartureChange(e.target.value)}
+                      onFocus={(e) => e.currentTarget.scrollIntoView({ behavior: "smooth", block: "center" })}
                       className="flex-1 bg-transparent font-sans text-sm text-ink outline-none [color-scheme:light] cursor-pointer"
                     />
                   </div>
@@ -369,6 +370,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                       value={form.returnDate ?? ""}
                       onChange={(e) => handleReturnChange(e.target.value)}
                       disabled={!form.departureDate}
+                      onFocus={(e) => e.currentTarget.scrollIntoView({ behavior: "smooth", block: "center" })}
                       className="flex-1 bg-transparent font-sans text-sm text-ink outline-none [color-scheme:light] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                   </div>
@@ -405,7 +407,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     setExactHotelAddress("");
                     setHotelInputValue("");
                   }}
-                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200 cursor-pointer
                     ${accommodationStatus === "needed"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -428,7 +430,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => setAccommodationStatus("booked")}
-                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200 cursor-pointer
                     ${accommodationStatus === "booked"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -496,7 +498,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => setTransportMode("walking-transit")}
-                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200 cursor-pointer
                     ${transportMode === "walking-transit"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"
@@ -519,7 +521,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 <button
                   type="button"
                   onClick={() => { setTransportMode("car-driver"); setWalkingTolerance("strict"); }}
-                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200
+                  className={`flex flex-col gap-2 p-3 overflow-hidden border text-left transition-all duration-200 cursor-pointer
                     ${transportMode === "car-driver"
                       ? "border-ink bg-ink text-paper"
                       : "border-ink/10 text-ink hover:border-ink/30"

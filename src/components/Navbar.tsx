@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import MobileMenu from "@/components/MobileMenu";
+import { Home } from "lucide-react";
 
 // Load Clerk auth components client-side only — prevents SSR throws when no key is configured
 const NavbarAuth = dynamic(() => import("./NavbarAuth"), { ssr: false });
@@ -54,6 +55,13 @@ export default function Navbar() {
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >
             DASHBOARD
+          </Link>
+          <Link
+            href="/"
+            aria-label="Home"
+            className="text-ink-light hover:text-ink transition-colors"
+          >
+            <Home size={16} strokeWidth={1.5} />
           </Link>
         </div>
 

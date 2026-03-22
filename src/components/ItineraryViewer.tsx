@@ -155,8 +155,9 @@ interface ItineraryViewerProps {
 }
 
 export default function ItineraryViewer({ itinerary, bottomSection, transportMode }: ItineraryViewerProps) {
-  const [activeDay, setActiveDay] = useState(0);
-  const currentDay = itinerary.days?.[activeDay];
+  // null = All Days view; number = single day index
+  const [activeDay, setActiveDay] = useState<number | null>(0);
+  const currentDay = activeDay !== null ? itinerary.days?.[activeDay] : null;
 
   return (
     <>
@@ -207,11 +208,29 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         transition={{ duration: 0.4, delay: 0.15 }}
         className="sticky top-0 z-20 flex overflow-x-auto border-b border-ink/8 mb-8 -mx-6 md:-mx-10 px-6 md:px-10 scrollbar-none print:hidden bg-paper/80 backdrop-blur-md"
       >
+        {/* ALL DAYS toggle — first pill */}
+        <button
+          onClick={() => setActiveDay(null)}
+          className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
+            activeDay === null
+              ? "border-b-2 border-burnt-orange"
+              : "border-b-2 border-transparent hover:border-ink/20"
+          }`}
+        >
+          <span className={`micro-copy ${activeDay === null ? "text-burnt-orange" : "text-ink-light"}`}>
+            ALL
+          </span>
+          <span className={`font-serif italic text-sm leading-tight mt-0.5 ${activeDay === null ? "text-ink" : "text-ink-light"}`}>
+            Days
+          </span>
+        </button>
+
+        {/* Individual day tabs */}
         {itinerary.days.map((day, i) => (
           <button
             key={day.day}
             onClick={() => setActiveDay(i)}
-            className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all ${
+            className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
               activeDay === i
                 ? "border-b-2 border-burnt-orange"
                 : "border-b-2 border-transparent hover:border-ink/20"
@@ -231,19 +250,36 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         ))}
       </motion.div>
 
-      {/* ── SCREEN ONLY: Active day (animated on tab switch) ── */}
+      {/* ── SCREEN ONLY: Day content (animated on tab switch) ── */}
       <div className="print:hidden">
         <AnimatePresence mode="wait">
-          {currentDay && (
+          {activeDay === null ? (
+            /* ALL DAYS — stack every DaySection vertically */
             <motion.div
-              key={activeDay}
+              key="all"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
+              className="space-y-12"
             >
-              <DaySection day={currentDay} transportMode={transportMode} />
+              {itinerary.days.map((day) => (
+                <DaySection key={day.day} day={day} transportMode={transportMode} />
+              ))}
             </motion.div>
+          ) : (
+            /* Single day — existing animated behaviour */
+            currentDay && (
+              <motion.div
+                key={activeDay}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <DaySection day={currentDay} transportMode={transportMode} />
+              </motion.div>
+            )
           )}
         </AnimatePresence>
       </div>

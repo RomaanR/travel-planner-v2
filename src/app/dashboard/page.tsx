@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import UnauthenticatedState from "@/components/UnauthenticatedState";
 import Link from "next/link";
 import { MapPin, Zap, Calendar } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import dynamicImport from "next/dynamic";
 import type { DestinationPin } from "@/components/WorldMap";
 import type { ItineraryResponse } from "@/types/itinerary";
@@ -107,6 +108,7 @@ export default async function DashboardPage() {
 
           {/* ── Page header ── */}
           <div className="mb-12">
+            <BackButton href="/" label="HOME" />
             <p className="micro-copy text-ink-light mb-3">Your Dashboard</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-tight">
               Welcome back.

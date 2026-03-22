@@ -8,6 +8,7 @@ import { Check, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 const FREE_FEATURES = [
   "1 complimentary bespoke itinerary",
@@ -72,6 +73,8 @@ export default function PricingPage() {
       <Navbar />
 
       <section className="pt-32 pb-24 px-6 md:px-16 max-w-screen-xl mx-auto">
+
+        <BackButton href="/" label="HOME" />
 
         {/* Header */}
         <motion.div

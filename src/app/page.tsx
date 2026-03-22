@@ -24,23 +24,24 @@ export default function HomePage() {
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-end overflow-hidden">
-        {/* Cinematic background image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85"
-            alt="Cinematic mountain forest — luxury travel"
-            fill
-            priority
-            className="object-cover"
-            sizes="100vw"
-          />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/60" />
-        </div>
 
-        {/* Hero content */}
-        <div className="relative z-10 px-8 md:px-16 pt-40 pb-24 md:pb-32">
+      {/* Background — fixed to viewport so it never shifts when the form
+          expands and the page height grows. Opaque sections below cover it. */}
+      <div className="fixed inset-0 z-0">
+        <Image
+          src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85"
+          alt="Cinematic mountain forest — luxury travel"
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/60" />
+      </div>
+
+      <section className="relative z-10 min-h-screen flex flex-col justify-between overflow-hidden">
+        {/* Top — heading block */}
+        <div className="px-8 md:px-16 pt-28 md:pt-32">
           {/* Pre-title */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -51,13 +52,13 @@ export default function HomePage() {
             Curated Luxury Journeys
           </motion.p>
 
-          {/* Main heading */}
+          {/* Main heading — smaller clamp floor so the form stays above the fold on mobile */}
           <motion.h1
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
             className="font-serif italic text-white leading-none mb-2"
-            style={{ fontSize: "clamp(3.5rem, 15vw, 14rem)" }}
+            style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
           >
             Seek
           </motion.h1>
@@ -65,8 +66,8 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.45 }}
-            className="font-serif italic text-white leading-none mb-12"
-            style={{ fontSize: "clamp(3.5rem, 15vw, 14rem)" }}
+            className="font-serif italic text-white leading-none mb-8"
+            style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
           >
             Wander
           </motion.h1>
@@ -76,7 +77,7 @@ export default function HomePage() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.6 }}
-            className="origin-left w-24 h-px bg-white/40 mb-8"
+            className="origin-left w-24 h-px bg-white/40 mb-6"
           />
 
           {/* Sub-caption */}
@@ -84,11 +85,14 @@ export default function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.7 }}
-            className="font-sans text-white/70 text-base md:text-lg mb-16 max-w-md leading-relaxed"
+            className="font-sans text-white/70 text-base md:text-lg max-w-md leading-relaxed"
           >
             Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
+        </div>
 
+        {/* Bottom — form anchored to the lower portion of the hero */}
+        <div className="px-8 md:px-16 pb-16 md:pb-24 scroll-mt-20">
           {/* Curation Form */}
           <CurationForm onGenerate={handleGenerate} />
         </div>

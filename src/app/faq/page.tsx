@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import BackButton from "@/components/BackButton";
 
 const FAQS = [
   {
@@ -147,6 +148,7 @@ export default function FaqPage() {
       <Navbar />
       <main className="min-h-screen bg-paper pt-28 pb-20 px-8 md:px-16">
         <div className="max-w-2xl mx-auto">
+          <BackButton href="/" label="HOME" />
           <p className="micro-copy text-ink-light mb-4">Support</p>
           <h1 className="font-serif italic text-5xl md:text-6xl text-ink leading-none mb-4">
             Frequently Asked<br />Questions
