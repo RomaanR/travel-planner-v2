@@ -18,7 +18,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
-  "Unlimited bespoke itineraries",
+  "1 additional bespoke itinerary credit",
   "Day-by-day timeline with real restaurants",
   "Interactive map with curated markers",
   "Hidden gem recommendations",
@@ -27,7 +27,7 @@ const PRO_FEATURES = [
   "PDF export of every journey",
   "Up to 7-day itineraries",
   "Hotel recommendations across 3 tiers",
-  "Priority concierge generation",
+  "Credits never expire",
 ];
 
 function CancelledBanner() {
@@ -85,7 +85,7 @@ export default function PricingPage() {
           </Suspense>
           <p className="micro-copy text-ink-light mb-4">Simple Pricing</p>
           <h1 className="font-serif italic text-5xl md:text-8xl text-ink leading-none">
-            One Plan.<br />Unlimited Journeys.
+            Pay once.<br />Travel forever.
           </h1>
         </motion.div>
 
@@ -127,15 +127,15 @@ export default function PricingPage() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="bg-ink text-paper p-8 md:p-12 flex flex-col relative overflow-hidden"
           >
-            {/* Best value badge */}
+            {/* One-time badge */}
             <span className="absolute top-6 right-6 micro-copy text-paper/40">
-              Most Popular
+              One-Time
             </span>
 
-            <p className="micro-copy text-paper/50 mb-6">Pro</p>
+            <p className="micro-copy text-paper/50 mb-6">Credit</p>
             <div className="mb-8">
               <span className="font-serif italic text-6xl text-paper">$4.99</span>
-              <span className="micro-copy text-paper/40 ml-2">/ month</span>
+              <span className="micro-copy text-paper/40 ml-2">/ itinerary</span>
             </div>
 
             <ul className="space-y-3 mb-10 flex-1">
@@ -162,12 +162,12 @@ export default function PricingPage() {
                   Redirecting to checkout&hellip;
                 </span>
               ) : (
-                "Upgrade to Pro"
+                "Buy a Credit &mdash; $4.99"
               )}
             </button>
 
             <p className="micro-copy text-paper/30 text-center mt-4">
-              Cancel anytime &middot; No hidden fees
+              One-time charge &middot; No subscription &middot; Credits never expire
             </p>
           </motion.div>
 
@@ -187,8 +187,8 @@ export default function PricingPage() {
               a: "Each generation of a unique trip (destination + dates + preferences) counts as one. Viewing or sharing an existing itinerary does not consume your free generation.",
             },
             {
-              q: "Can I cancel my Pro subscription?",
-              a: "Yes, at any time from your Stripe billing portal. You retain Pro access until the end of your billing period.",
+              q: "Do my credits expire?",
+              a: "No. Credits never expire. Buy one today, use it six months from now &mdash; it will be waiting for you.",
             },
             {
               q: "Is my payment information secure?",
