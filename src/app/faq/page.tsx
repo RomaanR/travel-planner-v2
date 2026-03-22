@@ -13,11 +13,11 @@ const FAQS = [
     items: [
       {
         q: "What exactly is Seek Wander?",
-        a: "Seek Wander is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 30 seconds. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
+        a: "Seek Wander is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 2 minutes. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
       },
       {
         q: "How long does it take to generate an itinerary?",
-        a: "Typically 15–30 seconds. Everything, including activities, meals, maps, transit estimates, and hotel recommendations, is generated and enriched in a single pass. There are no follow-up loading states or second requests.",
+        a: "Typically around 2 minutes. Everything, including activities, meals, maps, transit estimates, and hotel recommendations, is generated and enriched in a single pass. There are no follow-up loading states or second requests.",
       },
       {
         q: "What destinations are supported?",
@@ -25,7 +25,7 @@ const FAQS = [
       },
       {
         q: "Can I customise the itinerary after it's generated?",
-        a: "Not within the app. Itineraries are generated holistically. Each day is planned as a geographically coherent unit, so swapping a single activity without re-generating the full day would break the spatial logic and the map. If the result isn't right, regenerate with adjusted preferences: it only takes 30 seconds.",
+        a: "Not within the app. Itineraries are generated holistically. Each day is planned as a geographically coherent unit, so swapping a single activity without re-generating the full day would break the spatial logic and the map. If the result isn't right, regenerate with adjusted preferences: it only takes around 2 minutes.",
       },
       {
         q: "How accurate is the information?",
