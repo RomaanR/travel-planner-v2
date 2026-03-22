@@ -162,7 +162,7 @@ export default function PricingPage() {
                   Redirecting to checkout&hellip;
                 </span>
               ) : (
-                "Buy a Credit &mdash; $4.99"
+                "Buy a Credit \u2014 $4.99"
               )}
             </button>
 
