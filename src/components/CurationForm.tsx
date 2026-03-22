@@ -308,6 +308,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                onFocus={(e) => e.currentTarget.scrollIntoView({ behavior: "smooth", block: "start" })}
                 placeholder="Where do you wish to disappear?"
                 className="w-full py-5 pr-4 bg-transparent text-ink placeholder:text-ink-light font-sans text-base outline-none"
               />

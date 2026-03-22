@@ -109,6 +109,9 @@ export default function HomePage() {
         </motion.div>
       </section>
 
+      {/* ── Everything below the hero — opaque wrapper to cover the fixed background ── */}
+      <div className="relative z-10 bg-paper">
+
       {/* ── Stats Strip ──────────────────────────────────── */}
       <section className="border-b border-ink/5 bg-paper-dark">
         <div className="max-w-screen-xl mx-auto px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
@@ -233,6 +236,8 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      </div>{/* end below-hero opaque wrapper */}
     </main>
   );
 }
