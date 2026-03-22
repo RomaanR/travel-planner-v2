@@ -28,98 +28,36 @@ export async function POST(req: Request) {
   }
 
   // ── Handle events ────────────────────────────────────────────────────────────
+  // Only one event type needed for the credit system — all subscription/invoice
+  // events removed (no recurring billing in this model).
 
   switch (event.type) {
-    // Subscription created or renewed successfully — user is (or stays) Pro
-    case "invoice.payment_succeeded": {
-      const invoice      = event.data.object as Stripe.Invoice;
-      const customerId   = invoice.customer as string;
-      const subscriptionId = (invoice as unknown as { subscription?: string }).subscription ?? null;
-      const clerkUserId  = await resolveClerkUserId(customerId, subscriptionId);
-      if (clerkUserId) {
-        await prisma.userProfile.upsert({
-          where:  { id: clerkUserId },
-          create: { id: clerkUserId, plan: "pro", stripeCustomerId: customerId },
-          update: { plan: "pro" },
-        });
-        console.log(`[stripe/webhook] Upgraded ${clerkUserId} → pro`);
-      }
-      break;
-    }
-
-    // Checkout session completed — catch the very first payment before the
-    // invoice fires (invoice fires asynchronously; session fires synchronously)
     case "checkout.session.completed": {
       const session     = event.data.object as Stripe.Checkout.Session;
-      const customerId  = session.customer as string;
-      const clerkUserId = session.metadata?.clerkUserId
-        ?? await resolveClerkUserId(customerId, session.subscription as string);
-      if (clerkUserId) {
-        await prisma.userProfile.upsert({
-          where:  { id: clerkUserId },
-          create: { id: clerkUserId, plan: "pro", stripeCustomerId: customerId },
-          update: { plan: "pro", stripeCustomerId: customerId },
-        });
-        console.log(`[stripe/webhook] Checkout complete — ${clerkUserId} → pro`);
-      }
-      break;
-    }
+      const clerkUserId = session.metadata?.clerkUserId;
 
-    // Subscription cancelled or payment failed — downgrade to free
-    case "customer.subscription.deleted":
-    case "invoice.payment_failed": {
-      const obj        = event.data.object as { customer: string | Stripe.Customer };
-      const customerId = typeof obj.customer === "string" ? obj.customer : obj.customer.id;
-      const profile    = await prisma.userProfile.findFirst({
-        where: { stripeCustomerId: customerId },
-      });
-      if (profile) {
-        await prisma.userProfile.update({
-          where:  { id: profile.id },
-          data:   { plan: "free" },
-        });
-        console.log(`[stripe/webhook] Downgraded ${profile.id} → free`);
+      if (!clerkUserId) {
+        console.error("[stripe/webhook] No clerkUserId in session metadata — cannot credit user");
+        break;
       }
+
+      // Upsert: if the user row doesn't exist yet (they bought before their first
+      // free generation created it), start them at 2 credits — the 1 they never
+      // used from the default, plus the 1 they just purchased.
+      await prisma.userProfile.upsert({
+        where:  { id: clerkUserId },
+        create: { id: clerkUserId, availableCredits: 2 },
+        update: { availableCredits: { increment: 1 } },
+      });
+
+      console.log(`[stripe/webhook] +1 credit → ${clerkUserId}`);
       break;
     }
 
     default:
-      // Unhandled event type — return 200 so Stripe does not retry
+      // Return 200 for all unhandled events so Stripe does not retry them.
       break;
   }
 
   return NextResponse.json({ received: true });
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Resolve the Clerk userId from a Stripe customer ID.
- * Priority: customer metadata → subscription metadata → UserProfile DB lookup.
- */
-async function resolveClerkUserId(
-  customerId: string,
-  subscriptionId?: string | null
-): Promise<string | null> {
-  // 1. Check subscription metadata
-  if (subscriptionId) {
-    try {
-      const sub = await stripe.subscriptions.retrieve(subscriptionId);
-      if (sub.metadata?.clerkUserId) return sub.metadata.clerkUserId;
-    } catch {}
-  }
-
-  // 2. Check customer metadata
-  try {
-    const customer = await stripe.customers.retrieve(customerId);
-    if (!("deleted" in customer) && customer.metadata?.clerkUserId) {
-      return customer.metadata.clerkUserId;
-    }
-  } catch {}
-
-  // 3. Fall back to DB lookup
-  const profile = await prisma.userProfile.findFirst({
-    where: { stripeCustomerId: customerId },
-  });
-  return profile?.id ?? null;
 }

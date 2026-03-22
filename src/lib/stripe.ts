@@ -1,8 +1,5 @@
 import Stripe from "stripe";
 
-// Free tier: users get this many generations before the paywall kicks in.
-export const FREE_TIER_LIMIT = 1;
-
 // Lazy singleton — defers instantiation until first use so the build phase
 // (which runs without env vars) does not throw "apiKey not provided".
 let _stripe: Stripe | null = null;

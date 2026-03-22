@@ -10,7 +10,6 @@ export const maxDuration = 290;
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
 import { ratelimit } from "@/lib/ratelimit";
-import { FREE_TIER_LIMIT } from "@/lib/stripe";
 import type { PlaceCache } from "@prisma/client";
 import type {
   ItineraryResponse,
@@ -548,25 +547,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Paywall check ─────────────────────────────────────────────────────────
-    // Authenticated users on the free tier are capped at FREE_TIER_LIMIT lifetime
-    // generations. Anonymous users are not gated here — they hit the rate limiter
-    // above. Paid (pro) users skip this check entirely.
+    // ── Credit check ──────────────────────────────────────────────────────────
+    // Authenticated users must have availableCredits > 0. Anonymous users are
+    // not gated here — they hit the rate limiter above only.
+    // NOTE: `profile ? profile.availableCredits : 1` is intentional. A brand-new
+    // user has no DB row yet but is entitled to 1 free credit (Prisma default(1)).
+    // Using `?? 0` would incorrectly block them on their very first generation.
     if (userId) {
       const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
-      const isPro   = profile?.plan === "pro";
-      if (!isPro) {
-        const count = profile?.generationCount ?? 0;
-        if (count >= FREE_TIER_LIMIT) {
-          return Response.json(
-            {
-              error:    "free_tier_limit",
-              message:  "You have used your free itinerary. Upgrade to Pro for unlimited curations.",
-              upgradeUrl: "/pricing",
-            },
-            { status: 402 }
-          );
-        }
+      const credits = profile ? profile.availableCredits : 1;
+      if (credits <= 0) {
+        return Response.json(
+          {
+            error:      "no_credits",
+            message:    "You have no credits remaining. Purchase a credit to generate another itinerary.",
+            upgradeUrl: "/pricing",
+          },
+          { status: 402 }
+        );
       }
     }
 
@@ -843,16 +841,17 @@ export async function POST(req: Request) {
 
     console.log("[itinerary] generation cost:", meta);
 
-    // ── Step 7: Increment generation counter ──────────────────────────────────
-    // Only for authenticated users — fire-and-forget is acceptable here because
-    // a missed increment simply gives the user one extra free generation rather
-    // than causing a financial loss. The CostLog above already captures the spend.
+    // ── Step 7: Decrement available credits ───────────────────────────────────
+    // Fire-and-forget — a missed decrement gives the user one extra generation
+    // rather than blocking them unfairly. CostLog captures the financial spend.
+    // `create` branch handles the rare case where the row doesn't exist yet
+    // (user generated without ever hitting the credit-check upsert path).
     if (userId) {
       prisma.userProfile.upsert({
         where:  { id: userId },
-        create: { id: userId, generationCount: 1 },
-        update: { generationCount: { increment: 1 } },
-      }).catch(() => console.error("[itinerary] UserProfile increment failed"));
+        create: { id: userId, availableCredits: 0 }, // used their implicit free credit
+        update: { availableCredits: { decrement: 1 } },
+      }).catch(() => console.error("[itinerary] UserProfile decrement failed"));
     }
 
     return Response.json(itinerary);

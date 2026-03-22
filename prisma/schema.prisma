@@ -34,9 +34,8 @@ model PlaceCache {
 
 model UserProfile {
   id               String   @id                    // Clerk userId
-  plan             String   @default("free")        // "free" | "pro"
-  stripeCustomerId String?  @unique                 // Stripe customer ID (set after first checkout)
-  generationCount  Int      @default(0)             // lifetime generations — free tier capped at FREE_TIER_LIMIT
+  availableCredits Int      @default(1)             // 1 free credit on account creation; +1 per purchase
+  stripeCustomerId String?  @unique                 // kept for refund/audit purposes
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

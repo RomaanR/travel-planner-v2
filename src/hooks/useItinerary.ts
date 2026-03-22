@@ -92,7 +92,7 @@ export function useItinerary() {
       if (!res.ok) {
         const err = await res.json();
         // 402 = free tier exhausted — surface upgrade flow instead of generic error
-        if (res.status === 402 && err.error === "free_tier_limit") {
+        if (res.status === 402) {
           setPaywalled(true);
           toast.dismiss("curate-task");
           setLoading(false);
