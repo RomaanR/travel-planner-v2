@@ -46,7 +46,7 @@ function computeDuration(departure: string, returnDate: string): number {
   const diff = Math.ceil(
     (new Date(returnDate).getTime() - new Date(departure).getTime()) / 86400000
   );
-  return Math.min(5, Math.max(1, diff));
+  return Math.min(7, Math.max(1, diff));
 }
 
 // ─── Option data ──────────────────────────────────────────────────────────────
@@ -382,9 +382,9 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   className="mt-2 font-serif italic text-2xl text-ink"
                 >
                   {duration} day{duration !== 1 ? "s" : ""}
-                  {duration === 5 && (
+                  {duration === 7 && (
                     <span className="font-sans text-xs text-ink-light not-italic ml-2">
-                      (5-day max)
+                      (7-day max)
                     </span>
                   )}
                 </motion.p>

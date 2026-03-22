@@ -28,7 +28,7 @@ const ItinerarySchema = z.object({
   lng:           z.number().finite(),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
   returnDate:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
-  duration:      z.number().int().min(1).max(5),
+  duration:      z.number().int().min(1).max(7),
   travelParty:   z.enum(["solo", "couple", "family", "group"]),
   pace:          z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
@@ -244,7 +244,7 @@ Travel dates: ${departureDate} to ${returnDate}
 10. Writing: restrained elegance, no hyperbole. Every description is exactly 2 sentences, each sentence ≤15 words. Brevity is luxury.
 11. THE NEIGHBOURHOOD LOCK: ${neighborhoodLockRule}
 12. TRANSIT TIME REALITY: ${transitTimeRule}
-13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. For trips of 4–5 days: cap total timeline items across ALL days at 25 maximum — quality always over quantity.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
+13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. For trips of 4–5 days: cap total timeline items across ALL days at 25 maximum. For trips of 6–7 days: cap total timeline items across ALL days at 30 maximum — quality always over quantity.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
