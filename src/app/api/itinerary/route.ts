@@ -568,16 +568,30 @@ export async function POST(req: Request) {
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
     const t0Claude = Date.now();
+    // 180 s hard timeout — prevents the Anthropic SDK default of 10 min from
+    // hanging the function. Normal generation finishes in 60–100 s; 180 s gives
+    // comfortable headroom while still failing fast enough for a clean UX error.
     const message = await client.messages.create({
       model:      "claude-sonnet-4-6",
       max_tokens: 8192,
       system:     dynamicSystemPrompt,
       messages:   [{ role: "user", content: buildPrompt(safeBody) }],
-    }, { signal: req.signal });
+    }, { signal: req.signal, timeout: 180_000 });
     console.info(
       `[itinerary] Claude generation: ${Date.now() - t0Claude}ms | ` +
-      `in=${message.usage.input_tokens} out=${message.usage.output_tokens} tokens`
+      `in=${message.usage.input_tokens} out=${message.usage.output_tokens} tokens | ` +
+      `stop_reason=${message.stop_reason}`
     );
+
+    // Guard: if max_tokens was hit the JSON is truncated and can never be parsed.
+    // Surface an actionable error immediately rather than wasting another AI call.
+    if (message.stop_reason === "max_tokens") {
+      console.warn("[itinerary] Response truncated at max_tokens — returning actionable error.");
+      return NextResponse.json(
+        { error: "Your itinerary is very detailed and exceeded our generation limit. Please try a shorter trip (1–3 days) or choose a Relaxed pace, then generate again." },
+        { status: 500 }
+      );
+    }
 
     // Accumulates extra tokens if a spatial retry fires — added to cost at Step 5.
     let retryInputTokens  = 0;
@@ -608,7 +622,7 @@ export async function POST(req: Request) {
             role:    "user",
             content: `The following JSON is malformed and threw this error: ${(firstError as Error).message}\n\nPlease fix the syntax and return ONLY the raw, valid JSON object without any markdown or preamble. Here is the broken JSON:\n\n${rawText}`,
           }],
-        });
+        }, { signal: req.signal, timeout: 90_000 });
 
         const healRaw       = healMessage.content[0].type === "text" ? healMessage.content[0].text : "";
         const healSanitized = sanitizeJson(healRaw);
@@ -664,7 +678,7 @@ export async function POST(req: Request) {
               max_tokens: 2048,  // single day needs ~500–800 tokens
               system:     dynamicSystemPrompt,
               messages:   [{ role: "user", content: repairMessage }],
-            });
+            }, { signal: req.signal, timeout: 60_000 });
 
             const raw     = repairMsg.content[0].type === "text" ? repairMsg.content[0].text : "";
             const repaired = JSON.parse(sanitizeJson(raw)) as DayPlan;
