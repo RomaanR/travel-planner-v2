@@ -60,7 +60,9 @@ const PIN_SVG_URL =
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const LIBRARIES: ("places" | "geometry")[] = [];
+// Must match ItineraryMap.tsx exactly — the @react-google-maps/api loader is a
+// singleton and throws if useJsApiLoader is called twice with different options.
+const LIBRARIES: ("places" | "geometry")[] = ["places"];
 
 export default function WorldMap({ pins }: WorldMapProps) {
   const { isLoaded } = useJsApiLoader({
