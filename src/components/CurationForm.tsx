@@ -175,11 +175,17 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     const place = autocompleteRef.current.getPlace();
     if (!place.geometry?.location || !place.place_id) return;
 
+    // Use place.name ("Istanbul") not formatted_address ("Istanbul, İstanbul, Türkiye").
+    // Guard against Google returning administrative area names like
+    // "Metropolitan City of Rome Capital" or "Province of Barcelona" — these break
+    // the AI's spatial reasoning and trip naming. Fall back to the user's typed input
+    // (e.g. "Rome") which is always a clean city-level string.
+    const ADMIN_AREA_RE = /^(metropolitan city of|province of|region of|county of|prefecture of|district of|municipality of)\b/i;
+    const rawName = place.name || place.formatted_address || inputValue;
+    const cleanDestination = ADMIN_AREA_RE.test(rawName) ? (inputValue.trim() || rawName) : rawName;
+
     const update = {
-      // Use place.name ("Istanbul") not formatted_address ("Istanbul, İstanbul, Türkiye")
-      // — Google Places returns both romanised + native spellings in formatted_address
-      // for many cities, creating duplicated/mangled destination headings.
-      destination: place.name || place.formatted_address || inputValue,
+      destination: cleanDestination,
       placeId: place.place_id,
       lat: place.geometry.location.lat(),
       lng: place.geometry.location.lng(),
@@ -296,6 +302,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             <Autocomplete
               onLoad={(ref) => (autocompleteRef.current = ref)}
               onPlaceChanged={onPlaceChanged}
+              options={{ types: ["(cities)"] }}
             >
               <input
                 type="text"

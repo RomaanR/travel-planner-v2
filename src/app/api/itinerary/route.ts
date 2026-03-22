@@ -2,6 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+// Vercel max execution time — prevents silent mid-JSON truncation on slow
+// generations. Pro plan default is 300s; we set 290s so the function can
+// return a clean error response before Vercel hard-kills it.
+export const maxDuration = 290;
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
 import { ratelimit } from "@/lib/ratelimit";
