@@ -6,27 +6,16 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import CurationForm from "@/components/CurationForm";
 import BentoGrid from "@/components/BentoGrid";
-import { useRouter } from "next/navigation";
-import type { ItineraryRequest } from "@/types/itinerary";
 
 export default function HomePage() {
-  const router = useRouter();
-
-  async function handleGenerate(data: ItineraryRequest) {
-    sessionStorage.setItem("itineraryRequest", JSON.stringify(data));
-    router.push("/itinerary");
-  }
-
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────── */}
 
-      {/* Background — fixed to viewport so it never shifts when the form
-          expands and the page height grows. Opaque sections below cover it. */}
+      {/* Background — fixed to viewport so it never shifts when the page scrolls. */}
       <div className="fixed inset-0 z-0">
         <Image
           src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85"
@@ -52,7 +41,7 @@ export default function HomePage() {
             Curated Luxury Journeys
           </motion.p>
 
-          {/* Main heading — smaller clamp floor so the form stays above the fold on mobile */}
+          {/* Main heading */}
           <motion.h1
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
@@ -91,12 +80,37 @@ export default function HomePage() {
           </motion.p>
         </div>
 
-        {/* Bottom — form anchored to the lower portion of the hero */}
-        <div className="px-8 md:px-16 pb-16 md:pb-24 scroll-mt-20">
-          {/* Curation Form */}
-          <CurationForm onGenerate={handleGenerate} />
-          {/* Secondary CTA — sample itinerary preview */}
-          <div className="mt-5">
+        {/* Bottom-right — CTA buttons (absolute on desktop, flow on mobile) */}
+        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-20 md:pb-0 flex flex-col items-end gap-6">
+          {/* Thin vertical accent line */}
+          <motion.div
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.75 }}
+            className="origin-top hidden md:block w-px h-16 bg-white/25 self-center"
+          />
+
+          {/* Primary CTA */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
+          >
+            <Link
+              href="/curate"
+              className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4 hover:bg-burnt-orange/90 transition-colors duration-300"
+            >
+              Begin Your Journey
+              <span>&rarr;</span>
+            </Link>
+          </motion.div>
+
+          {/* Secondary CTA — sample itinerary */}
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.95 }}
+          >
             <Link
               href="/sample"
               className="micro-copy inline-flex items-center gap-2 bg-white/15 border border-white/60 text-white hover:bg-white/25 px-6 py-3 backdrop-blur-sm transition-all duration-300"
@@ -104,19 +118,18 @@ export default function HomePage() {
               <span>View Sample Itinerary</span>
               <span className="text-white/60">&rarr;</span>
             </Link>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="absolute bottom-8 right-8 flex items-center gap-3"
+        {/* Scroll indicator — bottom-center float animation */}
+        <motion.p
+          initial={{ y: 0, opacity: 0.4 }}
+          animate={{ y: 10, opacity: 1 }}
+          transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 uppercase tracking-[0.2em] text-[10px] text-white/60"
         >
-          <span className="micro-copy text-white/40">Scroll</span>
-          <div className="w-px h-12 bg-white/20" />
-        </motion.div>
+          Scroll to Explore
+        </motion.p>
       </section>
 
       {/* ── Everything below the hero — opaque wrapper to cover the fixed background ── */}
@@ -242,7 +255,7 @@ export default function HomePage() {
             </a>
           </div>
           <p className="micro-copy text-ink-light">
-            © {new Date().getFullYear()} Seek Wander. All rights reserved.
+            &copy; {new Date().getFullYear()} Seek Wander. All rights reserved.
           </p>
         </div>
       </footer>
