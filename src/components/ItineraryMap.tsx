@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   GoogleMap,
   Marker,
@@ -113,17 +114,36 @@ interface ItineraryMapProps {
 
 const LIBRARIES: ("places")[] = ["places"];
 
+// ─── Shared button class helpers ──────────────────────────────────────────────
+
+const pillActive = "bg-ink text-paper rounded-full px-4 py-1 text-[10px] tracking-widest uppercase shadow-sm transition-all";
+const pillInactive = "text-ink/40 hover:text-ink/60 px-3 py-1 text-[10px] tracking-widest uppercase transition-all";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ItineraryMap({ center, points }: ItineraryMapProps) {
   const [activeMarker, setActiveMarker] = useState<number | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [activeDay, setActiveDay] = useState<number | "all">("all");
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries: LIBRARIES,
   });
 
+  // Derive unique day numbers present in the full points array (drives pill tabs)
+  const visibleDays = useMemo(
+    () => Array.from(new Set(points.map((p) => p.day))).sort((a, b) => a - b),
+    [points]
+  );
+
+  // Filtered points — memoized for safe use in useEffect dependency array
+  const filteredPoints = useMemo(
+    () => (activeDay === "all" ? points : points.filter((p) => p.day === activeDay)),
+    [activeDay, points]
+  );
+
+  // Initial fit on map load
   const onLoad = useCallback((m: google.maps.Map) => {
     setMap(m);
     if (points.length > 0) {
@@ -135,8 +155,20 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
 
   const onUnmount = useCallback(() => setMap(null), []);
 
-  // Derive unique day numbers present in the current points array
-  const visibleDays = Array.from(new Set(points.map((p) => p.day))).sort((a, b) => a - b);
+  // Re-center map whenever the active day filter changes
+  useEffect(() => {
+    if (!map || filteredPoints.length === 0) return;
+
+    if (filteredPoints.length === 1) {
+      // Single point: center + comfortable city-level zoom to avoid max-zoom stretch
+      map.setCenter({ lat: filteredPoints[0].lat, lng: filteredPoints[0].lng });
+      map.setZoom(14);
+    } else {
+      const bounds = new window.google.maps.LatLngBounds();
+      filteredPoints.forEach((p) => bounds.extend({ lat: p.lat, lng: p.lng }));
+      map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+    }
+  }, [activeDay, filteredPoints, map]);
 
   if (loadError) {
     return (
@@ -156,6 +188,33 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
 
   return (
     <div className="w-full h-full relative">
+
+      {/* ── Day filter pill ─────────────────────────────────────────────────── */}
+      {visibleDays.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-white/80 backdrop-blur-md border border-white/20 rounded-full px-2 py-1 flex gap-1 shadow-lg"
+        >
+          <button
+            onClick={() => { setActiveDay("all"); setActiveMarker(null); }}
+            className={activeDay === "all" ? pillActive : pillInactive}
+          >
+            All
+          </button>
+          {visibleDays.map((day) => (
+            <button
+              key={day}
+              onClick={() => { setActiveDay(day); setActiveMarker(null); }}
+              className={activeDay === day ? pillActive : pillInactive}
+            >
+              Day {day}
+            </button>
+          ))}
+        </motion.div>
+      )}
+
       <GoogleMap
         mapContainerStyle={{ width: "100%", height: "100%" }}
         center={center}
@@ -173,10 +232,10 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           gestureHandling: "cooperative",
         }}
       >
-        {/* Subtle polyline connecting all points in order */}
-        {points.length > 1 && (
+        {/* Subtle polyline connecting filtered points in order */}
+        {filteredPoints.length > 1 && (
           <Polyline
-            path={points.map((p) => ({ lat: p.lat, lng: p.lng }))}
+            path={filteredPoints.map((p) => ({ lat: p.lat, lng: p.lng }))}
             options={{
               strokeColor: "#0A0A0A",
               strokeOpacity: 0.08,
@@ -186,8 +245,8 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           />
         )}
 
-        {/* Markers — colored by day */}
-        {points.map((point, i) => (
+        {/* Markers — filtered by active day, colored by day */}
+        {filteredPoints.map((point, i) => (
           <Marker
             key={`day${point.day}-${point.type}-${i}`}
             position={{ lat: point.lat, lng: point.lng }}
@@ -236,7 +295,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
         ))}
       </GoogleMap>
 
-      {/* Legend overlay — day-centric */}
+      {/* Legend overlay — day-centric (always shows all days) */}
       {visibleDays.length > 0 && (
         <div className="absolute bottom-4 left-4 bg-paper/90 backdrop-blur-sm border border-ink/8 px-4 py-3 flex flex-col gap-1.5">
           {visibleDays.map((day) => {
