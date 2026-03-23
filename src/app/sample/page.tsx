@@ -1,60 +1,69 @@
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { prisma } from "@/lib/db";
+import { computeMapPoints } from "@/lib/itineraryUtils";
+import type { ItineraryResponse } from "@/types/itinerary";
 import Navbar from "@/components/Navbar";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import ItineraryMap from "@/components/ItineraryMap";
 import ExportPdfButton from "@/components/ExportPdfButton";
-import { sampleNewYorkItinerary } from "@/lib/sampleItinerary";
-import { computeMapPoints } from "@/lib/itineraryUtils";
+
+export const dynamic = "force-dynamic";
+
+// ── Swap this UUID for the "golden" trip ID from your database ─────────────
+const SAMPLE_TRIP_ID = "PASTE_UUID_HERE";
 
 export const metadata: Metadata = {
-  title: "Sample Itinerary — New York City",
+  title: "Sample Itinerary | Seek Wander",
   description:
-    "A curated 3-day New York City itinerary by Seek Wander — experience the quality before you generate your own.",
+    "A curated luxury itinerary by Seek Wander — experience the quality before you generate your own.",
 };
 
-// ─── Bottom CTA ───────────────────────────────────────────────────────────────
+export default async function SamplePage() {
+  const trip = await prisma.trip.findUnique({ where: { id: SAMPLE_TRIP_ID } });
+  if (!trip) notFound();
 
-const bottomCta = (
-  <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-10">
-    <p className="micro-copy text-ink-light mb-4">You are viewing a sample itinerary</p>
-    <p className="font-serif italic text-3xl text-ink mb-6">
-      Ready for your own journey?
-    </p>
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <Link
-        href="/"
-        className="micro-copy bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
-      >
-        Curate My Itinerary
-      </Link>
-      <Link
-        href="/pricing"
-        className="micro-copy border border-ink/20 px-8 py-4 text-ink hover:bg-ink hover:text-paper transition-all duration-300"
-      >
-        View Pricing
-      </Link>
+  const itinerary = trip.itineraryData as unknown as ItineraryResponse;
+  const mapPoints  = computeMapPoints(itinerary.days ?? []);
+  const mapCenter  = mapPoints[0]
+    ? { lat: mapPoints[0].lat, lng: mapPoints[0].lng }
+    : { lat: 40.758, lng: -73.985 };
+
+  const bottomCta = (
+    <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-10">
+      <p className="micro-copy text-ink-light mb-4">You are viewing a sample itinerary</p>
+      <p className="font-serif italic text-3xl text-ink mb-6">
+        Ready for your own journey?
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <Link
+          href="/"
+          className="micro-copy bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
+        >
+          Curate My Itinerary
+        </Link>
+        <Link
+          href="/pricing"
+          className="micro-copy border border-ink/20 px-8 py-4 text-ink hover:bg-ink hover:text-paper transition-all duration-300"
+        >
+          View Pricing
+        </Link>
+      </div>
     </div>
-  </div>
-);
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function SamplePage() {
-  const mapPoints = computeMapPoints(sampleNewYorkItinerary.days);
-  const mapCenter = { lat: 40.7400, lng: -73.9950 }; // centred on lower Manhattan / Chelsea
+  );
 
   return (
     <div className="h-screen flex flex-col bg-paper overflow-hidden">
       <Navbar />
 
-      {/* Header strip — mirrors itinerary/page.tsx layout */}
+      {/* Header strip */}
       <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
         <div className="flex items-end justify-between">
           <div>
             <p className="micro-copy text-burnt-orange mb-1">Sample Itinerary</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
-              New York City
+              {trip.destination}
             </h1>
           </div>
           <ExportPdfButton />
@@ -74,7 +83,7 @@ export default function SamplePage() {
 
           <div className="px-6 md:px-10 py-8">
             <ItineraryViewer
-              itinerary={sampleNewYorkItinerary}
+              itinerary={itinerary}
               departureDate="2025-09-12"
               returnDate="2025-09-14"
               bottomSection={bottomCta}
