@@ -33,7 +33,9 @@ function PrintDayPage({
   const items = day.timeline ?? [];
 
   return (
-    <div className={isFirst ? "" : "print:break-before-page"}>
+    // p-16 is the physical page margin — required because @page { margin: 0 }
+    <div className={`p-16${isFirst ? "" : " print:break-before-page"}`}>
+
       {/* Day header */}
       <div className="border-b-2 border-black pb-5 mb-10">
         <p className="text-xs tracking-widest uppercase text-black/40 mb-3">
@@ -49,55 +51,53 @@ function PrintDayPage({
         </div>
       </div>
 
-      {/* Timeline rows */}
+      {/* Timeline rows — CSS Grid locks the two-column layout rigidly */}
       <div>
         {items.map((item: TimelineItem, i: number) => (
           <div
             key={i}
-            className="border-t border-black/20 pb-6 pt-5 break-inside-avoid"
+            className="grid gap-6 border-t border-black/20 py-5 break-inside-avoid"
+            style={{ gridTemplateColumns: "80px 1fr" }}
           >
-            {/* Strict non-wrapping row — time column + content */}
-            <div className="flex flex-row items-start flex-nowrap gap-6">
-              {/* Time column — fixed width, never shrinks */}
-              <div className="w-20 shrink-0">
-                <span className="font-mono text-[10px] text-black/40 leading-none">
-                  {item.startTime ?? ""}
+            {/* Time column — fixed 80 px, never wraps */}
+            <div>
+              <span className="font-mono text-[10px] text-black/40 leading-none">
+                {item.startTime ?? ""}
+              </span>
+            </div>
+
+            {/* Content column */}
+            <div>
+              {/* Title + type badge */}
+              <div className="flex items-start justify-between gap-4 mb-2">
+                <h3 className="font-serif italic text-2xl leading-tight text-black">
+                  {item.title}
+                </h3>
+                <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
+                  {isMealType(item.type)
+                    ? item.type
+                    : (item.category ?? "activity")}
                 </span>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                {/* Title row */}
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <h3 className="font-serif italic text-2xl leading-tight text-black">
-                    {item.title}
-                  </h3>
-                  <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
-                    {isMealType(item.type)
-                      ? item.type
-                      : (item.category ?? "activity")}
-                  </span>
+              {/* Description */}
+              <p className="text-sm text-black/60 leading-relaxed mb-3">
+                {item.description}
+              </p>
+
+              {/* Meta tags — grouped in a flex-wrap row so they never scatter */}
+              {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
+                <div className="flex flex-row flex-wrap gap-3 text-[10px] text-black/40">
+                  {item.duration && <span>{item.duration}</span>}
+                  {item.rating !== undefined && (
+                    <span>&#9733;&nbsp;{item.rating.toFixed(1)}</span>
+                  )}
+                  {item.pricePoint && <span>{item.pricePoint}</span>}
+                  {item.dietaryNote && (
+                    <span className="italic">{item.dietaryNote}</span>
+                  )}
                 </div>
-
-                {/* Description */}
-                <p className="text-sm text-black/60 leading-relaxed mb-3">
-                  {item.description}
-                </p>
-
-                {/* Meta row */}
-                {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
-                  <div className="flex flex-wrap items-center gap-4 text-[10px] text-black/40">
-                    {item.duration && <span>{item.duration}</span>}
-                    {item.rating !== undefined && (
-                      <span>&#9733; {item.rating.toFixed(1)}</span>
-                    )}
-                    {item.pricePoint && <span>{item.pricePoint}</span>}
-                    {item.dietaryNote && (
-                      <span className="italic">{item.dietaryNote}</span>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         ))}
@@ -131,20 +131,19 @@ export default function PrintItinerary({
     <div className="hidden print:block bg-white text-black font-sans">
 
       {/*
-        ── Kill browser chrome (URLs, dates, page numbers) ─────────────────
-        Setting @page { margin: 0 } removes the browser's header/footer
-        area entirely. We then apply our own body margin so content
-        doesn't bleed to the paper edge.
+        Kill browser chrome (URLs, dates, page numbers).
+        @page { margin: 0 } removes the browser header/footer area.
+        Body margin is deliberately omitted here — each page wrapper
+        carries its own p-16 padding to act as the physical margin.
       */}
       <style>{`
         @media print {
           @page { margin: 0; }
-          body  { margin: 1.5cm 2cm; }
         }
       `}</style>
 
-      {/* ── COVER PAGE ───────────────────────────────────────────────────── */}
-      <div className="print:break-after-page min-h-screen flex flex-col justify-between">
+      {/* ── COVER PAGE — p-16 is the physical page margin ────────────────── */}
+      <div className="print:break-after-page min-h-screen flex flex-col p-16">
 
         {/* Top bar */}
         <div className="flex items-center justify-between border-b border-black/20 pb-4">
@@ -156,7 +155,7 @@ export default function PrintItinerary({
           </span>
         </div>
 
-        {/* Centre block — perfectly vertically centred */}
+        {/* Centre block */}
         <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
           <p className="text-xs tracking-widest uppercase text-black/40 mb-8">
             Your Bespoke Journey
@@ -197,7 +196,7 @@ export default function PrintItinerary({
         </div>
       </div>
 
-      {/* ── DAY PAGES ────────────────────────────────────────────────────── */}
+      {/* ── DAY PAGES — padding lives inside PrintDayPage ────────────────── */}
       {itinerary.days.map((day, i) => (
         <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} />
       ))}
