@@ -35,15 +35,15 @@ function PrintDayPage({
   return (
     <div className={isFirst ? "" : "print:break-before-page"}>
       {/* Day header */}
-      <div className="border-b-2 border-black pb-4 mb-8">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-black/40 mb-1.5">
+      <div className="border-b-2 border-black pb-5 mb-10">
+        <p className="text-xs tracking-widest uppercase text-black/40 mb-3">
           Day {day.day}
         </p>
         <div className="flex items-end justify-between gap-6">
-          <h2 className="font-serif italic text-4xl leading-none text-black">
+          <h2 className="font-serif italic text-5xl leading-none text-black">
             {day.theme}
           </h2>
-          <span className="text-[10px] tracking-[0.2em] uppercase text-black/30 shrink-0 mb-1">
+          <span className="text-xs tracking-widest uppercase text-black/30 shrink-0 mb-1">
             {day.pace}
           </span>
         </div>
@@ -54,22 +54,25 @@ function PrintDayPage({
         {items.map((item: TimelineItem, i: number) => (
           <div
             key={i}
-            className="border-t border-black/10 py-5 break-inside-avoid"
+            className="border-t border-black/20 pb-6 pt-5 break-inside-avoid"
           >
-            <div className="flex items-start gap-6">
-              {/* Time column */}
-              <span className="font-mono text-[10px] text-black/40 w-14 shrink-0 pt-1">
-                {item.startTime ?? ""}
-              </span>
+            {/* Strict non-wrapping row — time column + content */}
+            <div className="flex flex-row items-start flex-nowrap gap-6">
+              {/* Time column — fixed width, never shrinks */}
+              <div className="w-20 shrink-0">
+                <span className="font-mono text-[10px] text-black/40 leading-none">
+                  {item.startTime ?? ""}
+                </span>
+              </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 {/* Title row */}
-                <div className="flex items-start justify-between gap-4 mb-1.5">
-                  <h3 className="font-serif italic text-xl leading-tight text-black">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <h3 className="font-serif italic text-2xl leading-tight text-black">
                     {item.title}
                   </h3>
-                  <span className="text-[9px] tracking-[0.2em] uppercase text-black/30 shrink-0 mt-1.5">
+                  <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
                     {isMealType(item.type)
                       ? item.type
                       : (item.category ?? "activity")}
@@ -77,7 +80,7 @@ function PrintDayPage({
                 </div>
 
                 {/* Description */}
-                <p className="text-sm text-black/60 leading-relaxed mb-2">
+                <p className="text-sm text-black/60 leading-relaxed mb-3">
                   {item.description}
                 </p>
 
@@ -102,8 +105,8 @@ function PrintDayPage({
 
       {/* Hidden gem */}
       {day.hiddenGem && (
-        <div className="border-t border-black/10 pt-5 mt-6 break-inside-avoid">
-          <p className="text-[10px] tracking-[0.3em] uppercase text-black/40 mb-2">
+        <div className="border-t border-black/20 pt-6 mt-4 break-inside-avoid">
+          <p className="text-xs tracking-widest uppercase text-black/40 mb-2">
             Hidden Gem
           </p>
           <p className="font-sans text-sm text-black/70 leading-relaxed italic">
@@ -127,6 +130,19 @@ export default function PrintItinerary({
   return (
     <div className="hidden print:block bg-white text-black font-sans">
 
+      {/*
+        ── Kill browser chrome (URLs, dates, page numbers) ─────────────────
+        Setting @page { margin: 0 } removes the browser's header/footer
+        area entirely. We then apply our own body margin so content
+        doesn't bleed to the paper edge.
+      */}
+      <style>{`
+        @media print {
+          @page { margin: 0; }
+          body  { margin: 1.5cm 2cm; }
+        }
+      `}</style>
+
       {/* ── COVER PAGE ───────────────────────────────────────────────────── */}
       <div className="print:break-after-page min-h-screen flex flex-col justify-between">
 
@@ -140,35 +156,32 @@ export default function PrintItinerary({
           </span>
         </div>
 
-        {/* Centre block */}
-        <div className="flex-1 flex flex-col justify-center py-20">
-          <p className="text-[10px] tracking-[0.3em] uppercase text-black/40 mb-6">
+        {/* Centre block — perfectly vertically centred */}
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
+          <p className="text-xs tracking-widest uppercase text-black/40 mb-8">
             Your Bespoke Journey
           </p>
 
-          {/* Destination — giant serif */}
-          <h1
-            className="font-serif italic leading-none text-black mb-6"
-            style={{ fontSize: "clamp(4rem, 12vw, 8rem)" }}
-          >
+          {/* Destination — absolutely massive serif */}
+          <h1 className="font-serif italic text-8xl leading-none text-black mb-8">
             {itinerary.destination}
           </h1>
 
           {/* Dates */}
           {hasDates && (
-            <p className="text-sm tracking-[0.1em] uppercase text-black/50 mb-1">
+            <p className="text-sm tracking-[0.15em] uppercase text-black/50 mb-1">
               {formatDate(departureDate!)} &ndash; {formatDate(returnDate!)}
             </p>
           )}
 
           {/* Day count */}
-          <p className="text-sm tracking-[0.1em] uppercase text-black/50">
+          <p className="text-sm tracking-[0.15em] uppercase text-black/40">
             {itinerary.days.length}&nbsp;
             {itinerary.days.length === 1 ? "Day" : "Days"}
           </p>
 
           {/* Thin rule */}
-          <div className="w-12 h-px bg-black/25 my-8" />
+          <div className="w-12 h-px bg-black/25 my-10" />
 
           {/* Editorial quote */}
           <blockquote className="font-serif italic text-2xl text-black/70 leading-relaxed max-w-xl">
