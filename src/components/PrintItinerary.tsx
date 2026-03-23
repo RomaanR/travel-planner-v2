@@ -1,10 +1,9 @@
-import type { ItineraryResponse, DayPlan, TimelineItem } from "@/types/itinerary";
+import type { ItineraryResponse, DayPlan, TimelineItem, TransitInfo } from "@/types/itinerary";
 import { normalizeDayPlan, isMealType } from "@/lib/itineraryUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
-  // T12:00:00 prevents off-by-one UTC midnight rollback on ISO date strings
   return new Date(iso + "T12:00:00").toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -12,31 +11,68 @@ function formatDate(iso: string): string {
   });
 }
 
+// Grid column definition reused across activity rows and transit connectors
+// so both always align perfectly: 80px (time) | 1fr (content) | 80px (image)
+const GRID_COLS = "80px 1fr 80px";
+const GRID_GAP  = "0 24px"; // gap-x-6 = 24px; no row-gap needed
+
+// ─── Transit connector ────────────────────────────────────────────────────────
+
+function TransitRow({ transit }: { transit: TransitInfo }) {
+  const parts: string[] = [];
+  if (transit.walkingMinutes  !== undefined) parts.push(`${transit.walkingMinutes} min walk`);
+  if (transit.drivingMinutes  !== undefined) parts.push(`${transit.drivingMinutes} min drive`);
+  if (parts.length === 0) return null;
+
+  return (
+    // Shares the same grid template as the activity rows above/below so the
+    // dashed line sits perfectly beneath the time column and the text starts
+    // at the content column — no manual padding arithmetic needed.
+    <div
+      className="grid py-1"
+      style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}
+    >
+      {/* Time column: centred dashed vertical line */}
+      <div className="flex justify-center">
+        <div
+          style={{
+            width: 1,
+            height: 20,
+            borderLeft: "1px dashed rgba(0,0,0,0.18)",
+          }}
+        />
+      </div>
+      {/* Content column: transit label */}
+      <div className="flex items-center">
+        <span className="text-[9px] text-black/40 italic">
+          {parts.join(" · ")}
+        </span>
+      </div>
+      {/* Image column: empty */}
+      <div />
+    </div>
+  );
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface PrintItineraryProps {
   itinerary: ItineraryResponse;
-  departureDate?: string; // ISO YYYY-MM-DD
-  returnDate?: string;    // ISO YYYY-MM-DD
+  departureDate?: string;
+  returnDate?: string;
 }
 
 // ─── Print-only day page ──────────────────────────────────────────────────────
 
-function PrintDayPage({
-  rawDay,
-  isFirst,
-}: {
-  rawDay: DayPlan;
-  isFirst: boolean;
-}) {
-  const day = normalizeDayPlan(rawDay);
+function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }) {
+  const day   = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
   return (
     // p-16 is the physical page margin — required because @page { margin: 0 }
     <div className={`p-16${isFirst ? "" : " print:break-before-page"}`}>
 
-      {/* Day header */}
+      {/* ── Day header ── */}
       <div className="border-b-2 border-black pb-5 mb-10">
         <p className="text-xs tracking-widest uppercase text-black/40 mb-3">
           Day {day.day}
@@ -51,59 +87,83 @@ function PrintDayPage({
         </div>
       </div>
 
-      {/* Timeline rows — CSS Grid locks the two-column layout rigidly */}
+      {/* ── Timeline ── */}
       <div>
-        {items.map((item: TimelineItem, i: number) => (
-          <div
-            key={i}
-            className="grid gap-6 border-t border-black/20 py-5 break-inside-avoid"
-            style={{ gridTemplateColumns: "80px 1fr" }}
-          >
-            {/* Time column — fixed 80 px, never wraps */}
-            <div>
-              <span className="font-mono text-[10px] text-black/40 leading-none">
-                {item.startTime ?? ""}
-              </span>
-            </div>
+        {items.map((item: TimelineItem, i: number) => {
+          const imageUrl = item.photoReference
+            ? `/api/photo?ref=${item.photoReference}`
+            : item.photoUrl ?? null;
 
-            {/* Content column */}
-            <div>
-              {/* Title + type badge */}
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <h3 className="font-serif italic text-2xl leading-tight text-black">
-                  {item.title}
-                </h3>
-                <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
-                  {isMealType(item.type)
-                    ? item.type
-                    : (item.category ?? "activity")}
-                </span>
-              </div>
+          return (
+            <div key={i}>
+              {/* Transit connector between activities */}
+              {i > 0 && item.transitFromPrevious && (
+                <TransitRow transit={item.transitFromPrevious} />
+              )}
 
-              {/* Description */}
-              <p className="text-sm text-black/60 leading-relaxed mb-3">
-                {item.description}
-              </p>
+              {/* Activity row — CSS Grid: 80px (time) | 1fr (content) | 80px (image) */}
+              <div
+                className="grid border-t border-black/20 py-5 break-inside-avoid"
+                style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}
+              >
+                {/* Time column */}
+                <div>
+                  <span className="font-mono text-[10px] text-black/40 leading-none">
+                    {item.startTime ?? ""}
+                  </span>
+                </div>
 
-              {/* Meta tags — grouped in a flex-wrap row so they never scatter */}
-              {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
-                <div className="flex flex-row flex-wrap gap-3 text-[10px] text-black/40">
-                  {item.duration && <span>{item.duration}</span>}
-                  {item.rating !== undefined && (
-                    <span>&#9733;&nbsp;{item.rating.toFixed(1)}</span>
-                  )}
-                  {item.pricePoint && <span>{item.pricePoint}</span>}
-                  {item.dietaryNote && (
-                    <span className="italic">{item.dietaryNote}</span>
+                {/* Content column */}
+                <div>
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <h3 className="font-serif italic text-2xl leading-tight text-black">
+                      {item.title}
+                    </h3>
+                    <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
+                      {isMealType(item.type)
+                        ? item.type
+                        : (item.category ?? "activity")}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-black/60 leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+
+                  {/* Meta tags — grouped so they never scatter */}
+                  {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
+                    <div className="flex flex-row flex-wrap gap-3 text-[10px] text-black/40">
+                      {item.duration && <span>{item.duration}</span>}
+                      {item.rating !== undefined && (
+                        <span>&#9733;&nbsp;{item.rating.toFixed(1)}</span>
+                      )}
+                      {item.pricePoint && <span>{item.pricePoint}</span>}
+                      {item.dietaryNote && (
+                        <span className="italic">{item.dietaryNote}</span>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
+
+                {/* Image column — empty cell keeps the grid intact when no image */}
+                <div>
+                  {imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={imageUrl}
+                      alt={item.title}
+                      className="w-20 h-20 object-cover rounded-sm"
+                      style={{ display: "block" }}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Hidden gem */}
+      {/* ── Hidden gem ── */}
       {day.hiddenGem && (
         <div className="border-t border-black/20 pt-6 mt-4 break-inside-avoid">
           <p className="text-xs tracking-widest uppercase text-black/40 mb-2">
@@ -130,19 +190,14 @@ export default function PrintItinerary({
   return (
     <div className="hidden print:block bg-white text-black font-sans">
 
-      {/*
-        Kill browser chrome (URLs, dates, page numbers).
-        @page { margin: 0 } removes the browser header/footer area.
-        Body margin is deliberately omitted here — each page wrapper
-        carries its own p-16 padding to act as the physical margin.
-      */}
+      {/* Kill browser chrome (URLs, dates, page numbers) */}
       <style>{`
         @media print {
           @page { margin: 0; }
         }
       `}</style>
 
-      {/* ── COVER PAGE — p-16 is the physical page margin ────────────────── */}
+      {/* ── COVER PAGE — p-16 is the physical page margin ── */}
       <div className="print:break-after-page min-h-screen flex flex-col p-16">
 
         {/* Top bar */}
@@ -161,28 +216,23 @@ export default function PrintItinerary({
             Your Bespoke Journey
           </p>
 
-          {/* Destination — absolutely massive serif */}
           <h1 className="font-serif italic text-8xl leading-none text-black mb-8">
             {itinerary.destination}
           </h1>
 
-          {/* Dates */}
           {hasDates && (
             <p className="text-sm tracking-[0.15em] uppercase text-black/50 mb-1">
               {formatDate(departureDate!)} &ndash; {formatDate(returnDate!)}
             </p>
           )}
 
-          {/* Day count */}
           <p className="text-sm tracking-[0.15em] uppercase text-black/40">
             {itinerary.days.length}&nbsp;
             {itinerary.days.length === 1 ? "Day" : "Days"}
           </p>
 
-          {/* Thin rule */}
           <div className="w-12 h-px bg-black/25 my-10" />
 
-          {/* Editorial quote */}
           <blockquote className="font-serif italic text-2xl text-black/70 leading-relaxed max-w-xl">
             &quot;{itinerary.editorial}&quot;
           </blockquote>
@@ -196,7 +246,7 @@ export default function PrintItinerary({
         </div>
       </div>
 
-      {/* ── DAY PAGES — padding lives inside PrintDayPage ────────────────── */}
+      {/* ── DAY PAGES — padding lives inside PrintDayPage ── */}
       {itinerary.days.map((day, i) => (
         <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} />
       ))}

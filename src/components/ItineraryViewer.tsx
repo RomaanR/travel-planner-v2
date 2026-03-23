@@ -177,7 +177,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="mb-8 print:opacity-100"
+        className="mb-8 print:hidden"
       >
         <div className="w-8 h-px bg-burnt-orange mb-4 print:bg-black" />
         <blockquote className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-relaxed print:text-black">
