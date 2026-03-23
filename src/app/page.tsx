@@ -95,6 +95,16 @@ export default function HomePage() {
         <div className="px-8 md:px-16 pb-16 md:pb-24 scroll-mt-20">
           {/* Curation Form */}
           <CurationForm onGenerate={handleGenerate} />
+          {/* Secondary CTA — sample itinerary preview */}
+          <div className="mt-5">
+            <Link
+              href="/sample"
+              className="micro-copy inline-flex items-center gap-2 text-white/55 hover:text-white/90 border border-white/20 hover:border-white/40 px-5 py-2.5 transition-all duration-300"
+            >
+              <span>View Sample Itinerary</span>
+              <span className="text-white/30">&rarr;</span>
+            </Link>
+          </div>
         </div>
 
         {/* Scroll indicator */}
