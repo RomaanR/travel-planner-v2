@@ -16,6 +16,7 @@ import type {
 import { normalizeDayPlan } from "@/lib/itineraryUtils";
 import InteractiveStays from "@/components/InteractiveStays";
 import TimelineCard from "@/components/TimelineCard";
+import PrintItinerary from "@/components/PrintItinerary";
 
 // ─── Transit connector ────────────────────────────────────────────────────────
 
@@ -152,33 +153,24 @@ interface ItineraryViewerProps {
   bottomSection?: ReactNode;
   /** User's chosen transport mode — filters transit display to show only the relevant time */
   transportMode?: "walking-transit" | "car-driver";
+  /** Travel dates — passed from sessionStorage on the live itinerary page; shown on the print cover */
+  departureDate?: string;
+  returnDate?: string;
 }
 
-export default function ItineraryViewer({ itinerary, bottomSection, transportMode }: ItineraryViewerProps) {
+export default function ItineraryViewer({ itinerary, bottomSection, transportMode, departureDate, returnDate }: ItineraryViewerProps) {
   // null = All Days view; number = single day index
   const [activeDay, setActiveDay] = useState<number | null>(0);
   const currentDay = activeDay !== null ? itinerary.days?.[activeDay] : null;
 
   return (
     <>
-      {/* ── PRINT ONLY: Branded dossier header ── */}
-      <div className="hidden print:flex flex-col mb-10">
-        <div className="flex items-center justify-between pb-3 border-b-2 border-black mb-4">
-          <span className="font-sans font-bold text-[11px] tracking-[0.3em] uppercase text-black">
-            Seek Wander
-          </span>
-          <span className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/40">
-            Curated Luxury Itinerary
-          </span>
-        </div>
-        <h1 className="font-serif italic text-5xl text-black leading-none">
-          {itinerary.destination}
-        </h1>
-        <p className="font-sans text-[10px] tracking-[0.2em] uppercase text-black/50 mt-2">
-          {itinerary.days.length}&nbsp;{itinerary.days.length === 1 ? "Day" : "Days"}
-        </p>
-        <div className="mt-4 h-px bg-black/10" />
-      </div>
+      {/* ── PRINT ONLY: Editorial magazine layout ── */}
+      <PrintItinerary
+        itinerary={itinerary}
+        departureDate={departureDate}
+        returnDate={returnDate}
+      />
 
       {/* Editorial opener */}
       <motion.div
@@ -282,18 +274,6 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
             )
           )}
         </AnimatePresence>
-      </div>
-
-      {/* ── PRINT ONLY: All days in sequence, each on a fresh page ── */}
-      <div className="hidden print:block">
-        {itinerary.days.map((day, i) => (
-          <div
-            key={`print-day-${day.day}`}
-            className={`print:break-inside-avoid${i > 0 ? " print:break-before-page" : ""}`}
-          >
-            <DaySection day={day} transportMode={transportMode} />
-          </div>
-        ))}
       </div>
 
       {/* Custom bottom section — hidden in print (CTAs have no meaning on paper) */}

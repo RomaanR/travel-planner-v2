@@ -58,6 +58,8 @@ export default function ItineraryPage() {
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [departureDate, setDepartureDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
 
   async function handleSave() {
     if (!itinerary || saveState !== "idle") return;
@@ -95,6 +97,8 @@ export default function ItineraryPage() {
 
     const data = result.data as ItineraryRequest;
     setDestination(data.destination);
+    setDepartureDate(data.departureDate ?? "");
+    setReturnDate(data.returnDate ?? "");
     setMapCenter({ lat: data.lat, lng: data.lng });
     if (data.transportMode === "walking-transit" || data.transportMode === "car-driver") {
       setTransportMode(data.transportMode);
@@ -238,6 +242,8 @@ export default function ItineraryPage() {
               <ItineraryViewer
                 itinerary={itinerary}
                 transportMode={transportMode}
+                departureDate={departureDate}
+                returnDate={returnDate}
                 bottomSection={
                   <motion.div
                     initial={{ opacity: 0 }}
