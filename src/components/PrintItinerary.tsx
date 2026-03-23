@@ -11,6 +11,22 @@ function formatDate(iso: string): string {
   });
 }
 
+// Returns a guaranteed premium Unsplash fallback keyed by activity type.
+// Ensures every image column has a beautiful photo even when Google Places
+// enrichment is absent (e.g. sample itinerary meals, offline saved trips).
+function getFallbackImage(type: string): string {
+  if (["breakfast", "lunch", "dinner", "snack", "drinks"].includes(type)) {
+    return "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80";
+  }
+  if (["MUSEUM", "CULTURE", "SHOPPING"].includes(type.toUpperCase())) {
+    return "https://images.unsplash.com/photo-1518998053401-878c7356cecb?w=400&q=80";
+  }
+  if (["NATURE", "ADVENTURE", "WELLNESS"].includes(type.toUpperCase())) {
+    return "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80";
+  }
+  return "https://images.unsplash.com/photo-1488646953014-85cb84e24328?w=400&q=80";
+}
+
 // Grid column definition reused across activity rows and transit connectors
 // so both always align perfectly: 80px (time) | 1fr (content) | 80px (image)
 const GRID_COLS = "80px 1fr 80px";
@@ -90,9 +106,13 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
       {/* ── Timeline ── */}
       <div>
         {items.map((item: TimelineItem, i: number) => {
-          const imageUrl = item.photoReference
-            ? `/api/photo?ref=${item.photoReference}`
-            : item.photoUrl ?? null;
+          // Resolve image: proxy ref → legacy url → category fallback.
+          // Never null — every row is guaranteed a photo.
+          const imageUrl =
+            item.photoReference
+              ? `/api/photo?ref=${item.photoReference}`
+              : item.photoUrl
+              ?? getFallbackImage(item.category ?? item.type);
 
           return (
             <div key={i}>
@@ -145,17 +165,16 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
                   )}
                 </div>
 
-                {/* Image column — empty cell keeps the grid intact when no image */}
+                {/* Image column — always populated; eager-loaded for print */}
                 <div>
-                  {imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={imageUrl}
-                      alt={item.title}
-                      className="w-20 h-20 object-cover rounded-sm"
-                      style={{ display: "block" }}
-                    />
-                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageUrl}
+                    alt={item.title}
+                    loading="eager"
+                    className="w-20 h-20 object-cover rounded-sm"
+                    style={{ display: "block" }}
+                  />
                 </div>
               </div>
             </div>
