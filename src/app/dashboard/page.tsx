@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import UnauthenticatedState from "@/components/UnauthenticatedState";
 import Link from "next/link";
-import { MapPin, Zap, Calendar } from "lucide-react";
+import { MapPin, Zap, Calendar, Bookmark } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import dynamicImport from "next/dynamic";
 import type { DestinationPin } from "@/components/WorldMap";
@@ -71,10 +71,11 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const availableCredits  = profile ? profile.availableCredits : 1;
-  const totalTrips        = allTrips.length;
+  const availableCredits   = profile ? profile.availableCredits : 1;
+  const generatedCount     = profile?.totalGenerations ?? 0;
+  const savedCount         = allTrips.length;
   const uniqueDestinations = new Set(allTrips.map((t) => t.destination)).size;
-  const totalDays         = allTrips.reduce((sum, t) => sum + t.days, 0);
+  const totalDays          = allTrips.reduce((sum, t) => sum + t.days, 0);
 
   // ── Extract coordinates from stored itinerary JSON ─────────────────────────
   // Each saved itinerary has days[0].timeline[0].coordinates close to the
@@ -148,10 +149,11 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Stats row ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-            <StatCard icon={<MapPin size={16} strokeWidth={1.5} />}  label="TRIPS GENERATED"     value={totalTrips} />
-            <StatCard icon={<Zap size={16} strokeWidth={1.5} />}     label="DESTINATIONS"         value={uniqueDestinations} />
-            <StatCard icon={<Calendar size={16} strokeWidth={1.5} />} label="DAYS PLANNED"        value={totalDays} />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            <StatCard icon={<Zap size={16} strokeWidth={1.5} />}      label="TRIPS GENERATED" value={generatedCount} />
+            <StatCard icon={<Bookmark size={16} strokeWidth={1.5} />} label="TRIPS SAVED"     value={savedCount} />
+            <StatCard icon={<MapPin size={16} strokeWidth={1.5} />}   label="DESTINATIONS"    value={uniqueDestinations} />
+            <StatCard icon={<Calendar size={16} strokeWidth={1.5} />} label="DAYS PLANNED"    value={totalDays} />
           </div>
 
           {/* ── World map ── */}

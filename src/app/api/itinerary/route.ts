@@ -855,8 +855,8 @@ export async function POST(req: Request) {
     if (userId) {
       prisma.userProfile.upsert({
         where:  { id: userId },
-        create: { id: userId, availableCredits: 0 }, // used their implicit free credit
-        update: { availableCredits: { decrement: 1 } },
+        create: { id: userId, availableCredits: 0, totalGenerations: 1 }, // used their implicit free credit
+        update: { availableCredits: { decrement: 1 }, totalGenerations: { increment: 1 } },
       }).catch(() => console.error("[itinerary] UserProfile decrement failed"));
     }
 

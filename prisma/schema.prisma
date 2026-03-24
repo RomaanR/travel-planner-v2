@@ -35,6 +35,7 @@ model PlaceCache {
 model UserProfile {
   id               String   @id                    // Clerk userId
   availableCredits Int      @default(1)             // 1 free credit on account creation; +1 per purchase
+  totalGenerations Int      @default(0)             // incremented on every successful AI generation (saved or not)
   stripeCustomerId String?  @unique                 // kept for refund/audit purposes
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
