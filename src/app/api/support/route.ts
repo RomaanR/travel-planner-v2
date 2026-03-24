@@ -6,7 +6,7 @@ import { supportRatelimit } from "@/lib/ratelimit";
 
 const SupportSchema = z.object({
   email:   z.string().email("Please enter a valid email address.").max(254),
-  message: z.string().min(10, "Message must be at least 10 characters.").max(3000),
+  message: z.string().min(1, "Please enter a message.").max(3000),
 });
 
 export async function POST(req: NextRequest) {
@@ -48,10 +48,10 @@ export async function POST(req: NextRequest) {
 
   const parsed = SupportSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json(
-      { error: parsed.error.flatten().fieldErrors },
-      { status: 400 }
-    );
+    // Flatten to a single string so the client can display it directly
+    const firstError = Object.values(parsed.error.flatten().fieldErrors)
+      .flat()[0] ?? "Please check your details and try again.";
+    return Response.json({ error: firstError }, { status: 400 });
   }
 
   const { email, message } = parsed.data;
