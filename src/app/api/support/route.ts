@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 import { supportRatelimit } from "@/lib/ratelimit";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const SupportSchema = z.object({
   email:   z.string().email("Please enter a valid email address.").max(254),
@@ -53,6 +56,43 @@ export async function POST(req: NextRequest) {
 
   // ── Persist to database ─────────────────────────────────────────────────────
   await prisma.supportTicket.create({ data: { email, message } });
+
+  // ── Send notification email ─────────────────────────────────────────────────
+  // Fire-and-forget — a failed email never blocks the user's success response.
+  // The ticket is already saved to the DB, so no data is lost if Resend is down.
+  resend.emails.send({
+    from:    "Seek Wander Support <onboarding@resend.dev>",
+    to:      "zenithai003@gmail.com",
+    replyTo: email,
+    subject: `New Support Ticket — ${email}`,
+    html: `
+      <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:32px;background:#F5F0E8;color:#0A0A0A;">
+        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6B6B6B;margin:0 0 8px;">
+          Seek Wander &mdash; Client Support
+        </p>
+        <h1 style="font-size:28px;font-style:italic;font-weight:400;margin:0 0 24px;">
+          New Support Ticket
+        </h1>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:0 0 4px;">From</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;padding:0 0 24px;border-bottom:1px solid rgba(10,10,10,0.1);">${email}</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:16px 0 4px;">Message</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;line-height:1.7;white-space:pre-wrap;">${message}</td>
+          </tr>
+        </table>
+        <p style="margin-top:32px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;">
+          Reply directly to this email to respond to the client.
+        </p>
+      </div>
+    `,
+  }).catch((err) => console.error("[support] Resend failed:", err));
 
   return Response.json({ success: true });
 }
