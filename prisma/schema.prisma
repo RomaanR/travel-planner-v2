@@ -51,3 +51,11 @@ model CostLog {
   cacheMisses Int                            // = googleTextSearchCalls (items not in cache)
   createdAt   DateTime @default(now())
 }
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  email     String
+  message   String
+  status    String   @default("open")       // "open" | "resolved" — for future admin triage
+  createdAt DateTime @default(now())
+}

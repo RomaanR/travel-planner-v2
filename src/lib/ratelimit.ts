@@ -16,3 +16,13 @@ export const ratelimit = new Ratelimit({
   analytics: true,                       // surfaces usage in Upstash dashboard
   prefix:    "seek-wander:itinerary",    // namespaced — clean Redis keyspace
 });
+
+// 3 support tickets per IP per sliding 1-hour window.
+// Public unauthenticated endpoint — IP-keyed to prevent spam bot submissions.
+// No shared "anonymous" bucket — missing x-forwarded-for is rejected at the route level.
+export const supportRatelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(3, "1 h"),
+  analytics: true,
+  prefix:    "seek-wander:support",
+});

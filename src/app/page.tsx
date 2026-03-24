@@ -250,9 +250,9 @@ export default function HomePage() {
             <Link href="/refunds" className="micro-copy text-ink-light hover:text-ink transition-colors">
               Refunds
             </Link>
-            <a href="mailto:hello@seekwander.com" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Contact
-            </a>
+            <Link href="/support" className="micro-copy text-ink-light hover:text-ink transition-colors">
+              Support
+            </Link>
           </div>
           <p className="micro-copy text-ink-light">
             &copy; {new Date().getFullYear()} Seek Wander. All rights reserved.
