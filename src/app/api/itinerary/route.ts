@@ -49,6 +49,7 @@ const ItinerarySchema = z.object({
   // "relaxed" → up to 4km / 45-min walk; allows adjacent-neighbourhood exploration.
   // Ignored entirely when transportMode === "car-driver".
   walkingTolerance:     z.enum(["strict", "relaxed"]).optional(),
+  isRegion:             z.boolean().optional(),
 });
 
 type ItineraryRequest = z.infer<typeof ItinerarySchema>;
@@ -167,6 +168,7 @@ function buildPrompt(data: ItineraryRequest): string {
   const {
     destination, duration, travelParty, pace, budgetTier, dietary, interests,
     departureDate, returnDate, exactHotelAddress, transportMode, walkingTolerance,
+    isRegion,
   } = data;
 
   const baseCamp = exactHotelAddress
@@ -177,15 +179,19 @@ function buildPrompt(data: ItineraryRequest): string {
     ? "Rental Car / Private Driver"
     : "Walking & Public Transit (default)";
 
-  const neighborhoodLockRule = transportMode === "car-driver"
-    ? "You may suggest regional day trips and cross-district exploration. However, consecutive stops WITHIN a single day must still be geographically clustered — do not schedule stops more than 40km apart within the same day."
-    : `ALL activities for the ENTIRE TRIP must stay within the exact same city and its immediate walkable neighbourhoods as the Base Camp. DO NOT suggest regional day trips, neighbouring towns, or any attraction that requires highway travel or a dedicated long-distance journey. Concrete example: if the Base Camp is central Antalya, do NOT suggest Aspendos, Perge, Side, Pamukkale, or Cappadocia — these violate this rule. Every single activity must be reachable on foot or by local public transit within the city.`;
+  const neighborhoodLockRule = isRegion
+    ? "The user has selected a broad geographical region rather than a single city. For each day of the itinerary, anchor the user in ONE specific city or town within this region — do not mix stops from different towns on the same day. Arrange the days in a logical geographical sequence to minimize backtracking across the region. Day-to-day travel between anchor towns is expected and acceptable."
+    : transportMode === "car-driver"
+      ? "You may suggest regional day trips and cross-district exploration. However, consecutive stops WITHIN a single day must still be geographically clustered — do not schedule stops more than 40km apart within the same day."
+      : `ALL activities for the ENTIRE TRIP must stay within the exact same city and its immediate walkable neighbourhoods as the Base Camp. DO NOT suggest regional day trips, neighbouring towns, or any attraction that requires highway travel or a dedicated long-distance journey. Concrete example: if the Base Camp is central Antalya, do NOT suggest Aspendos, Perge, Side, Pamukkale, or Cappadocia — these violate this rule. Every single activity must be reachable on foot or by local public transit within the city.`;
 
-  const transitTimeRule = transportMode === "car-driver"
-    ? "Verify that consecutive stops within a day are reachable within 30 minutes by car. If a pair of stops would take longer, widen the startTime gap to reflect reality."
-    : walkingTolerance === "relaxed"
-      ? "You may place consecutive stops up to 4km / 45 minutes walking distance apart, allowing the itinerary to span adjacent neighbourhoods within the city. This is the user's explicit preference — do not artificially over-cluster stops. The city-boundary rule (Rule 11) still applies."
-      : "HARD CONSTRAINT — WALKING ONLY: You MUST select places for each day that are within a strict 1.5 km radius of each other. Do NOT suggest any place that requires more than 20 minutes of walking from the previous location. This is non-negotiable. If a landmark is famous but farther than 1.5 km from the previous stop, exclude it and choose a closer alternative in the same neighbourhood. Violating this rule makes the itinerary unusable for the user.";
+  const transitTimeRule = isRegion
+    ? "Within each day's anchor city, keep consecutive stops within a comfortable 30-minute walk or short taxi ride. Inter-day travel between anchor cities is expected — widen startTime gaps on travel days to reflect realistic transit. Do not schedule a full activity slate on a heavy travel day."
+    : transportMode === "car-driver"
+      ? "Verify that consecutive stops within a day are reachable within 30 minutes by car. If a pair of stops would take longer, widen the startTime gap to reflect reality."
+      : walkingTolerance === "relaxed"
+        ? "You may place consecutive stops up to 4km / 45 minutes walking distance apart, allowing the itinerary to span adjacent neighbourhoods within the city. This is the user's explicit preference — do not artificially over-cluster stops. The city-boundary rule (Rule 11) still applies."
+        : "HARD CONSTRAINT — WALKING ONLY: You MUST select places for each day that are within a strict 1.5 km radius of each other. Do NOT suggest any place that requires more than 20 minutes of walking from the previous location. This is non-negotiable. If a landmark is famous but farther than 1.5 km from the previous stop, exclude it and choose a closer alternative in the same neighbourhood. Violating this rule makes the itinerary unusable for the user.";
 
   const dietaryStr = dietary.length === 0 || dietary.includes("none")
     ? "No dietary restrictions"

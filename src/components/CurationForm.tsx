@@ -148,6 +148,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const [exactHotelAddress, setExactHotelAddress] = useState("");
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
   const [walkingTolerance, setWalkingTolerance] = useState<"strict" | "relaxed">("strict");
+  const [isRegion, setIsRegion] = useState(false);
   const localToday = useMemo(getLocalToday, []);
 
   const [form, setForm] = useState<Partial<ItineraryRequest>>({
@@ -183,6 +184,17 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     const ADMIN_AREA_RE = /^(metropolitan city of|province of|region of|county of|prefecture of|district of|municipality of)\b/i;
     const rawName = place.name || place.formatted_address || inputValue;
     const cleanDestination = ADMIN_AREA_RE.test(rawName) ? (inputValue.trim() || rawName) : rawName;
+
+    // Detect whether the selected place is a broad region (e.g. "Kansai", "Tuscany")
+    // rather than a specific city. City types short-circuit to false; admin/natural
+    // area types (without a co-present locality) flag as region. "country" excluded —
+    // whole-country selections are too broad for region-mode to be useful.
+    const placeTypes = place.types ?? [];
+    const CITY_TYPES   = new Set(["locality", "sublocality", "neighborhood", "postal_town", "sublocality_level_1"]);
+    const REGION_TYPES = new Set(["administrative_area_level_1", "administrative_area_level_2", "natural_feature", "colloquial_area"]);
+    const hasCity      = placeTypes.some((t) => CITY_TYPES.has(t));
+    const hasRegion    = placeTypes.some((t) => REGION_TYPES.has(t));
+    setIsRegion(!hasCity && hasRegion);
 
     const update = {
       destination: cleanDestination,
@@ -285,6 +297,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
       transportMode,
       // Only send when walking — car-driver ignores this value entirely on the server.
       walkingTolerance:   transportMode === "walking-transit" ? walkingTolerance : undefined,
+      isRegion,
     });
   }
 
@@ -302,12 +315,12 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             <Autocomplete
               onLoad={(ref) => (autocompleteRef.current = ref)}
               onPlaceChanged={onPlaceChanged}
-              options={{ types: ["(cities)"] }}
+              options={{ types: ["(regions)"] }}
             >
               <input
                 type="text"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => { setInputValue(e.target.value); setIsRegion(false); }}
                 onFocus={(e) => e.currentTarget.scrollIntoView({ behavior: "smooth", block: "start" })}
                 placeholder="Where do you wish to disappear?"
                 className="w-full py-5 pr-4 bg-transparent text-ink placeholder:text-ink-light font-sans text-base outline-none scroll-mt-32"
@@ -327,6 +340,22 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
           </div>
         )}
       </div>
+
+      {/* Region warning — fades in when a broad region is detected */}
+      <AnimatePresence>
+        {isRegion && stage >= 1 && (
+          <motion.p
+            key="region-warning"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="mt-2 text-[10px] tracking-widest uppercase text-burnt-orange"
+          >
+            Broad region selected &mdash; we will curate a multi-destination journey with longer transit between days.
+          </motion.p>
+        )}
+      </AnimatePresence>
 
       {/* Stage 1: Preference panel */}
       <AnimatePresence>
