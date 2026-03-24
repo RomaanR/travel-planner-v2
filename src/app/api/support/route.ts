@@ -4,8 +4,6 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/db";
 import { supportRatelimit } from "@/lib/ratelimit";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const SupportSchema = z.object({
   email:   z.string().email("Please enter a valid email address.").max(254),
   message: z.string().min(10, "Message must be at least 10 characters.").max(3000),
@@ -13,9 +11,13 @@ const SupportSchema = z.object({
 
 export async function POST(req: NextRequest) {
   // ── Rate limit by IP ────────────────────────────────────────────────────────
-  // x-forwarded-for is set by Vercel edge. Absent on localhost — reject rather
-  // than fall back to a shared bucket that would let bots self-rate-limit.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  // x-forwarded-for is set by Vercel edge. Falls back to "127.0.0.1" in local
+  // dev so the form is testable without a tunnel. In production, a missing
+  // header is rejected (no shared anonymous bucket).
+  const isDev = process.env.NODE_ENV === "development";
+  const ip    = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+             ?? (isDev ? "127.0.0.1" : null);
+
   if (!ip) {
     return Response.json(
       { error: "Unable to verify request origin." },
@@ -60,8 +62,9 @@ export async function POST(req: NextRequest) {
   // ── Send notification email ─────────────────────────────────────────────────
   // Fire-and-forget — a failed email never blocks the user's success response.
   // The ticket is already saved to the DB, so no data is lost if Resend is down.
+  const resend = new Resend(process.env.RESEND_API_KEY);
   resend.emails.send({
-    from:    "Seek Wander Support <onboarding@resend.dev>",
+    from:    "onboarding@resend.dev",
     to:      "zenithai003@gmail.com",
     replyTo: email,
     subject: `New Support Ticket — ${email}`,
