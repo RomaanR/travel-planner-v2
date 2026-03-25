@@ -72,6 +72,7 @@ export type ActivityAlternative = {
 
 /** Unified card type — replaces separate Activity + DiningRec for new itineraries */
 export type TimelineItem = {
+  spatialReasoning?: string; // AI chain-of-thought — present in raw AI output, stripped server-side before client response
   type: TimelineItemType;
   title: string;           // activity name OR restaurant name
   description: string;     // 2 sentences for activities; cuisine for meals

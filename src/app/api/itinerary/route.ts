@@ -103,6 +103,7 @@ const SCHEMA = `{
       "pace": "relaxed | moderate | packed",
       "timeline": [
         {
+          "spatialReasoning": "string — MANDATORY FIRST. State: (a) the neighbourhood of the PREVIOUS stop (or 'Start of day' for first item), (b) the neighbourhood of THIS proposed stop, (c) estimated transit time between them, (d) PASS or VIOLATION. If VIOLATION, write 'VIOLATION — choosing closer alternative:' and name the replacement before proceeding.",
           "type": "activity | breakfast | lunch | dinner | snack | drinks",
           "title": "string (place or activity name — real names only)",
           "description": "string (exactly 2 concise sentences, each ≤15 words)",
@@ -142,6 +143,7 @@ const SCHEMA_WITH_STAYS = `{
       "pace": "relaxed | moderate | packed",
       "timeline": [
         {
+          "spatialReasoning": "string — MANDATORY FIRST. State: (a) the neighbourhood of the PREVIOUS stop (or 'Start of day' for first item), (b) the neighbourhood of THIS proposed stop, (c) estimated transit time between them, (d) PASS or VIOLATION. If VIOLATION, write 'VIOLATION — choosing closer alternative:' and name the replacement before proceeding.",
           "type": "activity | breakfast | lunch | dinner | snack | drinks",
           "title": "string (place or activity name — real names only)",
           "description": "string (exactly 2 concise sentences, each ≤15 words)",
@@ -250,7 +252,8 @@ Travel dates: ${departureDate} to ${returnDate}
 10. Writing: restrained elegance, no hyperbole. Every description is exactly 2 sentences, each sentence ≤15 words. Brevity is luxury.
 11. THE NEIGHBOURHOOD LOCK: ${neighborhoodLockRule}
 12. TRANSIT TIME REALITY: ${transitTimeRule}
-13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. For trips of 4–5 days: cap total timeline items across ALL days at 25 maximum. For trips of 6–7 days: cap total timeline items across ALL days at 30 maximum — quality always over quantity.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
+13. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. For trips of 4–5 days: cap total timeline items across ALL days at 25 maximum. For trips of 6–7 days: cap total timeline items across ALL days at 30 maximum — quality always over quantity.
+14. CHAIN OF THOUGHT — SPATIAL VALIDATION (MANDATORY): For EVERY timeline item, you MUST fill in the "spatialReasoning" field FIRST before writing the title or coordinates. Explicitly state: (a) the neighbourhood/district of the PREVIOUS stop, or "Start of day" for the first item; (b) the neighbourhood/district you are considering for THIS stop; (c) your estimated transit time between them; (d) whether this PASSES or VIOLATES the user's mobility rule. If it violates the rule, write "VIOLATION — choosing closer alternative:" followed by your replacement choice. This is your internal spatial scratch-pad — it ensures you never commit to a geographically incoherent stop.${familyRule}${halalRule}${kosherRule}${gfRule}${dfRule}${veganRule}
 
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
@@ -800,6 +803,14 @@ export async function POST(req: Request) {
         }
       });
     });
+
+    // ── Step 4b: Strip internal chain-of-thought before transmitting to client ─
+    // spatialReasoning is AI scratch-pad only — not typed in the response, adds payload weight
+    for (const day of itinerary.days) {
+      for (const item of (day.timeline ?? [])) {
+        delete (item as Record<string, unknown>).spatialReasoning;
+      }
+    }
 
     // ── Step 5: Calculate generation cost ────────────────────────────────────
     // retryInputTokens / retryOutputTokens are non-zero only when a spatial retry fired.
