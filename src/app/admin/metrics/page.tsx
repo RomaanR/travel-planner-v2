@@ -61,7 +61,7 @@ export default async function AdminMetricsPage() {
   // ── Data ────────────────────────────────────────────────────────────────────
   const [agg, logs, stripePayments, userAgg, zeroCredits, totalUsers] = await Promise.all([
     prisma.costLog.aggregate({
-      _sum:   { totalCost: true, aiCost: true, googleCost: true, cacheHits: true, cacheMisses: true },
+      _sum:   { totalCost: true, aiCost: true, googleCost: true, cacheHits: true, cacheMisses: true, inputTokens: true, outputTokens: true, thinkingTokens: true },
       _avg:   { totalCost: true },
       _count: { _all: true },
     }),
@@ -85,9 +85,13 @@ export default async function AdminMetricsPage() {
   const totalGoogle    = Number(agg._sum.googleCost  ?? 0);
   const avgCost        = Number(agg._avg.totalCost   ?? 0);
   const totalGens      = agg._count._all;
-  const totalHits      = Number(agg._sum.cacheHits   ?? 0);
-  const totalMisses    = Number(agg._sum.cacheMisses ?? 0);
-  const cacheHitRate   = totalHits + totalMisses > 0
+  const totalHits         = Number(agg._sum.cacheHits      ?? 0);
+  const totalMisses       = Number(agg._sum.cacheMisses    ?? 0);
+  const totalInputTokens  = Number(agg._sum.inputTokens    ?? 0);
+  const totalOutputTokens = Number(agg._sum.outputTokens   ?? 0);
+  const totalThinkTokens  = Number(agg._sum.thinkingTokens ?? 0);
+  const totalTokens       = totalInputTokens + totalOutputTokens;
+  const cacheHitRate      = totalHits + totalMisses > 0
     ? (totalHits / (totalHits + totalMisses)) * 100
     : 0;
 
@@ -315,6 +319,16 @@ export default async function AdminMetricsPage() {
               <p className="micro-copy text-ink-light/60 mt-1">
                 {totalGens > 0 ? `$${fmt(totalAi / totalGens)} avg per trip` : "—"}
               </p>
+              <div className="mt-3 pt-3 border-t border-ink/10 space-y-0.5">
+                <p className="micro-copy text-ink-light/60">
+                  {totalTokens.toLocaleString()} total tokens
+                  {totalGens > 0 ? ` · ${Math.round(totalTokens / totalGens).toLocaleString()} avg/trip` : ""}
+                </p>
+                <p className="micro-copy text-ink-light/60">
+                  in {totalInputTokens.toLocaleString()} · out {totalOutputTokens.toLocaleString()}
+                  {totalThinkTokens > 0 ? ` · think ${totalThinkTokens.toLocaleString()}` : ""}
+                </p>
+              </div>
             </div>
             <div className="bg-paper-dark p-6">
               <p className="micro-copy text-ink-light mb-1">Total Google Places Cost</p>
@@ -352,7 +366,7 @@ export default async function AdminMetricsPage() {
                 {/* Head */}
                 <thead>
                   <tr className="bg-paper-dark border-b border-ink/10">
-                    {["Date", "Destination", "User", "AI Cost", "Google Cost", "Total", "Cache"].map((h) => (
+                    {["Date", "Destination", "User", "Tokens (in/out/think)", "AI Cost", "Google Cost", "Total", "Cache"].map((h) => (
                       <th
                         key={h}
                         className="micro-copy text-left px-4 py-3 font-normal text-ink-light whitespace-nowrap"
@@ -397,6 +411,16 @@ export default async function AdminMetricsPage() {
                             ? `···${log.userId.slice(-8)}`
                             : <span className="text-ink-light/40">anon</span>
                           }
+                        </td>
+
+                        {/* Tokens */}
+                        <td className="px-4 py-3 font-mono text-xs text-ink-light whitespace-nowrap">
+                          {(log.inputTokens ?? 0).toLocaleString()}
+                          {" / "}
+                          {(log.outputTokens ?? 0).toLocaleString()}
+                          {(log.thinkingTokens ?? 0) > 0 && (
+                            <span className="text-burnt-orange"> / {log.thinkingTokens!.toLocaleString()}</span>
+                          )}
                         </td>
 
                         {/* AI Cost */}

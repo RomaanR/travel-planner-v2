@@ -42,15 +42,18 @@ model UserProfile {
 }
 
 model CostLog {
-  id          String   @id @default(uuid())
-  userId      String?                        // Clerk userId — null if unauthenticated
-  destination String
-  aiCost      Decimal  @db.Decimal(10, 6)
-  googleCost  Decimal  @db.Decimal(10, 6)
-  totalCost   Decimal  @db.Decimal(10, 6)
-  cacheHits   Int
-  cacheMisses Int                            // = googleTextSearchCalls (items not in cache)
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  userId         String?                        // Clerk userId — null if unauthenticated
+  destination    String
+  inputTokens    Int      @default(0)           // exact Anthropic input token count
+  outputTokens   Int      @default(0)           // exact Anthropic output token count (text only)
+  thinkingTokens Int      @default(0)           // Adaptive Thinking / reasoning tokens (billed at output rate; 0 when off)
+  aiCost         Decimal  @db.Decimal(10, 6)
+  googleCost     Decimal  @db.Decimal(10, 6)
+  totalCost      Decimal  @db.Decimal(10, 6)
+  cacheHits      Int
+  cacheMisses    Int                            // = googleTextSearchCalls (items not in cache)
+  createdAt      DateTime @default(now())
 }
 
 model SupportTicket {

@@ -149,14 +149,15 @@ export type DayPlan = {
 // ─── Generation cost metadata ─────────────────────────────────────────────────
 
 export type GenerationMeta = {
-  claudeInputTokens: number;
-  claudeOutputTokens: number;
-  estimatedClaudeCostUsd: number;
+  claudeInputTokens:    number;
+  claudeOutputTokens:   number;
+  claudeThinkingTokens: number;   // Adaptive Thinking / reasoning tokens (0 when off)
+  claudeCostUsd:        number;
   googleTextSearchCalls: number;
-  googleDetailsCalls: number;
-  googleCacheHits: number;
-  estimatedGoogleCostUsd: number;
-  totalEstimatedCostUsd: number;
+  googleDetailsCalls:   number;
+  googleCacheHits:      number;
+  googleCostUsd:        number;
+  totalCostUsd:         number;
 };
 
 export type RecommendedStay = {

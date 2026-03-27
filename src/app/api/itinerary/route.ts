@@ -814,8 +814,12 @@ export async function POST(req: Request) {
 
     // ── Step 5: Calculate generation cost ────────────────────────────────────
     // retryInputTokens / retryOutputTokens are non-zero only when a spatial retry fired.
+    // thinking_tokens: Anthropic SDK exposes this separately when Adaptive Thinking fires.
+    // It is billed at the output rate. Cast to any — field is absent on standard responses.
+    const thinkingTokens    = (message.usage as Record<string, unknown>).thinking_tokens as number ?? 0;
+
     const totalInputTokens  = message.usage.input_tokens  + retryInputTokens;
-    const totalOutputTokens = message.usage.output_tokens + retryOutputTokens;
+    const totalOutputTokens = message.usage.output_tokens + retryOutputTokens + thinkingTokens;
 
     const claudeCostUsd =
       totalInputTokens  * CLAUDE_INPUT_COST +
@@ -826,14 +830,15 @@ export async function POST(req: Request) {
       apiCounters.details    * GOOGLE_DETAILS;
 
     const meta: GenerationMeta = {
-      claudeInputTokens:      totalInputTokens,
-      claudeOutputTokens:     totalOutputTokens,
-      estimatedClaudeCostUsd: parseFloat(claudeCostUsd.toFixed(4)),
-      googleTextSearchCalls:  apiCounters.textSearch,
-      googleDetailsCalls:     apiCounters.details,
-      googleCacheHits:        apiCounters.cacheHits,
-      estimatedGoogleCostUsd: parseFloat(googleCostUsd.toFixed(4)),
-      totalEstimatedCostUsd:  parseFloat((claudeCostUsd + googleCostUsd).toFixed(4)),
+      claudeInputTokens:    totalInputTokens,
+      claudeOutputTokens:   totalOutputTokens,
+      claudeThinkingTokens: thinkingTokens,
+      claudeCostUsd:        parseFloat(claudeCostUsd.toFixed(4)),
+      googleTextSearchCalls: apiCounters.textSearch,
+      googleDetailsCalls:   apiCounters.details,
+      googleCacheHits:      apiCounters.cacheHits,
+      googleCostUsd:        parseFloat(googleCostUsd.toFixed(4)),
+      totalCostUsd:         parseFloat((claudeCostUsd + googleCostUsd).toFixed(4)),
     };
 
     // ── Step 6: Persist cost to CostLog ──────────────────────────────────────
@@ -843,20 +848,26 @@ export async function POST(req: Request) {
     try {
       await prisma.costLog.create({
         data: {
-          userId:      userId ?? null,
-          destination: safeBody.destination,
-          aiCost:      meta.estimatedClaudeCostUsd,
-          googleCost:  meta.estimatedGoogleCostUsd,
-          totalCost:   meta.totalEstimatedCostUsd,
-          cacheHits:   apiCounters.cacheHits,
-          cacheMisses: apiCounters.textSearch,
+          userId:         userId ?? null,
+          destination:    safeBody.destination,
+          inputTokens:    totalInputTokens,
+          outputTokens:   totalOutputTokens,
+          thinkingTokens: thinkingTokens,
+          aiCost:         meta.claudeCostUsd,
+          googleCost:     meta.googleCostUsd,
+          totalCost:      meta.totalCostUsd,
+          cacheHits:      apiCounters.cacheHits,
+          cacheMisses:    apiCounters.textSearch,
         },
       });
     } catch {
       console.error("[itinerary] CostLog write failed");
     }
 
-    console.log("[itinerary] generation cost:", meta);
+    console.log(
+      `[itinerary] cost | in=${totalInputTokens} out=${totalOutputTokens} think=${thinkingTokens} tokens` +
+      ` | claude=$${meta.claudeCostUsd} google=$${meta.googleCostUsd} total=$${meta.totalCostUsd}`
+    );
 
     // ── Step 7: Decrement available credits ───────────────────────────────────
     // Fire-and-forget — a missed decrement gives the user one extra generation
