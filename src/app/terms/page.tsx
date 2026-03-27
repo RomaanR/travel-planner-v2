@@ -41,7 +41,7 @@ export default function TermsPage() {
                 1. Acceptance of Terms
               </h2>
               <p>
-                By accessing or using Seek Wander (&quot;the Service&quot;),
+                By accessing or using TravalBee (&quot;the Service&quot;),
                 you agree to be bound by these Terms of Service. If you do not
                 agree, please do not use the Service.
               </p>
@@ -52,7 +52,7 @@ export default function TermsPage() {
                 2. Description of Service &amp; AI Disclaimer
               </h2>
               <p className="mb-3">
-                Seek Wander generates personalised travel itineraries based on
+                TravalBee generates personalised travel itineraries based on
                 your preferences. The Service utilises third-party artificial
                 intelligence (&quot;AI&quot;), specifically Anthropic&apos;s
                 Claude, to produce these itineraries.
@@ -72,7 +72,7 @@ export default function TermsPage() {
                 <strong className="text-ink">
                   You assume all risk for relying on AI-generated content.
                 </strong>{" "}
-                Seek Wander does not guarantee the accuracy, availability,
+                TravalBee does not guarantee the accuracy, availability,
                 safety, or suitability of any recommended venue, restaurant,
                 accommodation, or activity.
               </p>
@@ -148,7 +148,7 @@ export default function TermsPage() {
               <p>
                 The Service is provided &quot;as is&quot; and &quot;as
                 available&quot; without warranties of any kind, express or
-                implied. To the fullest extent permitted by law, Seek Wander
+                implied. To the fullest extent permitted by law, TravalBee
                 shall not be liable for any direct, indirect, incidental,
                 special, or consequential damages arising from your use of the
                 Service, including but not limited to travel disruptions, venue
@@ -163,9 +163,9 @@ export default function TermsPage() {
               </h2>
               <p>
                 Generated itineraries are provided for your personal,
-                non-commercial use. The Seek Wander brand, design system,
+                non-commercial use. The TravalBee brand, design system,
                 software, and underlying technology remain the exclusive
-                intellectual property of Seek Wander. Unauthorised
+                intellectual property of TravalBee. Unauthorised
                 reproduction or commercial use is prohibited.
               </p>
             </section>
@@ -189,10 +189,10 @@ export default function TermsPage() {
               <p>
                 For questions about these Terms, email us at{" "}
                 <a
-                  href="mailto:hello@seekwander.com"
+                  href="mailto:hello@travalbee.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  hello@seekwander.com
+                  hello@travalbee.com
                 </a>
               </p>
             </section>
@@ -223,7 +223,7 @@ export default function TermsPage() {
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              Back to Seek Wander
+              Back to TravalBee
             </Link>
           </div>
         </div>

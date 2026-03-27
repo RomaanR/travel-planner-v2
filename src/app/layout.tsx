@@ -22,28 +22,28 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Seek Wander | Bespoke Travel Curation",
-    template: "%s | Seek Wander",
+    default: "TravalBee | Bespoke Travel Curation",
+    template: "%s | TravalBee",
   },
   description:
     "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
   openGraph: {
-    title: "Seek Wander | Bespoke Travel Curation",
+    title: "TravalBee | Bespoke Travel Curation",
     description:
       "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
     type: "website",
-    siteName: "Seek Wander",
+    siteName: "TravalBee",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Seek Wander | Bespoke Travel Curation",
+    title: "TravalBee | Bespoke Travel Curation",
     description:
       "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Seek Wander",
+    title: "TravalBee",
   },
 };
 

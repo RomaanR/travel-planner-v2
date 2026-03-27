@@ -112,7 +112,7 @@ export default async function AdminMetricsPage() {
       {/* Header */}
       <div className="border-b border-ink/10 px-8 md:px-16 py-10">
         <p className="micro-copy text-ink-light mb-2">
-          Admin &middot; Seek Wander
+          Admin &middot; TravalBee
         </p>
         <h1 className="font-serif italic text-5xl md:text-7xl text-ink leading-none">
           Unit Economics

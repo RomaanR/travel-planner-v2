@@ -35,13 +35,13 @@ export async function generateMetadata({
   const firstSentence = editorial.split(/\.\s+/)[0]?.trim();
   const description = firstSentence
     ? `${firstSentence}.`
-    : `A curated luxury journey to ${trip.destination}, crafted by Seek Wander.`;
+    : `A curated luxury journey to ${trip.destination}, crafted by TravalBee.`;
 
   // Destination hero photo for og:image / twitter:image.
   // Returns null if MAPS_SERVER_KEY is absent or the Places call fails.
   const photoUrl = await getDestinationPhotoUrl(trip.destination);
 
-  const title = `${trip.destination} | Curated by Seek Wander`;
+  const title = `${trip.destination} | Curated by TravalBee`;
 
   return {
     title,
@@ -50,7 +50,7 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      siteName: "Seek Wander",
+      siteName: "TravalBee",
       ...(photoUrl
         ? { images: [{ url: photoUrl, width: 800, alt: trip.destination }] }
         : {}),

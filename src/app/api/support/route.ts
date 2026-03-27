@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     html: `
       <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:32px;background:#F5F0E8;color:#0A0A0A;">
         <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6B6B6B;margin:0 0 8px;">
-          Seek Wander &mdash; Client Support
+          TravalBee &mdash; Client Support
         </p>
         <h1 style="font-size:28px;font-style:italic;font-weight:400;margin:0 0 24px;">
           New Support Ticket

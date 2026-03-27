@@ -32,7 +32,7 @@ export default function RefundPolicyPage() {
 
             <p>
               This Refund Policy applies to all paid subscriptions and one-time
-              purchases made through Seek Wander (&quot;we&quot;,
+              purchases made through TravalBee (&quot;we&quot;,
               &quot;us&quot;, or &quot;our&quot;). We want you to feel
               confident purchasing: if something is not right, we will
               make it right.
@@ -43,7 +43,7 @@ export default function RefundPolicyPage() {
                 1. The Nature of Our Service
               </h2>
               <p>
-                Seek Wander delivers a digital service: the instant generation
+                TravalBee delivers a digital service: the instant generation
                 of a personalised travel itinerary. Because the curation is
                 performed and delivered at the moment you submit your request,
                 the core service is consumed upon delivery. We do not sell
@@ -157,10 +157,10 @@ export default function RefundPolicyPage() {
               <p className="mb-3">
                 Email us at{" "}
                 <a
-                  href="mailto:hello@seekwander.com"
+                  href="mailto:hello@travalbee.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  hello@seekwander.com
+                  hello@travalbee.com
                 </a>{" "}
                 with the subject line{" "}
                 <strong className="text-ink">&quot;Refund Request&quot;</strong>{" "}
@@ -203,10 +203,10 @@ export default function RefundPolicyPage() {
               <p>
                 For billing and refund enquiries, contact us at{" "}
                 <a
-                  href="mailto:hello@seekwander.com"
+                  href="mailto:hello@travalbee.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  hello@seekwander.com
+                  hello@travalbee.com
                 </a>
               </p>
             </section>
@@ -223,7 +223,7 @@ export default function RefundPolicyPage() {
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              Back to Seek Wander
+              Back to TravalBee
             </Link>
           </div>
         </div>

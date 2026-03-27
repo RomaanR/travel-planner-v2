@@ -19,7 +19,7 @@ export default function ShareButton({ tripId, destination }: ShareButtonProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${destination} — Seek Wander`,
+          title: `${destination} — TravalBee`,
           text: `A curated luxury itinerary for ${destination}.`,
           url,
         });

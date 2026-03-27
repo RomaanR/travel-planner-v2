@@ -31,7 +31,7 @@ export default function CookiePolicyPage() {
             </p>
 
             <p>
-              This Cookie Policy explains how Seek Wander (&quot;we&quot;,
+              This Cookie Policy explains how TravalBee (&quot;we&quot;,
               &quot;us&quot;, or &quot;our&quot;) uses cookies and similar
               browser storage technologies when you visit our website. We keep
               this simple: we do not use advertising or tracking cookies.
@@ -227,10 +227,10 @@ export default function CookiePolicyPage() {
                 If you have any questions about this Cookie Policy, email us
                 at{" "}
                 <a
-                  href="mailto:privacy@seekwander.com"
+                  href="mailto:privacy@travalbee.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  privacy@seekwander.com
+                  privacy@travalbee.com
                 </a>
               </p>
             </section>
@@ -247,7 +247,7 @@ export default function CookiePolicyPage() {
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              Back to Seek Wander
+              Back to TravalBee
             </Link>
           </div>
         </div>

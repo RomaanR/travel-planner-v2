@@ -195,7 +195,7 @@ export default function PricingPage() {
             },
             {
               q: "Is my payment information secure?",
-              a: "Payments are handled entirely by Stripe. Seek Wander never stores your card details.",
+              a: "Payments are handled entirely by Stripe. TravalBee never stores your card details.",
             },
             {
               q: "Do you offer refunds?",
@@ -220,9 +220,9 @@ export default function PricingPage() {
       {/* Footer */}
       <footer className="border-t border-ink/5 bg-paper-dark px-8 md:px-16 py-8">
         <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="font-serif italic text-2xl text-ink">Seek Wander</p>
+          <p className="font-serif italic text-2xl text-ink">TravalBee</p>
           <p className="micro-copy text-ink-light">
-            &copy; {new Date().getFullYear()} Seek Wander. All rights reserved.
+            &copy; {new Date().getFullYear()} TravalBee. All rights reserved.
           </p>
         </div>
       </footer>

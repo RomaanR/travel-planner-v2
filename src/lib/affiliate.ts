@@ -1,6 +1,6 @@
 /**
  * Builds a Booking.com affiliate search URL for a given hotel + destination.
- * AID 4013143 — Seek Wander affiliate account.
+ * AID 4013143 — TravalBee affiliate account.
  */
 export function createAffiliateUrl(hotelName: string, destination: string): string {
   const query = encodeURIComponent(`${hotelName} ${destination}`);

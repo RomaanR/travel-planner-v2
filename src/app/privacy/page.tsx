@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              Seek Wander (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;)
+              TravalBee (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;)
               is committed to protecting your privacy. This policy explains what
               information we collect, how we use it, and your rights in relation
               to it.
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
                 1. Information We Collect
               </h2>
               <p className="mb-3">
-                When you use Seek Wander, we collect information you provide
+                When you use TravalBee, we collect information you provide
                 directly: your destination preferences, travel dates, party
                 size, pace, budget tier, dietary requirements, and interests.
                 If you create an account via our authentication provider
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
                 9. Children&apos;s Privacy
               </h2>
               <p>
-                Seek Wander is not intended for use by anyone under the age of{" "}
+                TravalBee is not intended for use by anyone under the age of{" "}
                 <strong className="text-ink">13</strong>, or under{" "}
                 <strong className="text-ink">16</strong> in the European
                 Economic Area. We do not knowingly collect personal information
@@ -213,10 +213,10 @@ export default function PrivacyPage() {
                 For privacy-related enquiries or data deletion requests, email
                 us at{" "}
                 <a
-                  href="mailto:privacy@seekwander.com"
+                  href="mailto:privacy@travalbee.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  privacy@seekwander.com
+                  privacy@travalbee.com
                 </a>
               </p>
             </section>
@@ -227,7 +227,7 @@ export default function PrivacyPage() {
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              &larr; Back to Seek Wander
+              &larr; Back to TravalBee
             </Link>
           </div>
         </div>

@@ -66,14 +66,14 @@ export default function MobileMenu() {
                 <Link href="/" onClick={close} className="flex items-center gap-3">
                   <Image
                     src="/icon-192x192.png"
-                    alt="Seek Wander"
+                    alt="TravalBee"
                     width={36}
                     height={36}
                     className="w-9 h-9 object-cover"
                     priority
                   />
                   <span className="font-serif italic text-2xl text-ink leading-none">
-                    Seek Wander
+                    TravalBee
                   </span>
                 </Link>
 

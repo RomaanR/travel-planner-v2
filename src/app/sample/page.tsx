@@ -15,9 +15,9 @@ export const dynamic = "force-dynamic";
 const SAMPLE_TRIP_ID = "7d88a6f1-fef5-4145-bee1-cc165b178d2a";
 
 export const metadata: Metadata = {
-  title: "Sample Itinerary | Seek Wander",
+  title: "Sample Itinerary | TravalBee",
   description:
-    "A curated luxury itinerary by Seek Wander — experience the quality before you generate your own.",
+    "A curated luxury itinerary by TravalBee — experience the quality before you generate your own.",
 };
 
 export default async function SamplePage() {

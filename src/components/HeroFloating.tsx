@@ -63,7 +63,7 @@ export default function HeroFloating() {
             className="font-serif italic text-white leading-none mb-2"
             style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
           >
-            Seek
+            Traval
           </motion.h1>
           <motion.h1
             initial={{ opacity: 0, y: 32 }}
@@ -72,7 +72,7 @@ export default function HeroFloating() {
             className="font-serif italic text-white leading-none mb-8"
             style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
           >
-            Wander
+            Bee
           </motion.h1>
 
           {/* Thin rule */}
@@ -186,7 +186,7 @@ export default function HeroFloating() {
 
               {/* Serif headline */}
               <p className="font-serif italic text-white text-lg leading-tight mb-2">
-                The Tokyo Journey
+                The New York Journey
               </p>
 
               {/* Metadata line */}

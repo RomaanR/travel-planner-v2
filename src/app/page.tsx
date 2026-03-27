@@ -114,7 +114,7 @@ export default function HomePage() {
         <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <p className="font-serif italic text-3xl text-ink mb-1">
-              Seek Wander
+              TravalBee
             </p>
             <p className="micro-copy text-ink-light">
               Curated Luxury Journeys
@@ -144,7 +144,7 @@ export default function HomePage() {
             </Link>
           </div>
           <p className="micro-copy text-ink-light">
-            &copy; {new Date().getFullYear()} Seek Wander. All rights reserved.
+            &copy; {new Date().getFullYear()} TravalBee. All rights reserved.
           </p>
         </div>
       </footer>

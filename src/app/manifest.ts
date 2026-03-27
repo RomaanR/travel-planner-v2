@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Seek Wander",
-    short_name: "Seek Wander",
+    name: "TravalBee",
+    short_name: "TravalBee",
     description: "Curated Luxury Travel Itineraries",
     start_url: "/",
     display: "standalone",

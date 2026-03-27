@@ -12,8 +12,8 @@ const FAQS = [
     category: "The Service",
     items: [
       {
-        q: "What exactly is Seek Wander?",
-        a: "Seek Wander is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 2 minutes. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
+        q: "What exactly is TravalBee?",
+        a: "TravalBee is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 2 minutes. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
       },
       {
         q: "How long does it take to generate an itinerary?",
@@ -38,7 +38,7 @@ const FAQS = [
     items: [
       {
         q: "Does it work offline?",
-        a: "Yes. Once an itinerary is generated and saved, it is stored locally in your browser. Your archive at /trips is fully accessible without an internet connection: maps, transit times, hotel cards, and all. Seek Wander is a Progressive Web App (PWA) and can be installed to your home screen.",
+        a: "Yes. Once an itinerary is generated and saved, it is stored locally in your browser. Your archive at /trips is fully accessible without an internet connection: maps, transit times, hotel cards, and all. TravalBee is a Progressive Web App (PWA) and can be installed to your home screen.",
       },
       {
         q: "Can I save my itineraries?",
@@ -83,7 +83,7 @@ const FAQS = [
       },
       {
         q: "How do I delete my account and data?",
-        a: "Email privacy@seekwander.com with the subject line \"Account Deletion Request\". All personal data and saved itineraries will be permanently removed from our database within 30 days.",
+        a: "Email privacy@travalbee.com with the subject line \"Account Deletion Request\". All personal data and saved itineraries will be permanently removed from our database within 30 days.",
       },
     ],
   },
@@ -154,9 +154,9 @@ export default function FaqPage() {
             Frequently Asked<br />Questions
           </h1>
           <p className="font-sans text-sm text-ink-light leading-relaxed mb-10 max-w-md">
-            Everything you need to know about Seek Wander. Can&apos;t find your answer?{" "}
+            Everything you need to know about TravalBee. Can&apos;t find your answer?{" "}
             <a
-              href="mailto:hello@seekwander.com"
+              href="mailto:hello@travalbee.com"
               className="text-emerald-accent hover:text-ink transition-colors"
             >
               Email us
@@ -190,10 +190,10 @@ export default function FaqPage() {
               href="/"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
-              &larr; Back to Seek Wander
+              &larr; Back to TravalBee
             </Link>
             <a
-              href="mailto:hello@seekwander.com"
+              href="mailto:hello@travalbee.com"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
               Contact Support

@@ -54,7 +54,7 @@ export default function EmptyTripsState() {
 
         {/* Micro-copy kicker */}
         <p className="micro-copy text-ink-light mb-5 tracking-widest">
-          Welcome to Seek Wander
+          Welcome to TravalBee
         </p>
 
         {/* Headline */}

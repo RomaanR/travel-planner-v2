@@ -14,7 +14,7 @@ export const ratelimit = new Ratelimit({
   redis,
   limiter:   Ratelimit.slidingWindow(5, "1 h"),
   analytics: true,                       // surfaces usage in Upstash dashboard
-  prefix:    "seek-wander:itinerary",    // namespaced — clean Redis keyspace
+  prefix:    "travalbee:itinerary",       // namespaced — clean Redis keyspace
 });
 
 // 3 support tickets per IP per sliding 1-hour window.
@@ -24,5 +24,5 @@ export const supportRatelimit = new Ratelimit({
   redis,
   limiter:   Ratelimit.slidingWindow(3, "1 h"),
   analytics: true,
-  prefix:    "seek-wander:support",
+  prefix:    "travalbee:support",
 });
