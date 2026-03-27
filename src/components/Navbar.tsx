@@ -39,12 +39,6 @@ export default function Navbar() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-8">
           <Link
-            href="/pricing"
-            className="micro-copy text-ink-light hover:text-ink transition-colors"
-          >
-            PRICING
-          </Link>
-          <Link
             href="/trips"
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >
@@ -55,6 +49,12 @@ export default function Navbar() {
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >
             DASHBOARD
+          </Link>
+          <Link
+            href="/pricing"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            PRICING
           </Link>
           <Link
             href="/"
