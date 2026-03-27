@@ -22,7 +22,7 @@ export default function Navbar() {
       <Link href="/" className="flex items-center gap-3">
         <Image
           src="/icon-192x192.png"
-          alt="TravalBee"
+          alt="TravalBee Logo"
           width={36}
           height={36}
           className="w-9 h-9 object-cover rounded-none"
