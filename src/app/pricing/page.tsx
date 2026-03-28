@@ -24,6 +24,8 @@ const PRO_FEATURES = [
   "Advanced Transit (Car/Regional)",
   "Premium PDF Export with Maps",
   "Priority AI Processing",
+  "1-Click Calendar Sync",
+  "1-Click Restaurant & Tour Booking Links",
 ];
 
 function CancelledBanner() {
