@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import * as Sentry from "@sentry/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -524,6 +525,7 @@ function sanitizeJson(raw: string): string {
 }
 
 export async function POST(req: Request) {
+  let capturedDestination: string | undefined;
   try {
     // ── Auth + Rate limit ─────────────────────────────────────────────────────
     // Must run before any expensive I/O (AI generation, Google Places, DB writes).
@@ -586,6 +588,7 @@ export async function POST(req: Request) {
       );
     }
     const safeBody = parsed.data;
+    capturedDestination = safeBody.destination;
 
     const apiKey = process.env.MAPS_SERVER_KEY ?? "";
 
@@ -891,8 +894,16 @@ export async function POST(req: Request) {
     }
     if (e instanceof SyntaxError) {
       console.error("[itinerary] Outer catch: malformed JSON survived self-heal —", (e as Error).message);
+      Sentry.withScope((scope) => {
+        scope.setExtra("destination", capturedDestination ?? "unknown");
+        Sentry.captureException(e);
+      });
     } else {
       console.error("[itinerary] Outer catch: unexpected error —", e);
+      Sentry.withScope((scope) => {
+        scope.setExtra("destination", capturedDestination ?? "unknown");
+        Sentry.captureException(e);
+      });
     }
     return Response.json(
       { error: "Unable to generate itinerary. Please try again or refine your request." },
