@@ -2,33 +2,28 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, Suspense } from "react";
+import { Suspense } from "react";
 import { motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
 
 const FREE_FEATURES = [
-  "1 complimentary bespoke itinerary",
-  "Day-by-day timeline with real restaurants",
-  "Interactive map with curated markers",
-  "Hidden gem recommendations",
-  "Shareable journey link",
+  "5 AI Itineraries per month",
+  "Up to 3 days per trip",
+  "Standard Transit Modes",
+  "Basic PDF Export",
+  "Standard AI Routing",
 ];
 
 const PRO_FEATURES = [
-  "1 additional bespoke itinerary credit",
-  "Day-by-day timeline with real restaurants",
-  "Interactive map with curated markers",
-  "Hidden gem recommendations",
-  "Shareable journey link",
-  "Save itineraries to your archive",
-  "PDF export of every journey",
-  "Up to 7-day itineraries",
-  "Hotel recommendations across 3 tiers",
-  "Credits never expire",
+  "10 AI Itineraries per month",
+  "Up to 14 days per trip",
+  "Advanced Transit (Car/Regional)",
+  "Premium PDF Export with Maps",
+  "Priority AI Processing",
 ];
 
 function CancelledBanner() {
@@ -42,32 +37,6 @@ function CancelledBanner() {
 }
 
 export default function PricingPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-
-  async function handleUpgrade() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch("/api/stripe/checkout", { method: "POST" });
-      if (!res.ok) {
-        const data = await res.json();
-        if (res.status === 401) {
-          // Not signed in — Clerk modal will open on the next click from Navbar
-          router.push("/?signIn=1");
-          return;
-        }
-        throw new Error(data.error ?? "Something went wrong");
-      }
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to start checkout. Please try again.");
-      setLoading(false);
-    }
-  }
-
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
@@ -123,22 +92,22 @@ export default function PricingPage() {
             </Link>
           </motion.div>
 
-          {/* Pro Card */}
+          {/* Premium Card */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="bg-ink text-paper p-8 md:p-12 flex flex-col relative overflow-hidden"
           >
-            {/* One-time badge */}
+            {/* Coming Soon badge */}
             <span className="absolute top-6 right-6 micro-copy text-paper/40">
-              One-Time
+              Coming Soon
             </span>
 
-            <p className="micro-copy text-paper/50 mb-6">Credit</p>
+            <p className="micro-copy text-paper/50 mb-6">Premium</p>
             <div className="mb-8">
               <span className="font-serif italic text-6xl text-paper">$4.99</span>
-              <span className="micro-copy text-paper/40 ml-2">/ itinerary</span>
+              <span className="micro-copy text-paper/40 ml-2">/ month</span>
             </div>
 
             <ul className="space-y-3 mb-10 flex-1">
@@ -150,27 +119,15 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            {error && (
-              <p className="micro-copy text-burnt-orange mb-4">{error}</p>
-            )}
-
             <button
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="block w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-paper hover:text-ink transition-all disabled:opacity-60 disabled:cursor-wait"
+              disabled
+              className="block w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 opacity-50 cursor-not-allowed pointer-events-none"
             >
-              {loading ? (
-                <span className="inline-flex items-center gap-2 justify-center">
-                  <Loader2 size={13} className="animate-spin" />
-                  Redirecting to checkout&hellip;
-                </span>
-              ) : (
-                "Buy a Credit \u2014 $4.99"
-              )}
+              Coming Soon
             </button>
 
             <p className="micro-copy text-paper/30 text-center mt-4">
-              One-time charge &middot; No subscription &middot; Credits never expire
+              Premium features launching soon
             </p>
           </motion.div>
 
