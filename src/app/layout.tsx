@@ -3,6 +3,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
+import * as Sentry from "@sentry/nextjs";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -20,32 +21,37 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "TravalBee | Bespoke Travel Curation",
-    template: "%s | TravalBee",
-  },
-  description:
-    "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
-  openGraph: {
-    title: "TravalBee | Bespoke Travel Curation",
+export function generateMetadata(): Metadata {
+  return {
+    title: {
+      default: "TravalBee | Bespoke Travel Curation",
+      template: "%s | TravalBee",
+    },
     description:
       "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
-    type: "website",
-    siteName: "TravalBee",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "TravalBee | Bespoke Travel Curation",
-    description:
-      "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "TravalBee",
-  },
-};
+    openGraph: {
+      title: "TravalBee | Bespoke Travel Curation",
+      description:
+        "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
+      type: "website",
+      siteName: "TravalBee",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "TravalBee | Bespoke Travel Curation",
+      description:
+        "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "TravalBee",
+    },
+    other: {
+      ...Sentry.getTraceData(),
+    },
+  };
+}
 
 export default function RootLayout({
   children,
