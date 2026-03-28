@@ -14,6 +14,8 @@ This is not a travel app. It is a **digital concierge** — the invisible hand o
 
 > **Brand rule:** The word "AI" is intentionally absent from all user-facing copy, manifests, metadata, and UI text. The product is positioned around the luxury *outcome*, not the technology. Claude is the invisible engine — never the headline.
 
+> **Rebrand (2026-03-27):** The application was officially rebranded from **"Curated Roam"** to **"TravalBee"**. All user-facing copy, metadata titles, PWA manifest `name`/`short_name`, Upstash Redis key prefixes (`travalbee:*`), affiliate JSDoc, email addresses (`travalbee.com`), Navbar/MobileMenu wordmarks, and OG/Twitter titles have been updated. The `seek_wander_archive` localStorage key is intentionally preserved to avoid breaking existing offline caches.
+
 ### The Zero-Latency Principle
 
 > **The most important architectural rule in this codebase.**
@@ -49,6 +51,7 @@ We generate everything — activities, meals, hotel recommendations, map coordin
 | Notifications | **`sonner`** | Branded toast layer — loading → success → error |
 | Affiliate | **Booking.com** | AID `4013143`, `createAffiliateUrl()` in `src/lib/affiliate.ts` |
 | Payments | **`stripe`** | One-time credit purchases — `mode: "payment"`, `checkout.session.completed` webhook |
+| Observability | **`@sentry/nextjs`** | Wizard-installed; `withSentryConfig` in `next.config.mjs`; `sentry.server.config.ts` + `sentry.edge.config.ts` + `src/instrumentation.ts` + `src/instrumentation-client.ts` + `src/app/global-error.tsx` |
 
 > **Clerk version lock:** Always install `@clerk/nextjs@6`, never `@clerk/nextjs@7+`. Clerk v7 requires Next.js 15. The v6 API uses `<SignedIn>/<SignedOut>` — `<Show>` is v7-only and must **never** be used.
 
@@ -703,8 +706,8 @@ These rules exist to prevent geographically incoherent schedules. They are **non
 
 | Rule | Behaviour Enforced |
 |------|-------------------|
-| **11. THE NEIGHBOURHOOD LOCK** | Branches on `transportMode`. **Walking/transit:** ALL activities for the ENTIRE TRIP must stay within the exact same city. Named counter-examples prevent hallucination (e.g. "central Antalya → do NOT suggest Aspendos, Perge, Side"). **Car/driver:** Regional day trips allowed, but consecutive stops within a day must be ≤40km apart. |
-| **12. TRANSIT TIME REALITY** | Branches on `transportMode`. **Walking:** No two consecutive stops more than 20 min walk apart — replace, don't schedule. **Car:** Consecutive stops within a day must be reachable in ≤30 min by car; widen `startTime` gap if not. |
+| **11. THE NEIGHBOURHOOD LOCK** | Now **3-way** branch on `isRegion` → `transportMode`. **Region mode:** Each day anchored in one distinct town within the region; days sequenced geographically to minimise backtracking. **Car/driver (city):** Regional day trips allowed, consecutive stops ≤40km. **Walking/transit (city):** ALL activities must stay within the exact same city; named counter-examples prevent hallucination. |
+| **12. TRANSIT TIME REALITY** | Now **3-way** branch on `isRegion` → `transportMode`. **Region mode:** Within each day's anchor city keep stops ≤30 min walk/taxi; inter-day travel between towns expected — widen `startTime` gap on heavy travel days. **Car (city):** ≤30 min drive between stops. **Walking (city):** strict ≤20 min / relaxed ≤45 min (see `walkingTolerance`). |
 | **13. CURATED PACING** | 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit. |
 
 ### `buildPrompt()` — Accommodation & Transport Injection
@@ -719,8 +722,8 @@ The prompt's CLIENT PROFILE block includes two additional lines when `accommodat
 Variables constructed before the prompt string:
 - `baseCamp` = `exactHotelAddress ?? hotelName ?? ""` — prefers the Places-verified address over the raw name
 - `mobilityLabel` = `transportMode === "car-driver" ? "Private Car / Driver" : "Walking & Public Transit"`
-- `neighborhoodLockRule` — ternary string injected at Rule 11 (walking vs car wording, see table above)
-- `transitTimeRule` — ternary string injected at Rule 12 (20-min walk vs 30-min car wording, see table above)
+- `neighborhoodLockRule` — **3-way** string injected at Rule 11: `isRegion` (Regional Flow) → `car-driver` → walking city lock
+- `transitTimeRule` — **3-way** string injected at Rule 12: `isRegion` (anchor-city transit) → `car-driver` → walking strict/relaxed
 
 ### `enrichPlace()` — PlaceCache-First Enrichment
 
@@ -766,6 +769,8 @@ GOOGLE_DETAILS     = $0.017 / call
 `GenerationMeta` is **logged to server console only** — never transmitted to the client (margin protection). `prisma.costLog.create()` is **awaited** before `Response.json()`.
 
 > **Why awaited (not fire-and-forget)?** Vercel freezes the serverless function the instant the HTTP response is returned, killing any background promise mid-flight. Awaiting guarantees financial data integrity at the cost of ~50ms (negligible vs. 10+ second generation time).
+
+> **Exact token tracking (2026-03-27):** `CostLog` now stores `inputTokens Int`, `outputTokens Int`, and `thinkingTokens Int` from the raw Anthropic API response. Cost is computed from real token counts rather than estimates. The `/admin/metrics` dashboard sums `aiCost` directly from the DB column instead of using a hardcoded multiplier.
 
 ### `getDestinationPhotoUrl()` — `/trips` Dashboard Photos
 
@@ -1625,3 +1630,167 @@ Deployed: `/pricing`, `/faq`, `/privacy`, `/terms`, `/cookies`, `/refunds`. All 
 - DASHBOARD link added to Navbar desktop nav
 - Home icon (`<Home size={16}>`) in Navbar wordmark
 - `cursor-pointer` on all CurationForm card-style buttons
+
+---
+
+### 2026-03-23 — Forked Path Regional Search Architecture
+
+**Commit:** `df70643` · **Branch:** `main`
+
+#### Problem
+
+Destination autocomplete was locked to `types: ["(cities)"]`, rejecting valid regional searches like "Kansai", "Tuscany", or "Patagonia". The existing Neighbourhood Lock assumed a single-city context and produced incoherent schedules when a region was selected.
+
+#### Solution
+
+A `isRegion?: boolean` flag flows from the frontend through Zod validation into `buildPrompt()`, where it gates a third branch on both `neighborhoodLockRule` and `transitTimeRule`.
+
+**`src/types/itinerary.ts`**
+- Added `isRegion?: boolean` to `ItineraryRequest`
+
+**`src/components/CurationForm.tsx`**
+- Destination autocomplete: `types: ["(cities)"]` → `types: ["(regions)"]`
+- `isRegion` state added (default `false`); resets to `false` on manual retype
+- Region detection in `onPlaceChanged` via two `Set` lookups:
+  - `CITY_TYPES`: `locality`, `sublocality`, `neighborhood`, `postal_town`, `sublocality_level_1`
+  - `REGION_TYPES`: `administrative_area_level_1`, `administrative_area_level_2`, `natural_feature`, `colloquial_area`
+  - Logic: `!hasCity && hasRegion` → `true`. `country` excluded (too broad)
+- `<AnimatePresence>` + `<motion.p>` warning fades in (`opacity: 0→1, y: -5→0`, burnt-orange, `tracking-widest uppercase`) when region detected
+- `isRegion` included in `handleSubmit()` payload
+
+**`src/app/api/itinerary/route.ts`**
+- `isRegion: z.boolean().optional()` added to `ItinerarySchema`
+- `isRegion` destructured in `buildPrompt()`
+- `neighborhoodLockRule`: 2-way → **3-way** (region → car → walking); region takes precedence
+- `transitTimeRule`: 2-way → **3-way** (region → car → walking/tolerance); region takes precedence
+
+**Region Mode rules injected:**
+- Rule 11: Anchor each day in ONE specific city/town; days arranged in logical geographical sequence; no same-day cross-town mixing
+- Rule 12: Within day's anchor city keep stops ≤30 min walk/taxi; inter-day travel expected; widen `startTime` on heavy travel days
+
+**Security:** `isRegion` is `z.boolean().optional()` — Zod rejects non-boolean values before `buildPrompt()`. Rules are hardcoded strings, not user-interpolated — no injection surface.
+
+---
+
+### 2026-03-23 — Architecture Pivot: Dedicated Curation Page + Hero Refactor
+
+**Commit:** `e2a4c9b` · **Branch:** `main`
+
+#### Dedicated `/curate` Route
+
+`src/app/curate/page.tsx` created as a clean, distraction-free form page:
+- `bg-paper` layout with `Navbar`, `BackButton` (ChevronLeft, `micro-copy` style), and staggered Framer Motion fade-ins
+- `CurationForm` and its `handleGenerate` routing logic moved here from `page.tsx`
+- `sessionStorage.setItem("itineraryRequest", JSON.stringify(data))` then `router.push("/itinerary")`
+
+#### Homepage Hero — Pure Editorial
+
+`src/app/page.tsx` hero section refactored to editorial-only:
+- `CurationForm` removed entirely from the landing page
+- "BEGIN YOUR JOURNEY" primary CTA button added — `bg-burnt-orange text-white micro-copy`, links to `/curate`
+- "View Sample Itinerary" ghost button retained below it — `bg-white/15 border-white/60 backdrop-blur-sm`
+- CTAs positioned `absolute bottom-16 right-10 md:right-20` with `flex flex-col items-end gap-6`
+- Scroll indicator moved to `absolute bottom-10 left-1/2 -translate-x-1/2`; Framer Motion float animation: `initial={{ y: 0, opacity: 0.4 }} animate={{ y: 10, opacity: 1 }} transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}`
+
+---
+
+### 2026-03-23 — Dynamic Day Filter on ItineraryMap
+
+**Commit:** `fe41abf` · **Branch:** `main`
+
+**`src/components/ItineraryMap.tsx`**
+- `activeDay` state: `useState<number | "all">("all")`
+- `filteredPoints` via `useMemo` — when `activeDay` is a number, shows only `point.day === activeDay`; `"all"` shows everything
+- Polyline and Markers both render `filteredPoints` (not full `mapPoints`)
+- `useEffect` on `activeDay` change: single point → `map.setZoom(14)`, multiple → `map.fitBounds(bounds)` re-centers automatically; `setActiveMarker(null)` closes stale InfoWindows
+- Floating pill UI: `absolute top-4 left-1/2 -translate-x-1/2 z-10`, frosted glass `bg-white/80 backdrop-blur-md border border-white/20 rounded-full px-2 py-1`
+- Active pill button: `bg-ink text-paper rounded-full px-4 py-1`; inactive: `text-ink/40 hover:text-ink/60 px-3 py-1`
+- `motion.div` fade-in on load (`opacity 0→1, y -8→0`)
+- Pill hidden when `visibleDays.length <= 1` (single-day itineraries)
+
+---
+
+### 2026-03-23 — Client Support Form
+
+**Commits:** `3926215`, `ffb249b`, `4d7aefe`, `b32334d` · **Branch:** `main`
+
+#### New Model — `SupportTicket`
+
+Added to `prisma/schema.prisma` and synced to Supabase:
+```prisma
+model SupportTicket {
+  id        String   @id @default(uuid())
+  email     String
+  message   String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+}
+```
+
+#### Rate Limiting — `src/lib/ratelimit.ts`
+
+New `supportRatelimit` export: `slidingWindow(3, "1 h")`, prefix `"seek-wander:support"`. IP-keyed. Dev fallback: `"127.0.0.1"` when `NODE_ENV === "development"` (no `x-forwarded-for` on localhost).
+
+#### `src/app/api/support/route.ts` — New File
+
+POST endpoint security model: IP rate limit (3/hr) → Zod safeParse → `prisma.supportTicket.create()` → fire-and-forget Resend email → `{ success: true }`.
+- `new Resend()` instantiated lazily inside the handler (not module-level) — prevents 500 if `RESEND_API_KEY` is absent
+- Zod field errors flattened to a single string before returning 400 (prevents "Something went wrong" fallback in UI)
+- Message `min(1)` — no artificial length floor on support submissions
+- Resend `from: "onboarding@resend.dev"`, `replyTo: email`, `to: "zenithai003@gmail.com"`
+
+#### `src/app/support/page.tsx` — New File
+
+Mirrors `/curate` layout exactly. `idle → sending → success → error` state machine. `AnimatePresence` swaps form for confirmation on success. Inline burnt-orange error copy on failure. Reuses `BackButton` component.
+
+#### Footer Update — `src/app/page.tsx`
+
+`mailto:hello@seekwander.com` Contact anchor → `<Link href="/support">Support</Link>`.
+
+#### Environment Variable Added
+
+`RESEND_API_KEY` — add to Vercel env vars. Free tier: 3,000 emails/month via `onboarding@resend.dev`. Future: change `from` to `support@seekwander.com` once custom domain verified.
+
+---
+
+### 2026-03-23 — Dynamic Dashboard Metrics
+
+**Commit:** `aa4b98a` · **Branch:** `main`
+
+#### Problem
+
+Dashboard "TRIPS GENERATED" stat was displaying `allTrips.length` (saved trips count) — wrong metric. Users who generate but don't save saw incorrect numbers.
+
+#### Solution
+
+**`prisma/schema.prisma`** — `totalGenerations Int @default(0)` added to `UserProfile`. Existing rows default to `0`; no backfill needed.
+
+**`src/app/api/itinerary/route.ts`** — fire-and-forget `upsert` at Step 7 now increments both fields atomically:
+```ts
+create: { id: userId, availableCredits: 0, totalGenerations: 1 },
+update: { availableCredits: { decrement: 1 }, totalGenerations: { increment: 1 } },
+```
+Anonymous users (no `userId`) unaffected — block is guarded by `if (userId)`.
+
+**`src/app/dashboard/page.tsx`**:
+- `generatedCount = profile?.totalGenerations ?? 0` — real AI call count
+- `savedCount = allTrips.length` — persisted Trip rows
+- Stats grid: `grid-cols-1 md:grid-cols-3` → `grid-cols-2 md:grid-cols-4`
+- New `Bookmark` icon import; "TRIPS SAVED" StatCard added
+- Icon reassignment: `Zap` → Generated, `Bookmark` → Saved, `MapPin` → Destinations, `Calendar` → Days Planned
+
+---
+
+### 2026-03-27 — TravalBee Rebrand, Sentry Observability & Freemium Launch State
+
+#### Global Brand Rename
+All instances of "Seek Wander" / "Curated Roam" → "TravalBee" across 23+ `src/` files. Mapping: `"Seek Wander"` / `"Curated Roam"` → `"TravalBee"`, `"seek-wander"` Redis prefix → `"travalbee"`, `seekwander.com` → `travalbee.com`. `seek_wander_archive` localStorage key intentionally preserved — renaming it would break all existing offline caches for users who have already generated itineraries.
+
+#### Sentry Observability
+`@sentry/nextjs` installed via wizard and all generated files committed: `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation.ts`, `src/instrumentation-client.ts`, `src/app/global-error.tsx`. `next.config.mjs` wrapped with `withSentryConfig`. `layout.tsx` converted from `export const metadata` → `export function generateMetadata()` so `Sentry.getTraceData()` runs per-request (not once at build time). `POST /api/itinerary` outer catch instruments both `SyntaxError` and generic error branches with `Sentry.withScope({ destination })` — `AbortError` (client navigated away) intentionally excluded to avoid noise.
+
+#### Freemium Launch State
+Premium tier checkout button locked: text → "Coming Soon", `opacity-50 cursor-not-allowed pointer-events-none` applied, `handleUpgrade` / `onClick` removed. Free tier: 5 itineraries/month, max 3 days/trip. Premium features listed but locked: 10 itineraries/month, 14 days/trip, advanced transit (car/regional), premium PDF with maps, priority AI processing, 1-click calendar sync, 1-click restaurant & tour booking links.
+
+#### Exact Token Cost Tracking
+`CostLog` Prisma model updated with `inputTokens Int`, `outputTokens Int`, `thinkingTokens Int` columns. `POST /api/itinerary` extracts real token counts from the Anthropic SDK response (`usage.input_tokens`, `usage.output_tokens`). `/admin/metrics` sums `aiCost` directly from the DB column rather than estimating from a hardcoded multiplier.
