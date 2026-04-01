@@ -58,15 +58,14 @@ export default async function DashboardPage() {
   }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  // Rolling 30-day window — matches the quota check in /api/itinerary
+  const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  // Step 1: get monthly count + trip data in parallel (no upsert yet — we need
+  // Step 1: get rolling count + trip data in parallel (no upsert yet — we need
   // remainingGenerations before we can write it back to UserProfile).
   const [monthlyCount, recentTrips, allTrips] = await Promise.all([
     prisma.costLog.count({
-      where: { userId, createdAt: { gte: startOfMonth } },
+      where: { userId, createdAt: { gte: windowStart } },
     }),
     prisma.trip.findMany({
       where:     { userId },

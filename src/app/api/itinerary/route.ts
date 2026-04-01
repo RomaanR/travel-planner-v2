@@ -558,19 +558,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Free tier monthly quota ───────────────────────────────────────────────
-    // Authenticated users are limited to 5 AI itineraries per calendar month.
-    // Anonymous users are not quota-gated here — they rely on the rate limiter above.
+    // ── Free tier 30-day rolling quota ───────────────────────────────────────
+    // Authenticated users get 5 itineraries per rolling 30-day window.
+    // Anonymous users rely on the rate limiter above only.
+    // quotaCount is declared outer-scope so it's available after CostLog write
+    // to sync UserProfile.availableCredits without a second DB read.
+    let quotaCount = 0;
     if (userId) {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      const monthlyCount = await prisma.costLog.count({
-        where: { userId, createdAt: { gte: startOfMonth } },
+      const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      quotaCount = await prisma.costLog.count({
+        where: { userId, createdAt: { gte: windowStart } },
       });
-      if (monthlyCount >= 5) {
+      if (quotaCount >= 5) {
         return Response.json(
-          { error: "You have reached your limit of 5 free AI itineraries for this month. Premium is coming soon!" },
+          { error: "You have reached your limit of 5 free AI itineraries in the last 30 days. Your quota resets on a rolling 30-day basis." },
           { status: 403 }
         );
       }
@@ -891,6 +892,22 @@ export async function POST(req: Request) {
       });
     } catch {
       console.error("[itinerary] CostLog write failed");
+    }
+
+    // ── Sync UserProfile.availableCredits to Supabase ─────────────────────────
+    // quotaCount was captured before this generation — new remaining = 5 - (count + 1).
+    // This keeps Supabase in sync immediately after every generation without a second
+    // CostLog read. Silently ignored if the user has no profile row (anonymous).
+    if (userId) {
+      const newRemaining = Math.max(0, 5 - (quotaCount + 1));
+      try {
+        await prisma.userProfile.updateMany({
+          where: { id: userId },
+          data:  { availableCredits: newRemaining },
+        });
+      } catch {
+        console.error("[itinerary] UserProfile sync failed");
+      }
     }
 
     console.log(
