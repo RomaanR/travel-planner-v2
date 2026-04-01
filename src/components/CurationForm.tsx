@@ -46,7 +46,7 @@ function computeDuration(departure: string, returnDate: string): number {
   const diff = Math.ceil(
     (new Date(returnDate).getTime() - new Date(departure).getTime()) / 86400000
   );
-  return Math.min(7, Math.max(1, diff));
+  return Math.min(3, Math.max(1, diff));
 }
 
 // ─── Option data ──────────────────────────────────────────────────────────────
@@ -244,6 +244,14 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
       })()
     : localToday;
 
+  const maxReturn = form.departureDate
+    ? (() => {
+        const d = new Date(form.departureDate);
+        d.setDate(d.getDate() + 3);
+        return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+      })()
+    : undefined;
+
   // ── Dietary multi-select ──────────────────────────────────────────────────────
   function toggleDietary(opt: DietaryOption) {
     setForm((f) => {
@@ -397,6 +405,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     <input
                       type="date"
                       min={minReturn}
+                      max={maxReturn}
                       value={form.returnDate ?? ""}
                       onChange={(e) => handleReturnChange(e.target.value)}
                       disabled={!form.departureDate}
@@ -414,9 +423,9 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   className="mt-2 font-serif italic text-2xl text-ink"
                 >
                   {duration} day{duration !== 1 ? "s" : ""}
-                  {duration === 7 && (
+                  {duration === 3 && (
                     <span className="font-sans text-xs text-ink-light not-italic ml-2">
-                      (7-day max)
+                      (3-day max)
                     </span>
                   )}
                 </motion.p>

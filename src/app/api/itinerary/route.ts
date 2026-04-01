@@ -29,7 +29,7 @@ const ItinerarySchema = z.object({
   lng:           z.number().finite(),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
   returnDate:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
-  duration:      z.number().int().min(1).max(7),
+  duration:      z.number().int().min(1).max(3),
   travelParty:   z.enum(["solo", "couple", "family", "group"]),
   pace:          z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
@@ -558,6 +558,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // ── Free tier monthly quota ───────────────────────────────────────────────
+    // Authenticated users are limited to 5 AI itineraries per calendar month.
+    // Anonymous users are not quota-gated here — they rely on the rate limiter above.
+    if (userId) {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const monthlyCount = await prisma.costLog.count({
+        where: { userId, createdAt: { gte: startOfMonth } },
+      });
+      if (monthlyCount >= 5) {
+        return Response.json(
+          { error: "You have reached your limit of 5 free AI itineraries for this month. Premium is coming soon!" },
+          { status: 403 }
+        );
+      }
+    }
+
     // ── Credit check ──────────────────────────────────────────────────────────
     // Authenticated users must have availableCredits > 0. Anonymous users are
     // not gated here — they hit the rate limiter above only.
@@ -589,6 +607,14 @@ export async function POST(req: Request) {
     }
     const safeBody = parsed.data;
     capturedDestination = safeBody.destination;
+
+    // ── Free tier duration cap ────────────────────────────────────────────────
+    if (safeBody.duration > 3) {
+      return Response.json(
+        { error: "Free tier is currently limited to a maximum of 3 days per trip. Premium coming soon!" },
+        { status: 400 }
+      );
+    }
 
     const apiKey = process.env.MAPS_SERVER_KEY ?? "";
 
