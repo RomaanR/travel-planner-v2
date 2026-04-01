@@ -22,10 +22,6 @@ const PRO_FEATURES = [
   "10 AI Itineraries per month",
   "Up to 14 days per trip",
   "Advanced Transit (Car/Regional)",
-  "Premium PDF Export with Maps",
-  "Priority AI Processing",
-  "1-Click Calendar Sync",
-  "1-Click Restaurant & Tour Booking Links",
 ];
 
 function CancelledBanner() {
@@ -107,11 +103,6 @@ export default function PricingPage() {
             </span>
 
             <p className="micro-copy text-paper/50 mb-6">Premium</p>
-            <div className="mb-8">
-              <span className="font-serif italic text-6xl text-paper">$4.99</span>
-              <span className="micro-copy text-paper/40 ml-2">/ month</span>
-            </div>
-
             <ul className="space-y-3 mb-10 flex-1">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-3">
