@@ -41,12 +41,31 @@ function getLocalToday(): string {
   ].join("-");
 }
 
+// Parse a YYYY-MM-DD string as a LOCAL date (avoids UTC midnight → previous-day
+// rollback in negative-offset timezones like US/Eastern, US/Pacific, etc.)
+function parseDateLocal(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d); // local midnight — no UTC offset applied
+}
+
+function formatDateLocal(d: Date): string {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 function computeDuration(departure: string, returnDate: string): number {
   if (!departure || !returnDate) return 1;
-  const diff = Math.ceil(
-    (new Date(returnDate).getTime() - new Date(departure).getTime()) / 86400000
+  // Math.round instead of Math.ceil guards against DST hour-shift (±1 h)
+  // causing a fractional day to ceil up to an extra day.
+  const diff = Math.round(
+    (parseDateLocal(returnDate).getTime() - parseDateLocal(departure).getTime()) / 86400000
   );
-  return Math.min(3, Math.max(1, diff));
+  // +1 for inclusive counting: departure day counts as Day 1.
+  // July 1 → July 3 = 2 nights = 3 inclusive days.
+  return Math.min(3, Math.max(1, diff + 1));
 }
 
 // ─── Option data ──────────────────────────────────────────────────────────────
@@ -236,19 +255,22 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     [form.departureDate, form.returnDate]
   );
 
+  // minReturn = departure + 1 day (at least a 2-day trip)
+  // maxReturn = departure + 2 days (max 3-day inclusive trip: Day1, Day2, Day3)
+  // Both use parseDateLocal to avoid UTC midnight → previous-day rollback.
   const minReturn = form.departureDate
     ? (() => {
-        const d = new Date(form.departureDate);
+        const d = parseDateLocal(form.departureDate);
         d.setDate(d.getDate() + 1);
-        return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+        return formatDateLocal(d);
       })()
     : localToday;
 
   const maxReturn = form.departureDate
     ? (() => {
-        const d = new Date(form.departureDate);
-        d.setDate(d.getDate() + 3);
-        return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+        const d = parseDateLocal(form.departureDate);
+        d.setDate(d.getDate() + 2);
+        return formatDateLocal(d);
       })()
     : undefined;
 
