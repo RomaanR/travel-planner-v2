@@ -58,8 +58,19 @@ export default async function DashboardPage() {
   }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  const [profile, recentTrips, allTrips] = await Promise.all([
-    prisma.userProfile.findUnique({ where: { id: userId } }),
+  // upsert guarantees a UserProfile row exists for every authenticated user.
+  // New Clerk sign-ups have no DB row until here — findUnique would return null
+  // and the fallback of `1` was misleading under the 5/month freemium model.
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [profile, recentTrips, allTrips, monthlyCount] = await Promise.all([
+    prisma.userProfile.upsert({
+      where:  { id: userId },
+      create: { id: userId },  // schema defaults: availableCredits=1, totalGenerations=0
+      update: {},               // no-op if row already exists
+    }),
     prisma.trip.findMany({
       where:     { userId },
       orderBy:   { createdAt: "desc" },
@@ -69,10 +80,13 @@ export default async function DashboardPage() {
       where:   { userId },
       select:  { id: true, days: true, destination: true, itineraryData: true },
     }),
+    prisma.costLog.count({
+      where: { userId, createdAt: { gte: startOfMonth } },
+    }),
   ]);
 
-  const availableCredits   = profile ? profile.availableCredits : 1;
-  const generatedCount     = profile?.totalGenerations ?? 0;
+  const remainingGenerations = Math.max(0, 5 - monthlyCount);
+  const generatedCount       = profile.totalGenerations ?? 0;
   const savedCount         = allTrips.length;
   const uniqueDestinations = new Set(allTrips.map((t) => t.destination)).size;
   const totalDays          = allTrips.reduce((sum, t) => sum + t.days, 0);
@@ -116,29 +130,27 @@ export default async function DashboardPage() {
             </h1>
           </div>
 
-          {/* ── Credits widget ── */}
+          {/* ── Monthly quota widget ── */}
           <div className="bg-ink text-paper p-8 md:p-10 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
             <div className="flex-1">
               <p className="micro-copy text-paper/50 mb-3 tracking-widest">
-                AVAILABLE CREDITS
+                FREE TIER &mdash; THIS MONTH
               </p>
               <p className="font-serif italic text-7xl md:text-8xl text-paper leading-none mb-4">
-                {availableCredits}
+                {remainingGenerations}
               </p>
               <p className="font-sans text-sm text-paper/60 leading-relaxed">
-                {availableCredits === 0
-                  ? "Purchase a credit to generate your next itinerary."
-                  : `You have ${availableCredits} itinerary credit${availableCredits !== 1 ? "s" : ""} remaining.`}
+                {remainingGenerations === 0
+                  ? "You&apos;ve used all 5 free itineraries this month. Quota resets on the 1st."
+                  : `You have ${remainingGenerations} of 5 free itinerar${remainingGenerations !== 1 ? "ies" : "y"} remaining this month.`}
               </p>
             </div>
             <div className="flex-shrink-0">
-              {availableCredits === 0 ? (
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center gap-3 bg-burnt-orange text-white micro-copy px-8 py-4 hover:bg-burnt-orange/90 transition-colors duration-300"
-                >
-                  Buy a Credit &mdash; $4.99
-                </Link>
+              {remainingGenerations === 0 ? (
+                <div className="inline-flex items-center gap-2 border border-paper/20 px-6 py-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-paper/40" />
+                  <span className="micro-copy text-paper/40">Resets on the 1st</span>
+                </div>
               ) : (
                 <div className="inline-flex items-center gap-2 border border-emerald-accent/40 px-6 py-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-accent" />
