@@ -58,18 +58,15 @@ export default async function DashboardPage() {
   }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  // upsert guarantees a UserProfile row exists for every authenticated user.
-  // New Clerk sign-ups have no DB row until here — findUnique would return null
-  // and the fallback of `1` was misleading under the 5/month freemium model.
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const [profile, recentTrips, allTrips, monthlyCount] = await Promise.all([
-    prisma.userProfile.upsert({
-      where:  { id: userId },
-      create: { id: userId },  // schema defaults: availableCredits=1, totalGenerations=0
-      update: {},               // no-op if row already exists
+  // Step 1: get monthly count + trip data in parallel (no upsert yet — we need
+  // remainingGenerations before we can write it back to UserProfile).
+  const [monthlyCount, recentTrips, allTrips] = await Promise.all([
+    prisma.costLog.count({
+      where: { userId, createdAt: { gte: startOfMonth } },
     }),
     prisma.trip.findMany({
       where:     { userId },
@@ -80,13 +77,19 @@ export default async function DashboardPage() {
       where:   { userId },
       select:  { id: true, days: true, destination: true, itineraryData: true },
     }),
-    prisma.costLog.count({
-      where: { userId, createdAt: { gte: startOfMonth } },
-    }),
   ]);
 
   const remainingGenerations = Math.max(0, 5 - monthlyCount);
-  const generatedCount       = profile.totalGenerations ?? 0;
+
+  // Step 2: upsert UserProfile with the correct availableCredits so Supabase
+  // stays in sync with the dashboard on every visit.
+  const profile = await prisma.userProfile.upsert({
+    where:  { id: userId },
+    create: { id: userId, availableCredits: remainingGenerations },
+    update: { availableCredits: remainingGenerations },
+  });
+
+  const generatedCount = profile.totalGenerations ?? 0;
   const savedCount         = allTrips.length;
   const uniqueDestinations = new Set(allTrips.map((t) => t.destination)).size;
   const totalDays          = allTrips.reduce((sum, t) => sum + t.days, 0);
