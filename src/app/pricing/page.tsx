@@ -6,9 +6,11 @@ import { Suspense, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useAuth, SignInButton } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import { toast } from "sonner";
 
 const FREE_FEATURES = [
   "5 AI Itineraries per month",
@@ -37,6 +39,7 @@ function CancelledBanner() {
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
+  const { isSignedIn } = useAuth();
 
   async function handleUpgrade() {
     setLoading(true);
@@ -46,11 +49,12 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error("[pricing] No checkout URL returned", data);
+        toast.error("Checkout failed", { description: data.error ?? "Please try again." });
         setLoading(false);
       }
     } catch (err) {
       console.error("[pricing] Checkout error", err);
+      toast.error("Checkout failed", { description: "Please try again." });
       setLoading(false);
     }
   }
@@ -131,20 +135,28 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <button
-              onClick={handleUpgrade}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={13} className="animate-spin" />
-                  Redirecting&hellip;
-                </>
-              ) : (
-                "Upgrade to Premium"
-              )}
-            </button>
+            {isSignedIn ? (
+              <button
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Redirecting&hellip;
+                  </>
+                ) : (
+                  "Upgrade to Premium"
+                )}
+              </button>
+            ) : (
+              <SignInButton mode="modal">
+                <button className="flex items-center justify-center w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all">
+                  Sign in to Upgrade
+                </button>
+              </SignInButton>
+            )}
           </motion.div>
 
         </div>
