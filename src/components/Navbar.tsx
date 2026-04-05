@@ -40,6 +40,13 @@ export default function Navbar() {
         {/* Desktop nav links */}
         <div className="hidden md:flex items-center gap-8">
           <Link
+            href="/"
+            aria-label="Home"
+            className="text-ink-light hover:text-ink transition-colors"
+          >
+            <Home size={22} strokeWidth={1.5} />
+          </Link>
+          <Link
             href="/trips"
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >
@@ -50,13 +57,6 @@ export default function Navbar() {
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >
             DASHBOARD
-          </Link>
-          <Link
-            href="/"
-            aria-label="Home"
-            className="text-ink-light hover:text-ink transition-colors"
-          >
-            <Home size={22} strokeWidth={1.5} />
           </Link>
           <Link
             href="/pricing"
