@@ -68,16 +68,14 @@ export function useOfflineTrips() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { trips: fresh } = (await res.json()) as { trips: CachedTrip[] };
 
-        // 3. Persist to cache on success (kept active for when offline mode re-enables)
-        if (OFFLINE_MODE_ENABLED) writeCache(fresh);
+        // 3. Always persist to cache so fallback works if fetch fails later
+        writeCache(fresh);
         setTrips(fresh);
         setIsOffline(false);
       } catch {
-        // 4. Fall back to last-known cache (only when offline mode is enabled)
-        if (OFFLINE_MODE_ENABLED) {
-          setTrips(readCache());
-          setIsOffline(true);
-        }
+        // 4. Always fall back to cache on fetch failure (banner only shown when OFFLINE_MODE_ENABLED)
+        setTrips(readCache());
+        if (OFFLINE_MODE_ENABLED) setIsOffline(true);
       } finally {
         setLoading(false);
       }
