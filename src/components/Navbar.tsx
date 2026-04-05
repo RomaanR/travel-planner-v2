@@ -23,10 +23,10 @@ export default function Navbar() {
         <Image
           src="/icon-192x192.png"
           alt="TravalBee Logo"
-          width={56}
-          height={56}
-          className="w-14 h-14 object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-4px", marginBottom: "-4px" }}
+          width={70}
+          height={70}
+          className="w-[70px] h-[70px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-8px", marginBottom: "-8px" }}
           priority
         />
         <span className="font-serif italic text-2xl text-ink leading-none">
