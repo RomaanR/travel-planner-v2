@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -39,7 +39,16 @@ function CancelledBanner() {
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const { isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((data) => { if (data.isPremium) setIsPremium(true); })
+      .catch(() => {});
+  }, [isSignedIn]);
 
   async function handleUpgrade() {
     setLoading(true);
@@ -135,7 +144,12 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            {isSignedIn ? (
+            {isPremium ? (
+              <div className="flex items-center justify-center gap-2 w-full text-center micro-copy border border-paper/30 px-6 py-3.5 text-paper/60 cursor-default">
+                <Check size={13} strokeWidth={2} />
+                You&apos;re on Premium
+              </div>
+            ) : isSignedIn ? (
               <button
                 onClick={handleUpgrade}
                 disabled={loading}

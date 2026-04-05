@@ -103,6 +103,7 @@ export default async function DashboardPage() {
   }
 
   const remainingGenerations = profile.availableCredits;
+  const isPremium           = profile.isPremium ?? false;
 
   const generatedCount = profile.totalGenerations ?? 0;
   const savedCount         = allTrips.length;
@@ -149,26 +150,41 @@ export default async function DashboardPage() {
           </div>
 
           {/* ── Monthly quota widget ── */}
-          <div className="bg-ink text-paper p-8 md:p-10 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div className={`${isPremium ? "bg-burnt-orange" : "bg-ink"} text-paper p-8 md:p-10 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-8`}>
             <div className="flex-1">
               <p className="micro-copy text-paper/50 mb-3 tracking-widest">
-                FREE TIER &mdash; THIS MONTH
+                {isPremium ? "PREMIUM \u2014 THIS MONTH" : "FREE TIER \u2014 THIS MONTH"}
               </p>
               <p className="font-serif italic text-7xl md:text-8xl text-paper leading-none mb-4">
                 {remainingGenerations}
               </p>
               <p className="font-sans text-sm text-paper/60 leading-relaxed">
-                {remainingGenerations === 0
-                  ? "You&apos;ve used all 5 free itineraries this month. Quota resets on the 1st."
-                  : `You have ${remainingGenerations} of 5 free itinerar${remainingGenerations !== 1 ? "ies" : "y"} remaining this month.`}
+                {isPremium
+                  ? `You have ${remainingGenerations} of 10 premium itinerar${remainingGenerations !== 1 ? "ies" : "y"} remaining this month.`
+                  : remainingGenerations === 0
+                    ? "You&apos;ve used all 5 free itineraries this month. Upgrade to Premium for more."
+                    : `You have ${remainingGenerations} of 5 free itinerar${remainingGenerations !== 1 ? "ies" : "y"} remaining this month.`}
               </p>
             </div>
-            <div className="flex-shrink-0">
-              {remainingGenerations === 0 ? (
-                <div className="inline-flex items-center gap-2 border border-paper/20 px-6 py-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-paper/40" />
-                  <span className="micro-copy text-paper/40">Resets on the 1st</span>
+            <div className="flex-shrink-0 flex flex-col items-end gap-3">
+              {isPremium ? (
+                <div className="inline-flex items-center gap-2 border border-paper/30 px-6 py-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-paper" />
+                  <span className="micro-copy text-paper">Premium Active</span>
                 </div>
+              ) : remainingGenerations === 0 ? (
+                <>
+                  <div className="inline-flex items-center gap-2 border border-paper/20 px-6 py-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-paper/40" />
+                    <span className="micro-copy text-paper/40">Quota reached</span>
+                  </div>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 bg-paper text-ink micro-copy px-6 py-3 hover:bg-paper/90 transition-colors"
+                  >
+                    Upgrade to Premium &rarr;
+                  </Link>
+                </>
               ) : (
                 <div className="inline-flex items-center gap-2 border border-emerald-accent/40 px-6 py-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-accent" />
