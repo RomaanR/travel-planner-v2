@@ -19,17 +19,17 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 border-b border-black/5 bg-paper/80 backdrop-blur-sm"
     >
       {/* Wordmark */}
-      <Link href="/" className="flex items-center gap-3">
+      <Link href="/" className="flex items-center gap-2 md:gap-3">
         <Image
           src="/icon-192x192.png"
           alt="TravalBee Logo"
           width={120}
           height={120}
-          className="w-[120px] h-[120px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-32px", marginBottom: "-32px" }}
+          className="w-[60px] h-[60px] md:w-[120px] md:h-[120px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-12px", marginBottom: "-12px" }}
           priority
         />
-        <span className="font-serif italic text-4xl text-ink leading-none">
+        <span className="font-serif italic text-2xl md:text-4xl text-ink leading-none">
           TravalBee
         </span>
       </Link>
