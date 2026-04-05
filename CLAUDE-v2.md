@@ -1794,3 +1794,122 @@ Premium tier checkout button locked: text → "Coming Soon", `opacity-50 cursor-
 
 #### Exact Token Cost Tracking
 `CostLog` Prisma model updated with `inputTokens Int`, `outputTokens Int`, `thinkingTokens Int` columns. `POST /api/itinerary` extracts real token counts from the Anthropic SDK response (`usage.input_tokens`, `usage.output_tokens`). `/admin/metrics` sums `aiCost` directly from the DB column rather than estimating from a hardcoded multiplier.
+
+---
+
+### 2026-04-05 — Icon Pack, Navbar Polish, Hero Slideshow & UX Hardening
+
+**Commits:** `a8623eb`–`8f7b348` · **Branch:** `main`
+
+---
+
+#### TravalBee Icon Pack — Full Replacement
+
+All app icons replaced with the official TravalBee icon pack:
+
+- **`src/app/favicon.ico`** — removed; Next.js now serves the browser tab icon from `src/app/icon.png` (512×512) for sharper rendering at all DPR levels
+- **`src/app/apple-icon.png`** — 180×180 PNG; auto-served by Next.js App Router as `apple-touch-icon`
+- **`src/app/icon.png`** — 512×512 PNG; used as Next.js metadata icon and browser tab fallback
+- **`public/icon-192x192.png`** — PWA manifest icon (192×192)
+- **`public/icon-512x512.png`** — PWA manifest icon (512×512)
+
+No changes to `src/app/manifest.ts` — icon `src` paths were already correct.
+
+---
+
+#### Executive PRD — `docs/TravalBee_Executive_PRD_V1.pdf`
+
+11-page investor/CEO-ready PDF generated via `reportlab` (Python). Sections: Executive Vision, Market Positioning & The Problem, Product Strategy (Freemium Wedge), Core UX, Technical Architecture & SRE, Precision Unit Economics. Colour palette matches brand tokens (paper/ink/burnt-orange/emerald). Dark cover page with logo, branded footer with page numbers on all inner pages. Placed in `/docs/` alongside existing due-diligence PDFs.
+
+---
+
+#### Navbar — Logo Sizing & Nav Order
+
+**`src/components/Navbar.tsx`**
+
+- Logo size iterated to final value: `width={120} height={120}` (`w-[120px] h-[120px]`)
+- Negative vertical margins `style={{ marginTop: "-32px", marginBottom: "-32px" }}` absorb the logo overflow without expanding navbar height — `py-5` padding on `<motion.nav>` unchanged
+- Wordmark font size: `text-2xl` → `text-4xl` (Cormorant Garamond italic)
+- Home icon (`<Home size={22} strokeWidth={1.5} />`) moved to first position in desktop nav — order is now: Home → MY TRIPS → DASHBOARD → PRICING
+- Home icon size increased from `16` → `22`
+
+---
+
+#### Support Email Recipient
+
+**`src/app/api/support/route.ts`**
+
+- Resend `to` field updated: `"zenithai003@gmail.com"` → `"travalbee@outlook.com"`
+
+---
+
+#### Credits Hint — Inline Banner
+
+**`src/components/CurationForm.tsx`**
+
+- `showCreditsHint: boolean` state added
+- `useEffect` on mount: reads `sessionStorage.getItem("travalbee_credits_hint_shown")` — if absent, sets it and schedules `setShowCreditsHint(true)` after 600ms via `setTimeout` (cleared on unmount)
+- Destination `<input>` `onFocus` handler extended: calls `setShowCreditsHint(false)` — banner dismisses the instant the user clicks the search field
+- `<AnimatePresence>` + `<motion.div>` banner renders flush below the search bar (shares `border-t-0` to form a seamless join). Contains inline `<a href="/dashboard">` link and a `×` dismiss button
+- Animation: `initial={{ opacity: 0, y: -4 }}` → `animate={{ opacity: 1, y: 0 }}` → `exit={{ opacity: 0, y: -4 }}`, `duration: 0.3`
+- Old `sonner` toast implementation in `src/app/curate/page.tsx` fully removed
+
+---
+
+#### Privacy Page — Vendor Anonymisation
+
+**`src/app/privacy/page.tsx`** — Section 4 (Third-Party Services):
+
+Named vendors replaced with generic category labels (legal obligation is disclosure of *categories*, not specific vendors):
+
+| Old | New |
+|-----|-----|
+| Anthropic (Claude) | AI Inference Provider |
+| Google Maps Platform | Mapping & Location Services |
+| Clerk | Identity & Authentication Provider |
+| Booking.com | Hotel Booking Partner |
+| Vercel | Cloud Infrastructure Provider |
+
+Data handling language and the no-training-on-API-inputs clause preserved verbatim.
+
+---
+
+#### Hero — Rotating Background Slideshow
+
+**`src/components/HeroFloating.tsx`**
+
+- `BG_IMAGES` array: 7 high-quality Unsplash scenic images (alpine peaks, turquoise coastline, ancient forest, jungle waterfall, desert dunes, misty fjord, white sand beach) — all at `q=90`, `w=1920`
+- `getShuffled<T>(arr: T[]): T[]` — Fisher-Yates in-place shuffle; returns new array; called once on mount via `useState(() => getShuffled(BG_IMAGES))`
+- `bgIndex` state incremented every 6 000ms via `setInterval`; wraps via `% shuffled.length`
+- Background rendered via `<AnimatePresence mode="sync">` → `<motion.div key={bgIndex}>` with `initial={{ opacity: 0 }}` / `animate={{ opacity: 1 }}` / `exit={{ opacity: 0 }}`, `transition={{ duration: 1.8, ease: "easeInOut" }}` — slow cinematic crossfade
+- Gradient overlay (`from-black/65 via-black/25 to-black/60`) sits above all image layers via `absolute inset-0`; text legibility unaffected by image content
+- First image: `priority={bgIndex === 0}` — only the initial image gets LCP priority hint
+
+---
+
+#### ItineraryMap — Day Filter Pill Restyled
+
+**`src/components/ItineraryMap.tsx`**
+
+- Pill container: `bg-white/80 backdrop-blur-md border border-white/20` → `bg-black/90 backdrop-blur-md border border-white/10`
+- `pillActive`: `bg-ink text-paper` → `bg-burnt-orange text-white`
+- `pillInactive`: `text-ink/40 hover:text-ink/60` → `text-white/50 hover:text-white/80`
+
+---
+
+#### Offline Mode — Feature Flag
+
+**`src/hooks/useOfflineTrips.ts`**
+
+- `OFFLINE_MODE_ENABLED = false` constant added at module scope — single toggle to restore full offline behaviour
+- When `false`: `navigator.onLine` short-circuit disabled; offline banner (`isOffline`) never set to `true`
+- Cache write (`writeCache(fresh)`) and cache fallback on fetch failure (`setTrips(readCache())`) remain **always active** regardless of flag — trips never disappear on fetch error; data integrity preserved
+- To re-enable: set `OFFLINE_MODE_ENABLED = true`
+
+---
+
+#### Pricing — Premium Feature Addition
+
+**`src/app/pricing/page.tsx`**
+
+- `PRO_FEATURES` array: `"Dedicated AI Concierge for personalised travel enquiries"` inserted between `"Up to 14 days per trip"` and `"Advanced Transit (Car/Regional)"`
