@@ -116,8 +116,8 @@ const LIBRARIES: ("places")[] = ["places"];
 
 // ─── Shared button class helpers ──────────────────────────────────────────────
 
-const pillActive = "bg-ink text-paper rounded-full px-4 py-1 text-[10px] tracking-widest uppercase shadow-sm transition-all";
-const pillInactive = "text-ink/40 hover:text-ink/60 px-3 py-1 text-[10px] tracking-widest uppercase transition-all";
+const pillActive = "bg-burnt-orange text-white rounded-full px-4 py-1 text-[10px] tracking-widest uppercase shadow-sm transition-all";
+const pillInactive = "text-white/50 hover:text-white/80 px-3 py-1 text-[10px] tracking-widest uppercase transition-all";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -195,7 +195,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-white/80 backdrop-blur-md border border-white/20 rounded-full px-2 py-1 flex gap-1 shadow-lg"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/90 backdrop-blur-md border border-white/10 rounded-full px-2 py-1 flex gap-1 shadow-lg"
         >
           <button
             onClick={() => { setActiveDay("all"); setActiveMarker(null); }}
