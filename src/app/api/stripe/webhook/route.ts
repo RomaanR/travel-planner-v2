@@ -28,8 +28,16 @@ export async function POST(req: Request) {
   }
 
   // ── Handle events ────────────────────────────────────────────────────────────
-  // Only one event type needed for the credit system — all subscription/invoice
-  // events removed (no recurring billing in this model).
+  // Two event types cover the full subscription lifecycle:
+  //
+  // 1. checkout.session.completed — fires when user completes checkout form.
+  //    Grants the initial credit immediately so the user can start using the
+  //    product without waiting for the first invoice to settle.
+  //
+  // 2. invoice.payment_succeeded — fires on every successful charge, including
+  //    the initial charge AND all monthly renewals. We skip billing_reason
+  //    "manual" (one-off invoices) and only credit on subscription cycles.
+  //    This is the authoritative event for ongoing subscription access.
 
   switch (event.type) {
     case "checkout.session.completed": {
@@ -41,16 +49,42 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Upsert: if the user row doesn't exist yet (they bought before their first
-      // free generation created it), start them at 2 credits — the 1 they never
-      // used from the default, plus the 1 they just purchased.
+      // Grant initial credit on checkout completion.
+      // Upsert: handles edge case where userProfile row doesn't exist yet.
       await prisma.userProfile.upsert({
         where:  { id: clerkUserId },
         create: { id: clerkUserId, availableCredits: 2 },
         update: { availableCredits: { increment: 1 } },
       });
 
-      console.log(`[stripe/webhook] +1 credit → ${clerkUserId}`);
+      console.log(`[stripe/webhook] checkout.session.completed +1 credit → ${clerkUserId}`);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      const invoice       = event.data.object as Stripe.Invoice;
+      const billingReason = invoice.billing_reason;
+
+      // Only credit on recurring subscription renewals, not the initial charge
+      // (which is already handled by checkout.session.completed above).
+      if (billingReason !== "subscription_cycle") break;
+
+      // clerkUserId flows from checkout → subscription_data.metadata → invoice.subscription_details.metadata
+      const sub        = invoice.subscription_details;
+      const clerkUserId = sub?.metadata?.clerkUserId;
+
+      if (!clerkUserId) {
+        console.error("[stripe/webhook] No clerkUserId in invoice subscription metadata — cannot credit renewal");
+        break;
+      }
+
+      await prisma.userProfile.upsert({
+        where:  { id: clerkUserId },
+        create: { id: clerkUserId, availableCredits: 2 },
+        update: { availableCredits: { increment: 1 } },
+      });
+
+      console.log(`[stripe/webhook] invoice.payment_succeeded (renewal) +1 credit → ${clerkUserId}`);
       break;
     }
 

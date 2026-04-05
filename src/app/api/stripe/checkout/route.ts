@@ -11,8 +11,9 @@ export async function POST() {
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-    // One-time payment — no customer record needed. The clerkUserId in metadata
-    // is the sole identifier used by the webhook to credit the right user.
+    // Subscription model — $10.99/month recurring.
+    // clerkUserId is stored in both session metadata AND subscription_data.metadata
+    // so it flows through to all future invoice events (invoice.payment_succeeded).
     const session = await stripe.checkout.sessions.create({
       mode:                  "subscription",
       payment_method_types:  ["card"],
@@ -22,9 +23,10 @@ export async function POST() {
           quantity: 1,
         },
       ],
-      success_url:           `${baseUrl}/itinerary?credited=1`,
+      success_url:           `${baseUrl}/dashboard?subscribed=1`,
       cancel_url:            `${baseUrl}/pricing?cancelled=1`,
       metadata:              { clerkUserId: userId },
+      subscription_data:     { metadata: { clerkUserId: userId } },
       allow_promotion_codes: true,
     });
 
