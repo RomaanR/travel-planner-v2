@@ -2,9 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
@@ -36,6 +36,25 @@ function CancelledBanner() {
 }
 
 export default function PricingPage() {
+  const [loading, setLoading] = useState(false);
+
+  async function handleUpgrade() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("[pricing] No checkout URL returned", data);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("[pricing] Checkout error", err);
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
@@ -98,12 +117,11 @@ export default function PricingPage() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
             className="bg-ink text-paper p-8 md:p-12 flex flex-col relative overflow-hidden"
           >
-            {/* Coming Soon badge */}
-            <span className="absolute top-6 right-6 micro-copy text-paper/40">
-              Coming Soon
-            </span>
-
             <p className="micro-copy text-paper/50 mb-6">Premium</p>
+            <div className="mb-8">
+              <span className="font-serif italic text-6xl text-paper">$10.99</span>
+              <span className="micro-copy text-paper/40 ml-2">/ month</span>
+            </div>
             <ul className="space-y-3 mb-10 flex-1">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-3">
@@ -114,15 +132,19 @@ export default function PricingPage() {
             </ul>
 
             <button
-              disabled
-              className="block w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 opacity-50 cursor-not-allowed pointer-events-none"
+              onClick={handleUpgrade}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Coming Soon
+              {loading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Redirecting&hellip;
+                </>
+              ) : (
+                "Upgrade to Premium"
+              )}
             </button>
-
-            <p className="micro-copy text-paper/30 text-center mt-4">
-              Premium features launching soon
-            </p>
           </motion.div>
 
         </div>
