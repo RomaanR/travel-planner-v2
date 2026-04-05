@@ -29,7 +29,7 @@ const ItinerarySchema = z.object({
   lng:           z.number().finite(),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
   returnDate:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
-  duration:      z.number().int().min(1).max(3),
+  duration:      z.number().int().min(1).max(14), // premium allows up to 14; tier cap enforced after profile fetch
   travelParty:   z.enum(["solo", "couple", "family", "group"]),
   pace:          z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:    z.enum(["premium", "luxury", "ultra-luxury"]),
@@ -558,42 +558,57 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Free tier 30-day rolling quota ───────────────────────────────────────
-    // Authenticated users get 5 itineraries per rolling 30-day window.
-    // Anonymous users rely on the rate limiter above only.
-    // quotaCount is declared outer-scope so it's available after CostLog write
-    // to sync UserProfile.availableCredits without a second DB read.
+    // ── Tier check + quota gate ───────────────────────────────────────────────
+    // Fetch profile once — used for isPremium, credit check, and quota gate.
+    // Anonymous users (no userId) bypass all checks — rate limiter above is sole guard.
     let quotaCount = 0;
     if (userId) {
+      const profile     = await prisma.userProfile.findUnique({ where: { id: userId } });
+      const isPremium   = profile?.isPremium ?? false;
+      const credits     = profile?.availableCredits ?? 1; // brand-new user: 1 implicit free credit
+      const quotaLimit  = isPremium ? 10 : 5;
+
+      // ── Rolling 30-day quota ──────────────────────────────────────────────
       const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       quotaCount = await prisma.costLog.count({
         where: { userId, createdAt: { gte: windowStart } },
       });
-      if (quotaCount >= 5) {
+      if (quotaCount >= quotaLimit) {
         return Response.json(
-          { error: "You have reached your limit of 5 free AI itineraries in the last 30 days. Your quota resets on a rolling 30-day basis." },
+          {
+            error: isPremium
+              ? `You have used all ${quotaLimit} of your premium itineraries this month. Your quota resets on your next billing date.`
+              : `You have reached your limit of ${quotaLimit} free itineraries in the last 30 days. Upgrade to Premium for 10 itineraries/month.`,
+            upgradeUrl: "/pricing",
+          },
           { status: 403 }
         );
       }
-    }
 
-    // ── Credit check ──────────────────────────────────────────────────────────
-    // Authenticated users must have availableCredits > 0. Anonymous users are
-    // not gated here — they hit the rate limiter above only.
-    // NOTE: `profile ? profile.availableCredits : 1` is intentional. A brand-new
-    // user has no DB row yet but is entitled to 1 free credit (Prisma default(1)).
-    // Using `?? 0` would incorrectly block them on their very first generation.
-    if (userId) {
-      const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
-      const credits = profile ? profile.availableCredits : 1;
+      // ── Credit check ──────────────────────────────────────────────────────
       if (credits <= 0) {
         return Response.json(
           {
             error:      "no_credits",
-            message:    "You have no credits remaining. Purchase a credit to generate another itinerary.",
+            message:    "You have no credits remaining. Upgrade to Premium for 10 itineraries/month.",
             upgradeUrl: "/pricing",
           },
           { status: 402 }
+        );
+      }
+
+      // ── Duration tier gate ────────────────────────────────────────────────
+      // Parse duration from the raw body early (before full Zod parse) so we
+      // can return a clear upgrade prompt. Full Zod validation runs below.
+      const rawDuration = (await req.clone().json().catch(() => ({}))).duration;
+      if (typeof rawDuration === "number" && rawDuration > 3 && !isPremium) {
+        return Response.json(
+          {
+            error:      "upgrade_required",
+            message:    "Trips longer than 3 days require a Premium subscription.",
+            upgradeUrl: "/pricing",
+          },
+          { status: 403 }
         );
       }
     }
@@ -895,15 +910,13 @@ export async function POST(req: Request) {
     }
 
     // ── Sync UserProfile.availableCredits to Supabase ─────────────────────────
-    // quotaCount was captured before this generation — new remaining = 5 - (count + 1).
-    // This keeps Supabase in sync immediately after every generation without a second
-    // CostLog read. Silently ignored if the user has no profile row (anonymous).
+    // Decrement by 1 — works for both free (max 5) and premium (max 10) since
+    // credits were set to the quota limit on subscription start/renewal.
     if (userId) {
-      const newRemaining = Math.max(0, 5 - (quotaCount + 1));
       try {
         await prisma.userProfile.updateMany({
           where: { id: userId },
-          data:  { availableCredits: newRemaining },
+          data:  { availableCredits: { decrement: 1 } },
         });
       } catch {
         console.error("[itinerary] UserProfile sync failed");
