@@ -29,7 +29,7 @@ export default function Navbar() {
           style={{ marginTop: "-32px", marginBottom: "-32px" }}
           priority
         />
-        <span className="font-serif italic text-2xl text-ink leading-none">
+        <span className="font-serif italic text-4xl text-ink leading-none">
           TravalBee
         </span>
       </Link>
@@ -52,17 +52,17 @@ export default function Navbar() {
             DASHBOARD
           </Link>
           <Link
-            href="/pricing"
-            className="micro-copy text-ink-light hover:text-ink transition-colors"
-          >
-            PRICING
-          </Link>
-          <Link
             href="/"
             aria-label="Home"
             className="text-ink-light hover:text-ink transition-colors"
           >
-            <Home size={16} strokeWidth={1.5} />
+            <Home size={22} strokeWidth={1.5} />
+          </Link>
+          <Link
+            href="/pricing"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            PRICING
           </Link>
         </div>
 
