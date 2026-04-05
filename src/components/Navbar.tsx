@@ -23,9 +23,9 @@ export default function Navbar() {
         <Image
           src="/icon-192x192.png"
           alt="TravalBee Logo"
-          width={80}
-          height={80}
-          className="w-[80px] h-[80px] object-contain rounded-none flex-shrink-0"
+          width={120}
+          height={120}
+          className="w-[120px] h-[120px] object-contain rounded-none flex-shrink-0"
           style={{ marginTop: "-10px", marginBottom: "-10px" }}
           priority
         />
