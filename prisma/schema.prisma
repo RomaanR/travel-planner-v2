@@ -63,3 +63,10 @@ model SupportTicket {
   status    String   @default("open")       // "open" | "resolved" — for future admin triage
   createdAt DateTime @default(now())
 }
+
+model StripeEvent {
+  id             String   @id @default(uuid())
+  stripeEventId  String   @unique            // e.g. "evt_1ABC..." — Stripe's own event ID
+  type           String                      // e.g. "checkout.session.completed"
+  processedAt    DateTime @default(now())
+}

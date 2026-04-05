@@ -27,6 +27,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  // ── Idempotency check ────────────────────────────────────────────────────────
+  // Store the Stripe event ID before processing. If this event ID already exists
+  // (replay attack or Stripe retry after a transient error), return 200 immediately
+  // without crediting the user again.
+  try {
+    await prisma.stripeEvent.create({
+      data: { stripeEventId: event.id, type: event.type },
+    });
+  } catch {
+    // Unique constraint violation — this event was already processed.
+    console.log(`[stripe/webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
+    return NextResponse.json({ received: true });
+  }
+
   // ── Handle events ────────────────────────────────────────────────────────────
   // Two event types cover the full subscription lifecycle:
   //
