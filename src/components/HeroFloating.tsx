@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useFloating,
   useHover,
@@ -13,7 +13,40 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
+const BG_IMAGES = [
+  {
+    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85",
+    alt: "Cinematic mountain forest — luxury travel",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=85",
+    alt: "Tropical beach at golden hour",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=85",
+    alt: "Aerial view of luxury travel destination",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=1920&q=85",
+    alt: "European cityscape at dusk",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1920&q=85",
+    alt: "Scenic mountain lake landscape",
+  },
+];
+
 export default function HeroFloating() {
+  // ── Background slideshow ─────────────────────────────────────────
+  const [bgIndex, setBgIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgIndex((i) => (i + 1) % BG_IMAGES.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
   // ── Floating UI state ────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,14 +64,25 @@ export default function HeroFloating() {
     <>
       {/* Background — fixed to viewport so it never shifts when the page scrolls. */}
       <div className="fixed inset-0 z-0">
-        <Image
-          src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85"
-          alt="Cinematic mountain forest — luxury travel"
-          fill
-          priority
-          className="object-cover"
-          sizes="100vw"
-        />
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={bgIndex}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.8, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={BG_IMAGES[bgIndex].src}
+              alt={BG_IMAGES[bgIndex].alt}
+              fill
+              priority={bgIndex === 0}
+              className="object-cover"
+              sizes="100vw"
+            />
+          </motion.div>
+        </AnimatePresence>
         <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/25 to-black/60" />
       </div>
 
