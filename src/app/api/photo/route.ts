@@ -27,8 +27,8 @@ export async function GET(req: Request): Promise<Response> {
     `https://maps.googleapis.com/maps/api/place/photo` +
     `?maxwidth=800&photo_reference=${ref}&key=${apiKey}`;
 
-  // 301 — Next.js Image Optimization follows the redirect server-side,
-  // fetches the image from Google, and caches it at the Vercel CDN edge.
-  // The browser only ever sees /_next/image?url=/api/photo?ref=... — never the key.
-  return Response.redirect(googleUrl, 301);
+  // 302 (temporary) — not cached by browsers, preventing the Google URL
+  // (which contains MAPS_SERVER_KEY) from being stored in browser cache or history.
+  // Next.js Image Optimization still follows the redirect server-side as before.
+  return Response.redirect(googleUrl, 302);
 }
