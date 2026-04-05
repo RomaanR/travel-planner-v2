@@ -31,7 +31,7 @@ const StoredRequestSchema = z.object({
   lng:                 z.number().finite(),
   departureDate:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   returnDate:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  duration:            z.number().int().min(1).max(7),
+  duration:            z.number().int().min(1).max(14), // 14 = premium max; server enforces tier-specific limit
   travelParty:         z.enum(["solo", "couple", "family", "group"]),
   pace:                z.enum(["relaxed", "moderate", "packed"]),
   budgetTier:          z.enum(["premium", "luxury", "ultra-luxury"]),
