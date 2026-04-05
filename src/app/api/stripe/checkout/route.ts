@@ -14,7 +14,7 @@ export async function POST() {
     // One-time payment — no customer record needed. The clerkUserId in metadata
     // is the sole identifier used by the webhook to credit the right user.
     const session = await stripe.checkout.sessions.create({
-      mode:                  "payment",
+      mode:                  "subscription",
       payment_method_types:  ["card"],
       line_items: [
         {
