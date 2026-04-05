@@ -115,7 +115,7 @@ export default function BentoGrid() {
               </span>
             </blockquote>
             <p className="mt-6 micro-copy text-ink-light">
-              TravalBee &middot; Est. 2024
+              TravalBee &middot; Est. 2026
             </p>
           </div>
         </motion.div>

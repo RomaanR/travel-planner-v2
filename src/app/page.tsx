@@ -28,7 +28,7 @@ export default function HomePage() {
       <section className="border-b border-ink/5 bg-paper-dark">
         <div className="max-w-screen-xl mx-auto px-8 py-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
-            { value: "30s", label: "Average Curation Time" },
+            { value: "2 mins", label: "Average Curation Time" },
             { value: "120+", label: "Destinations Worldwide" },
             { value: "100%", label: "Hidden Gems Included" },
             { value: "Zero", label: "Tourist Traps" },
