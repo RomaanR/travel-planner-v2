@@ -16,6 +16,9 @@ export type CachedTrip = {
   } | null;
 };
 
+// ── Feature flag — set to true to re-enable offline mode ─────────────────────
+const OFFLINE_MODE_ENABLED = false;
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CACHE_KEY = "seek_wander_archive";
@@ -49,12 +52,14 @@ export function useOfflineTrips() {
 
   useEffect(() => {
     async function load() {
-      // 1. Short-circuit if the browser reports no connectivity
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
-        setTrips(readCache());
-        setIsOffline(true);
-        setLoading(false);
-        return;
+      if (OFFLINE_MODE_ENABLED) {
+        // 1. Short-circuit if the browser reports no connectivity
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          setTrips(readCache());
+          setIsOffline(true);
+          setLoading(false);
+          return;
+        }
       }
 
       try {
@@ -63,14 +68,16 @@ export function useOfflineTrips() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { trips: fresh } = (await res.json()) as { trips: CachedTrip[] };
 
-        // 3. Persist to cache on success
-        writeCache(fresh);
+        // 3. Persist to cache on success (kept active for when offline mode re-enables)
+        if (OFFLINE_MODE_ENABLED) writeCache(fresh);
         setTrips(fresh);
         setIsOffline(false);
       } catch {
-        // 4. Fall back to last-known cache
-        setTrips(readCache());
-        setIsOffline(true);
+        // 4. Fall back to last-known cache (only when offline mode is enabled)
+        if (OFFLINE_MODE_ENABLED) {
+          setTrips(readCache());
+          setIsOffline(true);
+        }
       } finally {
         setLoading(false);
       }
