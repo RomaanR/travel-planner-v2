@@ -23,9 +23,9 @@ export default function Navbar() {
         <Image
           src="/icon-192x192.png"
           alt="TravalBee Logo"
-          width={48}
-          height={48}
-          className="w-12 h-12 object-cover rounded-none"
+          width={64}
+          height={64}
+          className="w-16 h-16 object-cover rounded-none"
           priority
         />
         <span className="font-serif italic text-2xl text-ink leading-none">
