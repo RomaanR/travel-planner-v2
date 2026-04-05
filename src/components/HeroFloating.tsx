@@ -39,7 +39,7 @@ const BG_IMAGES = [
     alt: "Misty fjord reflecting still waters",
   },
   {
-    src: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=1920&q=90",
+    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=90",
     alt: "Pristine white sand beach with crystal waters",
   },
 ];
