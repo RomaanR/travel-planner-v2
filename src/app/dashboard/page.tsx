@@ -78,15 +78,31 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const remainingGenerations = Math.max(0, 5 - monthlyCount);
+  // Step 2: fetch (or create) the UserProfile — do NOT overwrite credits for
+  // premium users. The webhook owns their credit balance. For free users only,
+  // sync credits from the rolling quota so the dashboard stays accurate.
+  const existingProfile = await prisma.userProfile.findUnique({ where: { id: userId } });
 
-  // Step 2: upsert UserProfile with the correct availableCredits so Supabase
-  // stays in sync with the dashboard on every visit.
-  const profile = await prisma.userProfile.upsert({
-    where:  { id: userId },
-    create: { id: userId, availableCredits: remainingGenerations },
-    update: { availableCredits: remainingGenerations },
-  });
+  let profile;
+  if (!existingProfile) {
+    // Brand-new user — create row with free-tier remaining credits
+    const remainingGenerations = Math.max(0, 5 - monthlyCount);
+    profile = await prisma.userProfile.create({
+      data: { id: userId, availableCredits: remainingGenerations },
+    });
+  } else if (!existingProfile.isPremium) {
+    // Free user — keep credits in sync with rolling quota
+    const remainingGenerations = Math.max(0, 5 - monthlyCount);
+    profile = await prisma.userProfile.update({
+      where: { id: userId },
+      data:  { availableCredits: remainingGenerations },
+    });
+  } else {
+    // Premium user — never overwrite credits; webhook manages their balance
+    profile = existingProfile;
+  }
+
+  const remainingGenerations = profile.availableCredits;
 
   const generatedCount = profile.totalGenerations ?? 0;
   const savedCount         = allTrips.length;
