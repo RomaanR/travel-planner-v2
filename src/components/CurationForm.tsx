@@ -160,6 +160,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const hotelAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [showCreditsHint, setShowCreditsHint] = useState(false);
   const [stage, setStage] = useState<0 | 1>(0);
   const [accommodationStatus, setAccommodationStatus] = useState<"needed" | "booked">("needed");
   const [hotelName, setHotelName] = useState("");
@@ -187,6 +188,15 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     const params = new URLSearchParams(window.location.search);
     const dest = params.get("destination");
     if (dest) setInputValue(dest);
+  }, []);
+
+  // ── Credits hint — show once per session, dismiss on search focus ──────────
+  useEffect(() => {
+    const key = "travalbee_credits_hint_shown";
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const t = setTimeout(() => setShowCreditsHint(true), 600);
+    return () => clearTimeout(t);
   }, []);
 
   // ── Destination ──────────────────────────────────────────────────────────────
@@ -351,7 +361,10 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                 type="text"
                 value={inputValue}
                 onChange={(e) => { setInputValue(e.target.value); setIsRegion(false); }}
-                onFocus={(e) => e.currentTarget.scrollIntoView({ behavior: "smooth", block: "start" })}
+                onFocus={(e) => {
+                  e.currentTarget.scrollIntoView({ behavior: "smooth", block: "start" });
+                  setShowCreditsHint(false);
+                }}
                 placeholder="Where do you wish to disappear?"
                 className="w-full py-5 pr-4 bg-transparent text-ink placeholder:text-ink-light font-sans text-base outline-none scroll-mt-32"
               />
@@ -370,6 +383,36 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
           </div>
         )}
       </div>
+
+      {/* Credits hint — fades in below search bar, dismisses on input focus */}
+      <AnimatePresence>
+        {showCreditsHint && (
+          <motion.div
+            key="credits-hint"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex items-center justify-between gap-4 px-4 py-3 border border-t-0 border-ink/10 bg-paper-dark"
+          >
+            <p className="font-sans text-xs text-ink-light leading-snug">
+              You have <span className="text-ink font-medium">free credits</span> available &mdash; visit your{" "}
+              <a href="/dashboard" className="text-burnt-orange hover:underline underline-offset-2 transition-colors">
+                Dashboard
+              </a>{" "}
+              to see how many itineraries you have remaining.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCreditsHint(false)}
+              className="shrink-0 text-ink-light hover:text-ink transition-colors text-lg leading-none"
+              aria-label="Dismiss"
+            >
+              &times;
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Region warning — fades in when a broad region is detected */}
       <AnimatePresence>
