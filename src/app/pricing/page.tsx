@@ -21,6 +21,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "10 AI Itineraries per month",
   "Up to 14 days per trip",
+  "Dedicated AI Concierge for personalised travel enquiries",
   "Advanced Transit (Car/Regional)",
 ];
 
