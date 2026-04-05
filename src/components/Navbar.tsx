@@ -20,13 +20,24 @@ export default function Navbar() {
     >
       {/* Wordmark */}
       <Link href="/" className="flex items-center gap-2 md:gap-3">
+        {/* Mobile logo — 60px, small margins */}
+        <Image
+          src="/icon-192x192.png"
+          alt="TravalBee Logo"
+          width={60}
+          height={60}
+          className="md:hidden w-[60px] h-[60px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-8px", marginBottom: "-8px" }}
+          priority
+        />
+        {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
         <Image
           src="/icon-192x192.png"
           alt="TravalBee Logo"
           width={120}
           height={120}
-          className="w-[60px] h-[60px] md:w-[120px] md:h-[120px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-12px", marginBottom: "-12px" }}
+          className="hidden md:block w-[120px] h-[120px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-32px", marginBottom: "-32px" }}
           priority
         />
         <span className="font-serif italic text-2xl md:text-4xl text-ink leading-none">
