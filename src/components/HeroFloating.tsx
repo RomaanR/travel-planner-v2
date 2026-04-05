@@ -15,37 +15,55 @@ import Link from "next/link";
 
 const BG_IMAGES = [
   {
-    src: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85",
-    alt: "Cinematic mountain forest — luxury travel",
+    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90",
+    alt: "Dramatic alpine peaks at sunrise",
   },
   {
-    src: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=85",
-    alt: "Tropical beach at golden hour",
+    src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&q=90",
+    alt: "Aerial view of turquoise coastline",
   },
   {
-    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=85",
-    alt: "Aerial view of luxury travel destination",
+    src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=90",
+    alt: "Golden light through ancient forest",
   },
   {
-    src: "https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=1920&q=85",
-    alt: "European cityscape at dusk",
+    src: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=90",
+    alt: "Waterfall cascading through lush jungle",
   },
   {
-    src: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1920&q=85",
-    alt: "Scenic mountain lake landscape",
+    src: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=90",
+    alt: "Vast desert dunes at golden hour",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1439405326854-014607f694d7?w=1920&q=90",
+    alt: "Misty fjord reflecting still waters",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=1920&q=90",
+    alt: "Pristine white sand beach with crystal waters",
   },
 ];
 
+function getShuffled<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export default function HeroFloating() {
-  // ── Background slideshow ─────────────────────────────────────────
+  // ── Background slideshow (random order, reshuffled each mount) ───
+  const [shuffled] = useState(() => getShuffled(BG_IMAGES));
   const [bgIndex, setBgIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setBgIndex((i) => (i + 1) % BG_IMAGES.length);
+      setBgIndex((i) => (i + 1) % shuffled.length);
     }, 6000);
     return () => clearInterval(interval);
-  }, []);
+  }, [shuffled.length]);
 
   // ── Floating UI state ────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
@@ -74,8 +92,8 @@ export default function HeroFloating() {
             className="absolute inset-0"
           >
             <Image
-              src={BG_IMAGES[bgIndex].src}
-              alt={BG_IMAGES[bgIndex].alt}
+              src={shuffled[bgIndex].src}
+              alt={shuffled[bgIndex].alt}
               fill
               priority={bgIndex === 0}
               className="object-cover"
