@@ -26,7 +26,7 @@ export default function Navbar() {
           width={120}
           height={120}
           className="w-[120px] h-[120px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-10px", marginBottom: "-10px" }}
+          style={{ marginTop: "-32px", marginBottom: "-32px" }}
           priority
         />
         <span className="font-serif italic text-2xl text-ink leading-none">
