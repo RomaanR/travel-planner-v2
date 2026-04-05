@@ -6,12 +6,31 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import CurationForm from "@/components/CurationForm";
 import type { ItineraryRequest } from "@/types/itinerary";
 
 export default function CuratePage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const key = "travalbee_credits_hint_shown";
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+
+    setTimeout(() => {
+      toast("You have free credits to use", {
+        description: "Check your Dashboard to see how many itineraries you have remaining before upgrading.",
+        duration: 8000,
+        action: {
+          label: "View Dashboard",
+          onClick: () => router.push("/dashboard"),
+        },
+      });
+    }, 800);
+  }, [router]);
 
   async function handleGenerate(data: ItineraryRequest) {
     sessionStorage.setItem("itineraryRequest", JSON.stringify(data));
