@@ -173,12 +173,12 @@ export default async function DashboardPage() {
                     <div className="w-1.5 h-1.5 rounded-full bg-paper" />
                     <span className="micro-copy text-paper">Premium Active</span>
                   </div>
-                  <Link
+                  <a
                     href="/api/stripe/portal"
                     className="micro-copy text-paper/40 hover:text-paper/70 transition-colors underline underline-offset-2"
                   >
                     Manage subscription &rarr;
-                  </Link>
+                  </a>
                 </div>
               ) : remainingGenerations === 0 ? (
                 <>
