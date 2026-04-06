@@ -16,15 +16,24 @@ export async function GET(req: Request) {
 
   const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
   if (!profile?.stripeCustomerId) {
-    // No Stripe customer on record — user never completed a checkout
+    console.error(`[stripe/portal] No stripeCustomerId for userId=${userId}. Profile:`, JSON.stringify(profile));
     return NextResponse.redirect(new URL("/pricing", req.url));
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer:   profile.stripeCustomerId,
-    return_url: `${baseUrl}/dashboard`,
-  });
 
-  return NextResponse.redirect(portalSession.url);
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer:   profile.stripeCustomerId,
+      return_url: `${baseUrl}/dashboard`,
+    });
+    return NextResponse.redirect(portalSession.url);
+  } catch (err) {
+    console.error("[stripe/portal] Failed to create portal session:", err);
+    // Return a readable error rather than crashing silently
+    return NextResponse.json(
+      { error: "Could not open billing portal. Check that the Stripe Customer Portal is activated at dashboard.stripe.com → Settings → Billing → Customer portal." },
+      { status: 500 }
+    );
+  }
 }
