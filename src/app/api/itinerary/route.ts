@@ -561,55 +561,66 @@ export async function POST(req: Request) {
     // ── Tier check + quota gate ───────────────────────────────────────────────
     // Fetch profile once — used for isPremium, credit check, and quota gate.
     // Anonymous users (no userId) bypass all checks — rate limiter above is sole guard.
+    // isPremium is hoisted so the duration cap below can access it.
     let quotaCount = 0;
+    let isPremium  = false;
     if (userId) {
-      const profile     = await prisma.userProfile.findUnique({ where: { id: userId } });
-      const isPremium   = profile?.isPremium ?? false;
-      const credits     = profile?.availableCredits ?? 1; // brand-new user: 1 implicit free credit
-      const quotaLimit  = isPremium ? 10 : 5;
+      const profile    = await prisma.userProfile.findUnique({ where: { id: userId } });
+      isPremium        = profile?.isPremium ?? false;
+      const credits    = profile?.availableCredits ?? 1; // brand-new user: 1 implicit free credit
 
-      // ── Rolling 30-day quota ──────────────────────────────────────────────
-      const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      quotaCount = await prisma.costLog.count({
-        where: { userId, createdAt: { gte: windowStart } },
-      });
-      if (quotaCount >= quotaLimit) {
-        return Response.json(
-          {
-            error: isPremium
-              ? `You have used all ${quotaLimit} of your premium itineraries this month. Your quota resets on your next billing date.`
-              : `You have reached your limit of ${quotaLimit} free itineraries in the last 30 days. Upgrade to Premium for 10 itineraries/month.`,
-            upgradeUrl: "/pricing",
-          },
-          { status: 403 }
-        );
-      }
-
-      // ── Credit check ──────────────────────────────────────────────────────
-      if (credits <= 0) {
-        return Response.json(
-          {
-            error:      "no_credits",
-            message:    "You have no credits remaining. Upgrade to Premium for 10 itineraries/month.",
-            upgradeUrl: "/pricing",
-          },
-          { status: 402 }
-        );
-      }
-
-      // ── Duration tier gate ────────────────────────────────────────────────
-      // Parse duration from the raw body early (before full Zod parse) so we
-      // can return a clear upgrade prompt. Full Zod validation runs below.
-      const rawDuration = (await req.clone().json().catch(() => ({}))).duration;
-      if (typeof rawDuration === "number" && rawDuration > 3 && !isPremium) {
-        return Response.json(
-          {
-            error:      "upgrade_required",
-            message:    "Trips longer than 3 days require a Premium subscription.",
-            upgradeUrl: "/pricing",
-          },
-          { status: 403 }
-        );
+      if (isPremium) {
+        // ── Premium gate: availableCredits is the sole source of truth ──────
+        // The Stripe webhook owns this value (set to 10 on subscribe, decremented
+        // per generation). We deliberately skip the CostLog rolling-window check
+        // here because it counts generations from BEFORE the user subscribed,
+        // which would incorrectly block a new subscriber who tested as a free user.
+        if (credits <= 0) {
+          return Response.json(
+            {
+              error:      "You have used all 10 of your premium itineraries this month. Your quota resets on your next billing date.",
+              upgradeUrl: "/pricing",
+            },
+            { status: 403 }
+          );
+        }
+      } else {
+        // ── Free tier gate: rolling 30-day CostLog count ──────────────────
+        const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        quotaCount = await prisma.costLog.count({
+          where: { userId, createdAt: { gte: windowStart } },
+        });
+        if (quotaCount >= 5) {
+          return Response.json(
+            {
+              error:      "You have reached your limit of 5 free itineraries in the last 30 days. Upgrade to Premium for 10 itineraries/month.",
+              upgradeUrl: "/pricing",
+            },
+            { status: 403 }
+          );
+        }
+        if (credits <= 0) {
+          return Response.json(
+            {
+              error:      "no_credits",
+              message:    "You have no credits remaining. Upgrade to Premium for 10 itineraries/month.",
+              upgradeUrl: "/pricing",
+            },
+            { status: 402 }
+          );
+        }
+        // ── Duration tier gate (free users only) ──────────────────────────
+        const rawDuration = (await req.clone().json().catch(() => ({}))).duration;
+        if (typeof rawDuration === "number" && rawDuration > 3) {
+          return Response.json(
+            {
+              error:      "upgrade_required",
+              message:    "Trips longer than 3 days require a Premium subscription.",
+              upgradeUrl: "/pricing",
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 
@@ -623,14 +634,6 @@ export async function POST(req: Request) {
     }
     const safeBody = parsed.data;
     capturedDestination = safeBody.destination;
-
-    // ── Free tier duration cap ────────────────────────────────────────────────
-    if (safeBody.duration > 3) {
-      return Response.json(
-        { error: "Free tier is currently limited to a maximum of 3 days per trip. Premium coming soon!" },
-        { status: 400 }
-      );
-    }
 
     const apiKey = process.env.MAPS_SERVER_KEY ?? "";
 
