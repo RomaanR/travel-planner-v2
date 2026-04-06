@@ -168,9 +168,17 @@ export default async function DashboardPage() {
             </div>
             <div className="flex-shrink-0 flex flex-col items-end gap-3">
               {isPremium ? (
-                <div className="inline-flex items-center gap-2 border border-paper/30 px-6 py-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-paper" />
-                  <span className="micro-copy text-paper">Premium Active</span>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="inline-flex items-center gap-2 border border-paper/30 px-6 py-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-paper" />
+                    <span className="micro-copy text-paper">Premium Active</span>
+                  </div>
+                  <Link
+                    href="/api/stripe/portal"
+                    className="micro-copy text-paper/40 hover:text-paper/70 transition-colors underline underline-offset-2"
+                  >
+                    Manage subscription &rarr;
+                  </Link>
                 </div>
               ) : remainingGenerations === 0 ? (
                 <>

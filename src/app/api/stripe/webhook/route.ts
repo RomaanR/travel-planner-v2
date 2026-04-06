@@ -63,11 +63,12 @@ export async function POST(req: Request) {
         break;
       }
 
-      // Grant 10 credits on subscription start and mark user as premium.
+      // Grant 10 credits on subscription start, mark premium, and save Stripe customer ID.
+      const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
       await prisma.userProfile.upsert({
         where:  { id: clerkUserId },
-        create: { id: clerkUserId, availableCredits: 10, isPremium: true },
-        update: { availableCredits: 10, isPremium: true },
+        create: { id: clerkUserId, availableCredits: 10, isPremium: true, stripeCustomerId: customerId ?? null },
+        update: { availableCredits: 10, isPremium: true, ...(customerId ? { stripeCustomerId: customerId } : {}) },
       });
 
       console.log(`[stripe/webhook] checkout.session.completed → premium=true, credits=10 → ${clerkUserId}`);
