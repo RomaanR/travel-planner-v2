@@ -56,7 +56,7 @@ function formatDateLocal(d: Date): string {
   ].join("-");
 }
 
-function computeDuration(departure: string, returnDate: string): number {
+function computeDuration(departure: string, returnDate: string, maxDays: number): number {
   if (!departure || !returnDate) return 1;
   // Math.round instead of Math.ceil guards against DST hour-shift (±1 h)
   // causing a fractional day to ceil up to an extra day.
@@ -65,7 +65,7 @@ function computeDuration(departure: string, returnDate: string): number {
   );
   // +1 for inclusive counting: departure day counts as Day 1.
   // July 1 → July 3 = 2 nights = 3 inclusive days.
-  return Math.min(3, Math.max(1, diff + 1));
+  return Math.min(maxDays, Math.max(1, diff + 1));
 }
 
 // ─── Option data ──────────────────────────────────────────────────────────────
@@ -169,7 +169,16 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
   const [walkingTolerance, setWalkingTolerance] = useState<"strict" | "relaxed">("strict");
   const [isRegion, setIsRegion] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const localToday = useMemo(getLocalToday, []);
+
+  // Fetch premium status on mount to unlock 14-day calendar for subscribers
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((data) => { if (data.isPremium) setIsPremium(true); })
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState<Partial<ItineraryRequest>>({
     departureDate: "",
@@ -261,12 +270,14 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   }
 
   const duration = useMemo(
-    () => computeDuration(form.departureDate ?? "", form.returnDate ?? ""),
-    [form.departureDate, form.returnDate]
+    () => computeDuration(form.departureDate ?? "", form.returnDate ?? "", maxDays),
+    [form.departureDate, form.returnDate, maxDays]
   );
 
+  const maxDays = isPremium ? 14 : 3;
+
   // minReturn = departure + 1 day (at least a 2-day trip)
-  // maxReturn = departure + 2 days (max 3-day inclusive trip: Day1, Day2, Day3)
+  // maxReturn = departure + (maxDays - 1) days (inclusive: Day 1 is departure)
   // Both use parseDateLocal to avoid UTC midnight → previous-day rollback.
   const minReturn = form.departureDate
     ? (() => {
@@ -279,7 +290,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   const maxReturn = form.departureDate
     ? (() => {
         const d = parseDateLocal(form.departureDate);
-        d.setDate(d.getDate() + 2);
+        d.setDate(d.getDate() + (maxDays - 1));
         return formatDateLocal(d);
       })()
     : undefined;
@@ -488,9 +499,9 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   className="mt-2 font-serif italic text-2xl text-ink"
                 >
                   {duration} day{duration !== 1 ? "s" : ""}
-                  {duration === 3 && (
+                  {duration === maxDays && (
                     <span className="font-sans text-xs text-ink-light not-italic ml-2">
-                      (3-day max)
+                      ({maxDays}-day max)
                     </span>
                   )}
                 </motion.p>
