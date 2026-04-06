@@ -16,8 +16,13 @@ export async function GET(req: Request) {
 
   const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
   if (!profile?.stripeCustomerId) {
-    console.error(`[stripe/portal] No stripeCustomerId for userId=${userId}. Profile:`, JSON.stringify(profile));
-    return NextResponse.redirect(new URL("/pricing", req.url));
+    // DEBUG: return profile data so we can see exactly what Prisma is reading
+    return NextResponse.json({
+      debug: true,
+      userId,
+      profile: profile ?? null,
+      issue: "stripeCustomerId is null or profile not found",
+    }, { status: 400 });
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
