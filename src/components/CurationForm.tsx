@@ -269,12 +269,12 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
     setForm((f) => ({ ...f, returnDate: val }));
   }
 
+  const maxDays = isPremium ? 14 : 3;
+
   const duration = useMemo(
     () => computeDuration(form.departureDate ?? "", form.returnDate ?? "", maxDays),
     [form.departureDate, form.returnDate, maxDays]
   );
-
-  const maxDays = isPremium ? 14 : 3;
 
   // minReturn = departure + 1 day (at least a 2-day trip)
   // maxReturn = departure + (maxDays - 1) days (inclusive: Day 1 is departure)
