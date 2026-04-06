@@ -189,8 +189,8 @@ export default function PricingPage() {
               a: "Each generation of a unique trip (destination + dates + preferences) counts as one. Viewing or sharing an existing itinerary does not consume your free generation.",
             },
             {
-              q: "Do my credits expire?",
-              a: "No. Credits never expire. Buy one today, use it six months from now &mdash; it will be waiting for you.",
+              q: "When do my itinerary credits reset?",
+              a: "Your credits reset on your monthly billing date. Free users receive 5 itineraries per rolling 30-day window. Premium subscribers receive 10 itineraries per billing cycle, renewed automatically each month.",
             },
             {
               q: "Is my payment information secure?",

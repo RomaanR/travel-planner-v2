@@ -102,35 +102,48 @@ export default function PrivacyPage() {
               <p className="mb-3">We use the following third-party services:</p>
               <ul className="list-disc pl-5 space-y-3">
                 <li>
-                  <strong className="text-ink">AI Inference Provider</strong>
-                  {" "}is used to generate your travel itinerary. When you submit
-                  a request, your travel preferences (destination, dates, pace,
-                  dietary needs, interests) are securely transmitted to this
-                  provider solely for the purpose of generating your itinerary.{" "}
+                  <strong className="text-ink">Anthropic</strong>
+                  {" "}powers our itinerary generation. When you submit a request,
+                  your travel preferences (destination, dates, pace, dietary needs,
+                  interests) are securely transmitted to Anthropic solely for the
+                  purpose of generating your itinerary.{" "}
                   <strong className="text-ink">
-                    We do not permit our AI provider to use your data to train
-                    their public models.
+                    We do not permit Anthropic to use your data to train their
+                    public models.
                   </strong>{" "}
-                  Data is processed under their API terms, which prohibit
+                  Data is processed under Anthropic&apos;s API terms, which prohibit
                   training on API inputs by default.
                 </li>
                 <li>
-                  <strong className="text-ink">Mapping &amp; Location Services</strong>
-                  {" "}for destination search, interactive maps, and place information
+                  <strong className="text-ink">Google Maps Platform</strong>
+                  {" "}for destination search, interactive maps, and place information.
+                  Usage is subject to Google&apos;s Privacy Policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Identity &amp; Authentication Provider</strong>
-                  {" "}for secure user login and account management
+                  <strong className="text-ink">Clerk</strong>
+                  {" "}for secure user authentication and account management.
+                  Clerk stores your email address and manages your session tokens.
+                  Usage is subject to Clerk&apos;s Privacy Policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Hotel Booking Partner</strong>
-                  {" "}for accommodation recommendations. We may earn a commission
-                  if you complete a booking through our links. Any booking made
-                  is subject to the partner&apos;s own privacy policy.
+                  <strong className="text-ink">Stripe</strong>
+                  {" "}for payment processing. TravalBee never stores your card details
+                  &mdash; all payment data is handled exclusively by Stripe under
+                  PCI-DSS compliance. Usage is subject to Stripe&apos;s Privacy Policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Cloud Infrastructure Provider</strong>
-                  {" "}for application hosting, global content delivery, and serverless compute
+                  <strong className="text-ink">Booking.com (Affiliate Partner)</strong>
+                  {" "}for accommodation recommendations.{" "}
+                  <strong className="text-ink">
+                    TravalBee earns a commission if you complete a booking through
+                    our links.
+                  </strong>{" "}
+                  This does not affect the price you pay. Any booking made is subject
+                  to Booking.com&apos;s own privacy policy.
+                </li>
+                <li>
+                  <strong className="text-ink">Vercel</strong>
+                  {" "}for application hosting, global content delivery, and serverless compute.
                 </li>
               </ul>
             </section>

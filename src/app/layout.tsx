@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import * as Sentry from "@sentry/nextjs";
+import CookieBanner from "@/components/CookieBanner";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -81,6 +82,7 @@ export default function RootLayout({
             },
           }}
         />
+        <CookieBanner />
         <Analytics />
       </body>
     </html>

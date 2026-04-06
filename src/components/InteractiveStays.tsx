@@ -108,6 +108,11 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
           </motion.p>
         )}
       </AnimatePresence>
+
+      {/* Affiliate disclosure — FTC/ASA required */}
+      <p className="font-sans text-xs text-ink-light/50 mt-4 leading-relaxed">
+        Affiliate disclosure: TravalBee earns a commission if you book through these links at no extra cost to you.
+      </p>
     </motion.div>
   );
 }
