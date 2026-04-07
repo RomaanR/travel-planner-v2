@@ -53,78 +53,89 @@ export async function POST(req: Request) {
   //    "manual" (one-off invoices) and only credit on subscription cycles.
   //    This is the authoritative event for ongoing subscription access.
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session     = event.data.object as Stripe.Checkout.Session;
-      const clerkUserId = session.metadata?.clerkUserId;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session     = event.data.object as Stripe.Checkout.Session;
+        const clerkUserId = session.metadata?.clerkUserId;
 
-      if (!clerkUserId) {
-        console.error("[stripe/webhook] No clerkUserId in session metadata — cannot credit user");
+        if (!clerkUserId) {
+          console.error("[stripe/webhook] No clerkUserId in session metadata — cannot credit user");
+          break;
+        }
+
+        // Grant 10 credits on subscription start, mark premium, and save Stripe customer ID.
+        const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+        await prisma.userProfile.upsert({
+          where:  { id: clerkUserId },
+          create: { id: clerkUserId, availableCredits: 10, isPremium: true, stripeCustomerId: customerId ?? null },
+          update: { availableCredits: 10, isPremium: true, ...(customerId ? { stripeCustomerId: customerId } : {}) },
+        });
+
+        console.log(`[stripe/webhook] checkout.session.completed → premium=true, credits=10 → ${clerkUserId}`);
         break;
       }
 
-      // Grant 10 credits on subscription start, mark premium, and save Stripe customer ID.
-      const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-      await prisma.userProfile.upsert({
-        where:  { id: clerkUserId },
-        create: { id: clerkUserId, availableCredits: 10, isPremium: true, stripeCustomerId: customerId ?? null },
-        update: { availableCredits: 10, isPremium: true, ...(customerId ? { stripeCustomerId: customerId } : {}) },
-      });
+      case "invoice.payment_succeeded": {
+        const invoice       = event.data.object as Stripe.Invoice;
+        const billingReason = invoice.billing_reason;
 
-      console.log(`[stripe/webhook] checkout.session.completed → premium=true, credits=10 → ${clerkUserId}`);
-      break;
-    }
+        // Only credit on recurring subscription renewals, not the initial charge
+        // (which is already handled by checkout.session.completed above).
+        if (billingReason !== "subscription_cycle") break;
 
-    case "invoice.payment_succeeded": {
-      const invoice       = event.data.object as Stripe.Invoice;
-      const billingReason = invoice.billing_reason;
+        // clerkUserId flows from checkout → subscription_data.metadata → invoice.subscription_details.metadata
+        const sub         = invoice.subscription_details;
+        const clerkUserId = sub?.metadata?.clerkUserId;
 
-      // Only credit on recurring subscription renewals, not the initial charge
-      // (which is already handled by checkout.session.completed above).
-      if (billingReason !== "subscription_cycle") break;
+        if (!clerkUserId) {
+          console.error("[stripe/webhook] No clerkUserId in invoice subscription metadata — cannot credit renewal");
+          break;
+        }
 
-      // clerkUserId flows from checkout → subscription_data.metadata → invoice.subscription_details.metadata
-      const sub         = invoice.subscription_details;
-      const clerkUserId = sub?.metadata?.clerkUserId;
+        // Renew 10 credits for the new billing cycle and ensure premium flag is set.
+        await prisma.userProfile.upsert({
+          where:  { id: clerkUserId },
+          create: { id: clerkUserId, availableCredits: 10, isPremium: true },
+          update: { availableCredits: 10, isPremium: true },
+        });
 
-      if (!clerkUserId) {
-        console.error("[stripe/webhook] No clerkUserId in invoice subscription metadata — cannot credit renewal");
+        console.log(`[stripe/webhook] invoice.payment_succeeded (renewal) → credits reset to 10 → ${clerkUserId}`);
         break;
       }
 
-      // Renew 10 credits for the new billing cycle and ensure premium flag is set.
-      await prisma.userProfile.upsert({
-        where:  { id: clerkUserId },
-        create: { id: clerkUserId, availableCredits: 10, isPremium: true },
-        update: { availableCredits: 10, isPremium: true },
-      });
+      case "customer.subscription.deleted": {
+        // Subscription cancelled or payment failed — revoke premium access immediately.
+        const subscription = event.data.object as Stripe.Subscription;
+        const clerkUserId  = subscription.metadata?.clerkUserId;
 
-      console.log(`[stripe/webhook] invoice.payment_succeeded (renewal) → credits reset to 10 → ${clerkUserId}`);
-      break;
-    }
+        if (!clerkUserId) {
+          console.error("[stripe/webhook] No clerkUserId in subscription metadata — cannot revoke premium");
+          break;
+        }
 
-    case "customer.subscription.deleted": {
-      // Subscription cancelled or payment failed — revoke premium access immediately.
-      const subscription = event.data.object as Stripe.Subscription;
-      const clerkUserId  = subscription.metadata?.clerkUserId;
+        await prisma.userProfile.updateMany({
+          where: { id: clerkUserId },
+          data:  { isPremium: false, availableCredits: 0 },
+        });
 
-      if (!clerkUserId) {
-        console.error("[stripe/webhook] No clerkUserId in subscription metadata — cannot revoke premium");
+        console.log(`[stripe/webhook] customer.subscription.deleted → premium=false, credits=0 → ${clerkUserId}`);
         break;
       }
 
-      await prisma.userProfile.updateMany({
-        where: { id: clerkUserId },
-        data:  { isPremium: false, availableCredits: 0 },
-      });
-
-      console.log(`[stripe/webhook] customer.subscription.deleted → premium=false, credits=0 → ${clerkUserId}`);
-      break;
+      default:
+        // Return 200 for all unhandled events so Stripe does not retry them.
+        break;
     }
-
-    default:
-      // Return 200 for all unhandled events so Stripe does not retry them.
-      break;
+  } catch (err) {
+    // A DB error (e.g. Supabase timeout) during event processing must:
+    // 1. Delete the idempotency record — without this, Stripe's retry would hit
+    //    the duplicate-check above and return 200 immediately, silently skipping
+    //    the event and leaving the user without their credits/premium status.
+    // 2. Return 500 — signals Stripe to retry the webhook after a backoff delay.
+    console.error("[stripe/webhook] Event processing failed — removing idempotency record for retry:", event.id, err);
+    await prisma.stripeEvent.delete({ where: { stripeEventId: event.id } }).catch(() => {});
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
