@@ -152,8 +152,8 @@ export default function PricingPage() {
             ) : isSignedIn ? (
               <button
                 onClick={handleUpgrade}
-                disabled={loading}
-                className="flex items-center justify-center gap-2 w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={true}
+                className="flex items-center justify-center gap-2 w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 transition-all opacity-50 cursor-not-allowed"
               >
                 {loading ? (
                   <>
@@ -161,13 +161,13 @@ export default function PricingPage() {
                     Redirecting&hellip;
                   </>
                 ) : (
-                  "Upgrade to Premium"
+                  "Coming Soon"
                 )}
               </button>
             ) : (
               <SignInButton mode="modal">
-                <button className="flex items-center justify-center w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 hover:bg-burnt-orange/90 transition-all">
-                  Sign in to Upgrade
+                <button disabled className="flex items-center justify-center w-full text-center micro-copy bg-burnt-orange text-white px-6 py-3.5 transition-all opacity-50 cursor-not-allowed">
+                  Coming Soon
                 </button>
               </SignInButton>
             )}
