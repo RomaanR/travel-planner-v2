@@ -59,7 +59,7 @@ export default async function SamplePage() {
 
       {/* Header strip */}
       <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
-        <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="micro-copy text-burnt-orange mb-1">Sample Itinerary</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">

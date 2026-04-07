@@ -37,7 +37,7 @@ export default function HomePage() {
               key={stat.label}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0 }}
               transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.1 }}
               className="text-center"
             >
@@ -87,7 +87,7 @@ export default function HomePage() {
               key={item.step}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0 }}
               transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.1 }}
               className="bg-paper p-6 md:p-10 border border-ink/5"
             >

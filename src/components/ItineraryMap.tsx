@@ -14,11 +14,20 @@ import type { MapPoint } from "@/types/itinerary";
 // ─── Day-centric color palette ────────────────────────────────────────────────
 
 const DAY_PALETTE: Record<number, { fill: string; stroke: string; label: string }> = {
-  1: { fill: "#D4AF7A", stroke: "#B8924A", label: "Day 1" },  // Champagne
-  2: { fill: "#64748B", stroke: "#475569", label: "Day 2" },  // Slate
-  3: { fill: "#1E293B", stroke: "#0F172A", label: "Day 3" },  // Midnight
-  4: { fill: "#059669", stroke: "#047857", label: "Day 4" },  // Emerald
-  5: { fill: "#E11D48", stroke: "#BE123C", label: "Day 5" },  // Rose
+  1:  { fill: "#D4AF7A", stroke: "#B8924A", label: "Day 1"  },  // Champagne
+  2:  { fill: "#64748B", stroke: "#475569", label: "Day 2"  },  // Slate
+  3:  { fill: "#1E293B", stroke: "#0F172A", label: "Day 3"  },  // Midnight
+  4:  { fill: "#059669", stroke: "#047857", label: "Day 4"  },  // Emerald
+  5:  { fill: "#E11D48", stroke: "#BE123C", label: "Day 5"  },  // Rose
+  6:  { fill: "#7C3AED", stroke: "#6D28D9", label: "Day 6"  },  // Violet
+  7:  { fill: "#0891B2", stroke: "#0E7490", label: "Day 7"  },  // Cyan
+  8:  { fill: "#CA8A04", stroke: "#A16207", label: "Day 8"  },  // Amber
+  9:  { fill: "#9A3412", stroke: "#7C2D12", label: "Day 9"  },  // Sienna
+  10: { fill: "#0369A1", stroke: "#075985", label: "Day 10" },  // Ocean
+  11: { fill: "#BE185D", stroke: "#9D174D", label: "Day 11" },  // Fuchsia
+  12: { fill: "#15803D", stroke: "#166534", label: "Day 12" },  // Forest
+  13: { fill: "#B45309", stroke: "#92400E", label: "Day 13" },  // Copper
+  14: { fill: "#6366F1", stroke: "#4F46E5", label: "Day 14" },  // Indigo
 };
 const FALLBACK = { fill: "#6B6B6B", stroke: "#4a4a4a", label: "Day ?" };
 
@@ -195,7 +204,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/90 backdrop-blur-md border border-white/10 rounded-full px-2 py-1 flex gap-1 shadow-lg"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/90 backdrop-blur-md border border-white/10 rounded-full px-2 py-1 flex gap-1 shadow-lg max-w-[calc(100%-2rem)] overflow-x-auto"
         >
           <button
             onClick={() => { setActiveDay("all"); setActiveMarker(null); }}

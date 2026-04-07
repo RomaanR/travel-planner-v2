@@ -157,7 +157,7 @@ export default function HeroFloating() {
         </div>
 
         {/* Bottom-right — CTA buttons (absolute on desktop, flow on mobile) */}
-        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-20 md:pb-0 flex flex-col items-end gap-6">
+        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-36 md:pb-0 flex flex-col items-end gap-6">
           {/* Thin vertical accent line */}
           <motion.div
             initial={{ scaleY: 0 }}
