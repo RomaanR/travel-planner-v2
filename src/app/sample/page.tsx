@@ -74,14 +74,14 @@ export default async function SamplePage() {
       <div className="flex flex-1 min-h-0">
 
         {/* LEFT: scrollable timeline */}
-        <div className="w-full md:w-[55%] overflow-y-auto">
+        <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip">
 
           {/* Mobile map banner */}
           <div className="md:hidden h-52 w-full border-b border-ink/5">
             <ItineraryMap center={mapCenter} points={mapPoints} />
           </div>
 
-          <div className="px-6 md:px-10 py-8">
+          <div className="px-6 md:px-10 py-8 w-full min-w-0">
             <ItineraryViewer
               itinerary={itinerary}
               departureDate="2025-09-12"

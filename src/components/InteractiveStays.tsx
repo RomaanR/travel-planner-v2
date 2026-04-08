@@ -39,7 +39,7 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="mb-8 print:hidden"
+      className="w-full overflow-hidden mb-8 print:hidden"
     >
       {/* Section divider + kicker */}
       <div className="w-8 h-px bg-ink/20 mb-4" />

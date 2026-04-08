@@ -243,7 +243,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
       </motion.div>
 
       {/* ── SCREEN ONLY: Day content (animated on tab switch) ── */}
-      <div className="print:hidden">
+      <div className="print:hidden w-full min-w-0">
         <AnimatePresence mode="wait">
           {activeDay === null ? (
             /* ALL DAYS — stack every DaySection vertically */
@@ -277,7 +277,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
       </div>
 
       {/* Custom bottom section — hidden in print (CTAs have no meaning on paper) */}
-      <div className="print:hidden">
+      <div className="print:hidden w-full min-w-0">
         {bottomSection}
       </div>
     </>
