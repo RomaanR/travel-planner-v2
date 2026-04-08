@@ -194,16 +194,17 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
       )}
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}
+      {/* block + whitespace-nowrap + inline-flex buttons = native iOS scroll, no flex rubber-banding */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="sticky top-0 z-20 flex overflow-x-auto overflow-y-hidden whitespace-nowrap [-webkit-overflow-scrolling:touch] border-b border-ink/8 mb-8 md:-mx-10 md:px-10 scrollbar-none print:hidden bg-paper/80 backdrop-blur-md"
+        className="sticky top-0 z-20 block w-full max-w-full overflow-x-auto overflow-y-hidden whitespace-nowrap [-webkit-overflow-scrolling:touch] border-b border-ink/8 mb-8 md:-mx-10 md:px-10 scrollbar-none print:hidden bg-paper/80 backdrop-blur-md"
       >
-        {/* ALL DAYS toggle — first pill */}
+        {/* ALL DAYS toggle — first tab */}
         <button
           onClick={() => setActiveDay(null)}
-          className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
+          className={`inline-flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
             activeDay === null
               ? "border-b-2 border-burnt-orange"
               : "border-b-2 border-transparent hover:border-ink/20"
@@ -222,7 +223,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
           <button
             key={day.day}
             onClick={() => setActiveDay(i)}
-            className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
+            className={`inline-flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
               activeDay === i
                 ? "border-b-2 border-burnt-orange"
                 : "border-b-2 border-transparent hover:border-ink/20"
