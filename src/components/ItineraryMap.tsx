@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
 import {
   GoogleMap,
   Marker,
@@ -199,29 +198,34 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
     <div className="w-full h-full relative">
 
       {/* ── Day filter pill ─────────────────────────────────────────────────── */}
+      {/*
+        Cloning the exact scroll mechanics from ItineraryViewer's working tab bar:
+        - overflow-hidden on the outer pill clips content to max-w boundary
+        - flex overflow-x-auto inner track scrolls when content exceeds clip box
+        - flex-none shrink-0 on every button is the critical invariant — forbids
+          the browser from squishing any pill, so maxScrollLeft is always correct
+        - No motion.div (Framer can miscalculate hidden-overflow children widths)
+      */}
       {visibleDays.length > 1 && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/90 backdrop-blur-md border border-white/10 rounded-full px-2 py-1 flex gap-1 shadow-lg max-w-[calc(100%-2rem)] overflow-x-auto"
-        >
-          <button
-            onClick={() => { setActiveDay("all"); setActiveMarker(null); }}
-            className={activeDay === "all" ? pillActive : pillInactive}
-          >
-            All
-          </button>
-          {visibleDays.map((day) => (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 max-w-[calc(100%-2rem)] overflow-hidden rounded-full shadow-lg bg-black/90 backdrop-blur-md border border-white/10">
+          <div className="flex overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch] px-2 py-1 gap-1">
             <button
-              key={day}
-              onClick={() => { setActiveDay(day); setActiveMarker(null); }}
-              className={activeDay === day ? pillActive : pillInactive}
+              onClick={() => { setActiveDay("all"); setActiveMarker(null); }}
+              className={`flex-none shrink-0 ${activeDay === "all" ? pillActive : pillInactive}`}
             >
-              Day {day}
+              All
             </button>
-          ))}
-        </motion.div>
+            {visibleDays.map((day) => (
+              <button
+                key={day}
+                onClick={() => { setActiveDay(day); setActiveMarker(null); }}
+                className={`flex-none shrink-0 ${activeDay === day ? pillActive : pillInactive}`}
+              >
+                Day {day}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       <GoogleMap
