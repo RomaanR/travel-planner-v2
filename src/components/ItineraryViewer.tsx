@@ -203,11 +203,11 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
 
         Final approach:
         • Mobile: NO sticky (position:static). Sticky only at md+.
-        • overflow-x:scroll (not auto) — always-on scrolling, bypasses Safari's
-          flawed overflow-detection entirely.
-        • whitespace-nowrap + inline-flex buttons — browser measures inline
-          content width exactly like text; no flexbox width math involved.
-        • No snap, no flex container, no w-max dependency.
+        • CSS Grid grid-flow-col auto-cols-max — each column sizes to its content,
+          total grid width = sum of all columns; no flex shrinking, no w-max math.
+        • overflow-x:auto on the grid itself — scrolls when grid > viewport.
+        • snap-x snap-mandatory with snap-start on each item for tactile swipe.
+        • No whitespace-nowrap, no inline-flex, no w-max dependency.
       */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -215,14 +215,15 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         transition={{ duration: 0.4, delay: 0.15 }}
         className="w-full min-w-0 border-b border-ink/8 mb-8 print:hidden bg-paper/80 backdrop-blur-md md:sticky md:top-0 md:z-20 md:-mx-10 md:px-10"
       >
-        {/* Single scroll layer — overflow-x:scroll always enabled, whitespace-nowrap
-            forces buttons to lay out as one unbreakable inline line */}
-        <div className="w-full overflow-x-scroll overflow-y-hidden whitespace-nowrap scrollbar-none [-webkit-overflow-scrolling:touch] pl-6 md:pl-0">
+        {/* CSS Grid scroll track — grid-flow-col auto-cols-max gives each tab its
+            natural content width; the grid itself becomes the scroll container.
+            No flex, no w-max, no whitespace-nowrap needed. */}
+        <div className="w-full min-w-0 grid grid-flow-col auto-cols-max gap-0 overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none [-webkit-overflow-scrolling:touch] pl-6 md:pl-0">
 
           {/* ALL DAYS toggle */}
           <button
             onClick={() => setActiveDay(null)}
-            className={`inline-flex flex-col items-start align-top mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+            className={`snap-start flex flex-col items-start pb-3 pt-1 pr-5 sm:pr-8 transition-all cursor-pointer ${
               activeDay === null
                 ? "border-b-2 border-burnt-orange"
                 : "border-b-2 border-transparent hover:border-ink/20"
@@ -241,7 +242,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
             <button
               key={day.day}
               onClick={() => setActiveDay(i)}
-              className={`inline-flex flex-col items-start align-top mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+              className={`snap-start flex flex-col items-start pb-3 pt-1 pr-5 sm:pr-8 transition-all cursor-pointer ${
                 activeDay === i
                   ? "border-b-2 border-burnt-orange"
                   : "border-b-2 border-transparent hover:border-ink/20"
