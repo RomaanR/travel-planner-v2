@@ -195,64 +195,59 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}
       {/*
-        Two-layer scroll pattern — the only reliable way to prevent iOS rubber-banding:
-        • Outer (motion.div): overflow-x-auto on a block element — provides the native
-          scroll window. No flex, no whitespace-nowrap on this layer.
-        • Inner (div): flex w-max — w-max forces the inner div to be exactly as wide as
-          its button children, giving the outer scroll container a concrete width to
-          scroll against. Without w-max the outer container collapses and iOS springs back.
-        • Buttons: shrink-0 so they never compress inside the flex inner row.
-        No useEffect / scrollIntoView auto-scroll exists in this component.
+        Inline-block scroll — most bulletproof iOS Safari horizontal scroll:
+        • Wrapper: block overflow-x-auto whitespace-nowrap — a single scroll window.
+          NO flex anywhere on this element; browser treats children as one long
+          unbreakable line of inline content, calculating true width automatically.
+        • Buttons: inline-flex (inline flow) + align-top + mr-5 for spacing.
+          No shrink-0 / flex-child properties needed — inline elements don't shrink.
       */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="sticky top-0 z-20 w-full overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch] scrollbar-none border-b border-ink/8 mb-8 md:-mx-10 md:px-10 print:hidden bg-paper/80 backdrop-blur-md"
+        className="sticky top-0 z-20 block w-full overflow-x-auto overflow-y-hidden whitespace-nowrap [-webkit-overflow-scrolling:touch] scrollbar-none border-b border-ink/8 mb-8 md:-mx-10 md:px-10 print:hidden bg-paper/80 backdrop-blur-md"
       >
-        {/* Inner flex row — w-max is the key: gives scroll container a concrete pixel width */}
-        <div className="flex w-max">
-          {/* ALL DAYS toggle */}
+        {/* ALL DAYS toggle */}
+        <button
+          onClick={() => setActiveDay(null)}
+          className={`inline-flex flex-col items-start align-top mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+            activeDay === null
+              ? "border-b-2 border-burnt-orange"
+              : "border-b-2 border-transparent hover:border-ink/20"
+          }`}
+        >
+          <span className={`micro-copy ${activeDay === null ? "text-burnt-orange" : "text-ink-light"}`}>
+            ALL
+          </span>
+          <span className={`font-serif italic text-sm leading-tight mt-0.5 ${activeDay === null ? "text-ink" : "text-ink-light"}`}>
+            Days
+          </span>
+        </button>
+
+        {/* Individual day tabs */}
+        {itinerary.days.map((day, i) => (
           <button
-            onClick={() => setActiveDay(null)}
-            className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
-              activeDay === null
+            key={day.day}
+            onClick={() => setActiveDay(i)}
+            className={`inline-flex flex-col items-start align-top mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+              activeDay === i
                 ? "border-b-2 border-burnt-orange"
                 : "border-b-2 border-transparent hover:border-ink/20"
             }`}
           >
-            <span className={`micro-copy ${activeDay === null ? "text-burnt-orange" : "text-ink-light"}`}>
-              ALL
+            <span className={`micro-copy ${activeDay === i ? "text-burnt-orange" : "text-ink-light"}`}>
+              DAY {day.day}
             </span>
-            <span className={`font-serif italic text-sm leading-tight mt-0.5 ${activeDay === null ? "text-ink" : "text-ink-light"}`}>
-              Days
-            </span>
-          </button>
-
-          {/* Individual day tabs */}
-          {itinerary.days.map((day, i) => (
-            <button
-              key={day.day}
-              onClick={() => setActiveDay(i)}
-              className={`shrink-0 flex flex-col items-start pr-5 sm:pr-8 pb-3 pt-1 transition-all cursor-pointer ${
-                activeDay === i
-                  ? "border-b-2 border-burnt-orange"
-                  : "border-b-2 border-transparent hover:border-ink/20"
+            <span
+              className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[100px] sm:max-w-[140px] truncate ${
+                activeDay === i ? "text-ink" : "text-ink-light"
               }`}
             >
-              <span className={`micro-copy ${activeDay === i ? "text-burnt-orange" : "text-ink-light"}`}>
-                DAY {day.day}
-              </span>
-              <span
-                className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[100px] sm:max-w-[140px] truncate ${
-                  activeDay === i ? "text-ink" : "text-ink-light"
-                }`}
-              >
-                {day.theme}
-              </span>
-            </button>
-          ))}
-        </div>
+              {day.theme}
+            </span>
+          </button>
+        ))}
       </motion.div>
 
       {/* ── SCREEN ONLY: Day content (animated on tab switch) ── */}
