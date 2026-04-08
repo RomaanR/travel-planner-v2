@@ -1913,3 +1913,258 @@ Data handling language and the no-training-on-API-inputs clause preserved verbat
 **`src/app/pricing/page.tsx`**
 
 - `PRO_FEATURES` array: `"Dedicated AI Concierge for personalised travel enquiries"` inserted between `"Up to 14 days per trip"` and `"Advanced Transit (Car/Regional)"`
+
+---
+
+### 2026-04-05 22:18 UTC — Stripe Subscription Hardening, Premium Tier Enforcement & Legal Compliance
+
+**Commits:** `3166f0d`–`bdc401f` · **Branch:** `main`
+
+---
+
+#### Stripe — Subscription Model End-to-End
+
+**`src/app/api/stripe/checkout/route.ts`**
+
+- `mode: "payment"` → `mode: "subscription"` — aligns with recurring $10.99/month Stripe product
+- `subscription_data: { metadata: { clerkUserId: userId } }` added so `clerkUserId` flows through the Stripe lifecycle to `invoice.payment_succeeded` events
+- `success_url` updated to `/dashboard?subscribed=1`
+
+**`src/app/api/stripe/webhook/route.ts`**
+
+- Three lifecycle events now handled:
+  - `checkout.session.completed` — grants 10 credits, sets `isPremium: true`, saves `stripeCustomerId`
+  - `invoice.payment_succeeded` (billing_reason `subscription_cycle` only) — resets credits to 10 on renewal
+  - `customer.subscription.deleted` — sets `isPremium: false, availableCredits: 0`
+- Idempotency enforced via `StripeEvent` table: `prisma.stripeEvent.create({ data: { stripeEventId: event.id } })` before any processing; unique constraint violation = duplicate → return 200 immediately
+- `stripeCustomerId` extracted from `session.customer` and persisted to `UserProfile` on `checkout.session.completed`
+
+---
+
+#### Prisma Schema — `UserProfile` + `StripeEvent`
+
+**`prisma/schema.prisma`**
+
+- `UserProfile`: added `isPremium Boolean @default(false)` — single source of truth for subscription tier
+- New `StripeEvent` model:
+  ```prisma
+  model StripeEvent {
+    id            String   @id @default(uuid())
+    stripeEventId String   @unique   // Stripe event ID — enforces idempotency
+    type          String
+    processedAt   DateTime @default(now())
+  }
+  ```
+- Schema synced to Supabase via `npx dotenv -e .env.local -- prisma db push`
+
+---
+
+#### Premium Tier Enforcement — Quota Gate Refactor
+
+**`src/app/api/itinerary/route.ts`**
+
+- `isPremium` hoisted to outer scope (was scoped inside `if (userId)` block — inaccessible to downstream checks)
+- Quota logic split by tier:
+  - **Premium:** `availableCredits <= 0` is the sole gate — bypasses rolling CostLog count entirely. CostLog counts from before subscription would incorrectly block new subscribers who tested as free users.
+  - **Free:** rolling 30-day `CostLog.count()` check retained; hard cap at 5
+- Hardcoded `if (safeBody.duration > 3)` block (line 628) removed — was blocking all users including premium regardless of tier. Duration gate now lives exclusively inside the free-tier `else` branch.
+- Credit decrement: `prisma.userProfile.updateMany({ data: { availableCredits: { decrement: 1 } } })` after successful generation
+
+---
+
+#### Stripe Customer Portal — Subscription Management
+
+**`src/app/api/stripe/portal/route.ts`** *(new file)*
+
+- `GET /api/stripe/portal` — authenticated route (Clerk `auth()`)
+- Looks up `profile.stripeCustomerId`; creates `stripe.billingPortal.sessions.create({ customer, return_url: /dashboard })` and redirects
+- Full `try/catch` around portal session creation — returns structured 500 JSON if Stripe portal is not activated, rather than crashing silently
+- Redirects to `/pricing` if no `stripeCustomerId` on record
+- Dashboard "Manage subscription →" link uses `<a>` (not Next.js `<Link>`) — required to follow server-side 307 redirect to Stripe's external URL
+
+---
+
+#### `/api/user/profile` — Client-Side Tier Detection
+
+**`src/app/api/user/profile/route.ts`** *(new file)*
+
+- `GET /api/user/profile` — returns `{ isPremium, availableCredits }` for the authenticated Clerk user
+- Used by: `CurationForm` (calendar unlock), `pricing/page.tsx` (hide upgrade button for existing subscribers)
+
+---
+
+#### Dashboard — Premium UI & Dynamic Credit Sync
+
+**`src/app/dashboard/page.tsx`**
+
+- Profile fetch logic made tier-aware: `existingProfile.isPremium === true` → skip credit overwrite entirely (webhook owns premium credits); free users still sync via `5 - monthlyCount`
+- Quota widget background: `bg-ink` → `bg-burnt-orange` when `isPremium`
+- Widget label: `"FREE TIER — THIS MONTH"` → `"PREMIUM — THIS MONTH"` conditionally
+- Right panel: `"Premium Active"` badge (border-paper/30) + `"Manage subscription →"` `<a>` link visible for premium users
+- Free tier at 0 credits: `"Upgrade to Premium →"` CTA link added
+
+---
+
+#### Pricing Page — Existing Subscriber State
+
+**`src/app/pricing/page.tsx`**
+
+- `useEffect` on mount: fetches `/api/user/profile`; sets `isPremium` state if true
+- Premium card CTA renders three states:
+  1. `isPremium` → greyed-out `"✓ You're on Premium"` badge (no upgrade button)
+  2. `isSignedIn` → `"Upgrade to Premium"` button → Stripe checkout
+  3. Not signed in → `<SignInButton mode="modal">` → `"Sign in to Upgrade"`
+- FAQ: `"Do my credits expire? No. Credits never expire."` → `"When do my itinerary credits reset?"` with accurate monthly rolling window description
+
+---
+
+#### Photo Route — Cache Leak Fix
+
+**`src/app/api/photo/route.ts`**
+
+- `Response.redirect(googleUrl, 301)` → `Response.redirect(googleUrl, 302)` — prevents browsers caching the redirect permanently; the `MAPS_SERVER_KEY` query param was being stored in browser cache and DevTools network history
+
+---
+
+#### Legal Compliance — Cookie Banner, Affiliate Disclosure, Privacy Update
+
+**`src/components/CookieBanner.tsx`** *(new file)*
+
+- Fixed bottom bar rendered on first visit if `localStorage.getItem("travalbee_cookie_consent")` is absent
+- Two actions: `"Accept All"` → sets `"accepted"`; `"Decline"` → sets `"declined"`; both hide banner
+- `print:hidden` — excluded from PDF export
+- Added to root layout: `src/app/layout.tsx`
+
+**`src/components/InteractiveStays.tsx`**
+
+- Affiliate disclosure appended below hotel cards: `"TravalBee earns a commission if you book through these links at no extra cost to you."` — satisfies FTC/ASA clear-and-conspicuous proximity requirement
+
+**`src/app/privacy/page.tsx`** — Section 4 updated:
+
+| Vendor | What was added |
+|--------|---------------|
+| Anthropic | Named explicitly; no-training clause preserved |
+| Google Maps Platform | Named; Google Privacy Policy reference added |
+| Clerk | Named; email storage + session token handling disclosed |
+| Stripe | New entry: PCI-DSS, no card storage on TravalBee side |
+| Booking.com | Commission disclosure bolded per FTC requirement |
+| Vercel | Named explicitly |
+
+---
+
+#### CurationForm — 14-Day Calendar Unlock for Premium
+
+**`src/components/CurationForm.tsx`**
+
+- `useEffect` on mount: fetches `/api/user/profile`; sets `isPremium` state
+- `const maxDays = isPremium ? 14 : 3` — single derived constant controlling all date constraints
+- `computeDuration(departure, returnDate, maxDays)` — third parameter added; `Math.min(3, ...)` → `Math.min(maxDays, ...)`
+- `maxReturn` date input upper bound: `departure + 2` → `departure + (maxDays - 1)`
+- Duration badge: `duration === 3 → "(3-day max)"` → `duration === maxDays → "({maxDays}-day max)"`
+- **Bug fix:** `maxDays` was initially declared after the `useMemo` that referenced it in its dependency array — `const` temporal dead zone caused `ReferenceError: Cannot access 'Q' before initialization` at Vercel prerender. Fixed by hoisting `maxDays` above the `useMemo` call.
+- Practical ceiling: 7-day trips generate successfully within `max_tokens: 8192`; 13-day trips hit token limit. Raising to `max_tokens: 16000` deferred to future milestone.
+
+---
+
+### 2026-04-08 — Mobile QA, iOS Scroll Debugging & PDF Print Engine
+
+**Commits:** `cc5b060` → `2497f2a` · **Branch:** `main`
+
+---
+
+#### Day Tab Horizontal Scroll — Root Cause & Definitive Fix
+
+Multiple iterations were required to isolate the true cause of tab scroll truncation (clips at Day 2 on small phones, Day 4 on larger screens).
+
+**Root causes identified (in order of discovery):**
+
+1. `snap-mandatory` — iOS snaps back to the last reachable snap point when snap-start positions exceed `maxScrollLeft`; Days 5+ had no reachable snap point. Fixed by removing all snap classes.
+2. `flex` + `overflow-x: auto` on sticky subtrees — documented WebKit bug: Safari restricts internal horizontal scroll on `position: sticky` elements with `overflow-x`. Fixed by removing `md:sticky` on mobile.
+3. `overflow-x: auto` iOS miscalculation — Safari sometimes returns 0 scrollable width on auto. Fixed by switching to `overflow-x: scroll` (always-on).
+4. `flex-shrink: 1` default — flex children were silently squishing despite `w-max`, compressing the scroll track to viewport width. Root cause of all truncation.
+
+**Final architecture (definitive — `src/components/ItineraryViewer.tsx`):**
+
+- `sticky top-0 z-50` outer shell — no `overflow-x` on this element (avoids iOS sticky+overflow-x bug)
+- `overflow-hidden` clipping shell — caps the bar to container width, forces internal scroll instead of bleed
+- `flex overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch]` inner scroll track
+- `flex-none shrink-0` on every tab button — the critical invariant; `maxScrollLeft` = exact sum of all button widths
+- `bg-[#111111]` dark bar — eliminates `backdrop-blur` stacking context interactions
+- Removed `motion.div` wrapper — Framer Motion miscalculates hidden-overflow children widths
+- Removed `-mx-10 md:px-10` negative margin trick — was a hidden source of width miscalculation on desktop
+
+**Files changed:** `src/components/ItineraryViewer.tsx`
+
+---
+
+#### Map Day Filter Pill — Same Fix Applied
+
+The floating pill inside `ItineraryMap.tsx` had the identical root cause: `motion.div` wrapper + buttons without `flex-none shrink-0` caused Day 5+ to be unreachable.
+
+**Fix cloned from working tab bar architecture:**
+
+- Removed `motion.div`; replaced with plain `div`
+- Added `overflow-hidden` outer clipping shell on the `rounded-full` container
+- Inner `flex overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch]` scroll track
+- `flex-none shrink-0` on every pill button
+- Day selector `z-index`: `z-10` → `z-[110]` — explicit protection above Google Map tile layer within modal stacking context
+
+**Files changed:** `src/components/ItineraryMap.tsx`
+
+---
+
+#### Mobile Map UX — Immersive Fullscreen Modal (Airbnb Pattern)
+
+**`src/components/MobileMapBanner.tsx`** — full UX refactor:
+
+- **Before:** 208px thumbnail always rendered at the top of the timeline, consuming screen real estate
+- **After:** map is completely `hidden` by default; toggle opens a `fixed inset-0 z-[100] h-[100dvh]` fullscreen overlay
+- `100dvh` (dynamic viewport height) accounts for iOS Safari URL bar shrink/grow — map always fills the true visual viewport
+- FAB rendered **outside** the map container div via `<>` fragment — never clipped by the container's stacking context in either state
+- `z-[110]` FAB always sits above the `z-[100]` map overlay
+- `useEffect` locks `document.body.style.overflow = "hidden"` while modal is open; cleanup restores scroll on unmount — prevents accidental timeline scroll behind the map
+- FAB label: `"View Map"` → `"List View"` on toggle; `print:hidden` on both elements
+- Desktop layout: completely unaffected — `hidden md:block` right panel in `itinerary/page.tsx` and `sample/page.tsx` unchanged
+
+**Files changed:** `src/components/MobileMapBanner.tsx`, `src/components/ItineraryMap.tsx`
+
+---
+
+#### PDF / Print Engine — Iteration & Final State
+
+Three approaches were attempted; the final state is approach 3.
+
+**Approach 1 — `@media print` desktop canvas (abandoned):**
+`min-width: 1024px !important; width: 1024px !important` on `html, body`. Silently ignored by iOS Safari and Android Chrome — both browsers freeze the DOM at mobile viewport width before the print renderer reads `@media print`.
+
+**Approach 2 — Viewport meta swap (abandoned):**
+`ExportPdfButton.tsx` swapped `<meta name="viewport">` to `width=1024` before calling `window.print()` inside a `setTimeout(..., 300)`. iOS Safari blocks `window.print()` inside `setTimeout` — it is not in the direct call stack of a user gesture, so the browser treats it as a blocked popup. Silent failure on the target platform.
+
+**Approach 3 — Single-column print CSS (current — `src/app/globals.css`):**
+
+Embraces the native single-column mobile layout and makes it print-perfect rather than forcing an unreliable desktop reflow:
+
+| Rule | Purpose |
+|------|---------|
+| `@page { margin: 0.75in }` | Generous breathing room; `PrintItinerary` inline `@page { margin: 0 }` overrides margin for cover/day pages while preserving this value as fallback |
+| `html, body: width 100%, min-width: 0` | Removes all forced-width overrides; clean canvas |
+| `body > div: height auto, overflow visible` | Un-clamps the `h-screen overflow-hidden` split-screen app shell |
+| `p/h*/span/div: word-wrap + overflow-wrap: break-word` | Prevents long place names pushing off the page edge |
+| `img/svg: max-width 100%, object-fit contain, display block, break-inside avoid` | Images stay in containers; never split across pages |
+| `article/section/.itinerary-card/.hotel-card: break-inside avoid` | Entire cards pushed to next page rather than sliced |
+| `button/nav/.hide-on-print: display none` | Belt-and-suspenders behind component-level `print:hidden` |
+
+**`src/components/ExportPdfButton.tsx`** reverted to synchronous `onClick={() => window.print()}`.
+
+---
+
+#### Auto-Scroll on Day Tab Change
+
+**`src/components/ItineraryViewer.tsx`**
+
+- `scrollSentinelRef` — invisible `0`-height `aria-hidden` `<div>` placed immediately above the tab bar
+- `useEffect` fires on `activeDay` change; calls `scrollSentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })`
+- `scrollIntoView` targets the nearest scrollable ancestor automatically: the `overflow-y-auto` left panel on desktop split-screen; the window on `/trips/[id]` and `/shared/[id]` full-page routes
+- `isFirstRender` ref guards initial mount — no scroll fires when the page first loads
+- Sentinel positioned above the tab bar (not page top) — scroll lands with the day selector visible at the top of the viewport, not the editorial opener
+
