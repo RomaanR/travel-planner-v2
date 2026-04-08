@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -163,6 +163,22 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
   const [activeDay, setActiveDay] = useState<number | null>(0);
   const currentDay = activeDay !== null ? itinerary.days?.[activeDay] : null;
 
+  // Sentinel ref placed at the top of the screen content.
+  // scrollIntoView() targets the nearest scrollable ancestor automatically —
+  // on desktop this is the overflow-y-auto left panel; on mobile / full-page
+  // routes (/trips/[id], /shared/[id]) it falls back to the window.
+  const scrollSentinelRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the initial mount so arriving on the page doesn't trigger a scroll.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    scrollSentinelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeDay]);
+
   return (
     <>
       {/* ── PRINT ONLY: Editorial magazine layout ── */}
@@ -171,6 +187,12 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         departureDate={departureDate}
         returnDate={returnDate}
       />
+
+      {/* Scroll sentinel — invisible 0-height div at the very top of the
+          screen content. scrollIntoView on tab change scrolls the nearest
+          scrollable ancestor to this position, resetting the view to the
+          top of the itinerary regardless of how far the user had scrolled. */}
+      <div ref={scrollSentinelRef} aria-hidden="true" />
 
       {/* Editorial opener */}
       <motion.div
