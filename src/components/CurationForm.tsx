@@ -533,7 +533,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none break-words">I need recommendations</span>
+                  <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">I need recommendations</span>
                   <span className={`font-sans text-xs leading-tight ${
                     accommodationStatus === "needed" ? "text-paper/70" : "text-ink-light"
                   }`}>
@@ -556,7 +556,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none break-words">I have a reservation</span>
+                  <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">I have a reservation</span>
                   <span className={`font-sans text-xs leading-tight ${
                     accommodationStatus === "booked" ? "text-paper/70" : "text-ink-light"
                   }`}>

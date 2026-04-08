@@ -61,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body className="bg-paper text-ink antialiased">
+      <body className="bg-paper text-ink antialiased overflow-x-hidden">
         {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
           <ClerkProvider>{children}</ClerkProvider>
         ) : (
