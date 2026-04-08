@@ -70,24 +70,35 @@ body {
 /* ─── Print styles ────────────────────────────────────────────────────────── */
 
 @media print {
-  /* Page size & margins — A4 portrait with breathing room.
-     PrintItinerary.tsx inlines @page { margin: 0 } which overrides the
-     margin here (so its p-16 padding acts as the physical margin), but
-     the size: A4 declaration is preserved from this rule. */
+  /* Page margins — 0.75in gives generous breathing room on all paper sizes.
+     PrintItinerary.tsx inlines @page { margin: 0 } to override this so its
+     own p-16 padding acts as the physical margin on the cover + day pages. */
   @page {
-    size: A4 portrait;
-    margin: 1.5cm;
+    margin: 0.75in;
+  }
+
+  /* ── Base canvas — clean 100% width, no forced desktop widths ────────────
+     We render in the native single-column mobile layout and make that layout
+     print-perfect rather than forcing a desktop reflow (iOS Safari blocks
+     async window.print() inside setTimeout, so the viewport-swap approach
+     is unreliable). */
+  html,
+  body {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    display: block !important;
   }
 
   /* ── Un-clamp the app shell ──────────────────────────────────────────────
-     The itinerary pages use h-screen + overflow-hidden to create the
-     split-screen layout. These constraints clip print output to one page.
-     Force every wrapper back to auto height and visible overflow.
-     Desktop canvas width is enforced via viewport meta swap in
-     ExportPdfButton.tsx (width=1024) before window.print() is called —
-     CSS min-width overrides alone are ignored by iOS/Android print renderers. */
-  html,
-  body,
+     The itinerary pages use h-screen + overflow-hidden for the split-screen
+     layout. These hard-clip the print engine to one page. */
   body > div {
     height: auto !important;
     max-height: none !important;
@@ -96,20 +107,45 @@ body {
     display: block !important;
   }
 
+  /* ── Text containment — prevent any block from pushing off the page edge */
+  p, h1, h2, h3, h4, h5, h6, span, div {
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
   /* ── Image / SVG containment ─────────────────────────────────────────────
-     Prevents photos from blowing out of their column on the forced 1024px
-     canvas; break-inside: avoid stops images from splitting across pages. */
+     Prevents photos from blowing out of their container;
+     break-inside: avoid stops images from splitting across page boundaries. */
   img,
   svg {
     max-width: 100% !important;
     height: auto !important;
     object-fit: contain !important;
+    display: block !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Reset Framer Motion inline opacity/transform — prevents animation initial
-     states from hiding content in the print-only all-days section */
+  /* ── Block-level page-break protection ───────────────────────────────────
+     Keeps itinerary cards and hotel cards whole — if a card is at the
+     bottom of page 1 the print engine pushes the entire card to page 2. */
+  article, section, .itinerary-card, .hotel-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* ── Hide interactive / navigation UI ────────────────────────────────────
+     Buttons and nav are already hidden via print:hidden Tailwind utilities
+     on individual components; this is a belt-and-suspenders catch-all. */
+  button, nav, .hide-on-print {
+    display: none !important;
+  }
+
+  /* ── Reset Framer Motion inline styles ───────────────────────────────────
+     Prevents animation initial-states from hiding content in the print
+     all-days section (elements stuck at opacity:0 or y:24 transform). */
   [style*="opacity"] {
     opacity: 1 !important;
   }
