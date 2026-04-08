@@ -195,74 +195,53 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}
       {/*
-        Why every previous attempt failed:
-        1. sticky + overflow-x on the same subtree = known iOS Safari bug;
-           Safari restricts internal horizontal scroll on sticky subtrees.
-        2. overflow-x:auto relies on Safari's layout engine agreeing content
-           overflows — it sometimes miscalculates and returns 0 scrollable width.
-
-        Final approach:
-        • Mobile: NO sticky (position:static). Sticky only at md+.
-        • CSS Grid grid-flow-col auto-cols-max — each column sizes to its content,
-          total grid width = sum of all columns; no flex shrinking, no w-max math.
-        • overflow-x:auto on the grid itself — scrolls when grid > viewport.
-        • snap-x snap-mandatory with snap-start on each item for tactile swipe.
-        • No whitespace-nowrap, no inline-flex, no w-max dependency.
+        Architecture: sticky top-0 outer shell (no overflow-x — avoids iOS Safari
+        sticky+overflow-x bug) wraps an overflow-hidden clipping box, which wraps
+        a flex scroll track. flex-none shrink-0 on every button is the critical
+        invariant — it forbids the browser from resizing or squishing any tab,
+        so the flex track's intrinsic width is always the sum of all button widths,
+        and the scroll container has a real, correct maxScrollLeft.
+        No motion.div — Framer Motion can miscalculate hidden-overflow children widths.
+        No -mx / px negative-margin trick — removed to eliminate desktop clipping.
+        No CSS Grid — reverted; flex-none shrink-0 is sufficient and simpler.
       */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="w-full min-w-0 border-b border-ink/8 mb-8 print:hidden bg-paper/80 backdrop-blur-md md:sticky md:top-0 md:z-20 md:-mx-10 md:px-10"
-      >
-        {/* CSS Grid scroll track — grid-flow-col auto-cols-max gives each tab its
-            natural content width; the grid itself becomes the scroll container.
-            No flex, no w-max, no whitespace-nowrap needed. */}
-        <div className="w-full min-w-0 grid grid-flow-col auto-cols-max gap-0 overflow-x-auto overscroll-x-contain snap-x snap-mandatory scrollbar-none [-webkit-overflow-scrolling:touch] pl-6 md:pl-0">
+      <div className="sticky top-0 z-50 w-full print:hidden mb-6">
+        {/* Clipping shell: overflow-hidden caps the bar to container width,
+            forcing the inner flex track to scroll rather than bleed off-screen */}
+        <div className="w-full overflow-hidden bg-[#111111] border-b border-black/20">
+          {/* Flex scroll track: flex (not grid) + overflow-x-auto + -webkit-overflow-scrolling */}
+          <div className="flex overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch]">
 
-          {/* ALL DAYS toggle */}
-          <button
-            onClick={() => setActiveDay(null)}
-            className={`snap-start flex flex-col items-start pb-3 pt-1 pr-5 sm:pr-8 transition-all cursor-pointer ${
-              activeDay === null
-                ? "border-b-2 border-burnt-orange"
-                : "border-b-2 border-transparent hover:border-ink/20"
-            }`}
-          >
-            <span className={`micro-copy ${activeDay === null ? "text-burnt-orange" : "text-ink-light"}`}>
-              ALL
-            </span>
-            <span className={`font-serif italic text-sm leading-tight mt-0.5 ${activeDay === null ? "text-ink" : "text-ink-light"}`}>
-              Days
-            </span>
-          </button>
-
-          {/* Individual day tabs */}
-          {itinerary.days.map((day, i) => (
+            {/* ALL DAYS toggle */}
             <button
-              key={day.day}
-              onClick={() => setActiveDay(i)}
-              className={`snap-start flex flex-col items-start pb-3 pt-1 pr-5 sm:pr-8 transition-all cursor-pointer ${
-                activeDay === i
-                  ? "border-b-2 border-burnt-orange"
-                  : "border-b-2 border-transparent hover:border-ink/20"
+              onClick={() => setActiveDay(null)}
+              className={`flex-none shrink-0 px-6 py-3 text-xs tracking-widest uppercase font-bold border-r border-white/10 transition-colors cursor-pointer whitespace-nowrap ${
+                activeDay === null
+                  ? "text-white border-b-2 border-burnt-orange"
+                  : "text-white/50 border-b-2 border-transparent hover:text-white/75"
               }`}
             >
-              <span className={`micro-copy ${activeDay === i ? "text-burnt-orange" : "text-ink-light"}`}>
-                DAY {day.day}
-              </span>
-              <span
-                className={`font-serif italic text-sm leading-tight mt-0.5 max-w-[100px] sm:max-w-[140px] truncate ${
-                  activeDay === i ? "text-ink" : "text-ink-light"
+              All Days
+            </button>
+
+            {/* Individual day tabs */}
+            {itinerary.days.map((day, i) => (
+              <button
+                key={day.day}
+                onClick={() => setActiveDay(i)}
+                className={`flex-none shrink-0 px-6 py-3 text-xs tracking-widest uppercase font-bold border-r border-white/10 transition-colors cursor-pointer whitespace-nowrap ${
+                  activeDay === i
+                    ? "text-white border-b-2 border-burnt-orange"
+                    : "text-white/50 border-b-2 border-transparent hover:text-white/75"
                 }`}
               >
-                {day.theme}
-              </span>
-            </button>
-          ))}
+                Day {day.day}
+              </button>
+            ))}
 
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* ── SCREEN ONLY: Day content (animated on tab switch) ── */}
       <div className="print:hidden w-full min-w-0">
