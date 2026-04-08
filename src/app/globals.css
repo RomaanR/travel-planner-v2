@@ -79,27 +79,15 @@ body {
     margin: 1.5cm;
   }
 
-  /* ── Force desktop canvas ────────────────────────────────────────────────
-     Mobile browsers render the print job at phone viewport width (~375px),
-     stretching the layout across a full A4 sheet and blowing out images.
-     Setting min-width + width: 1024px forces the print engine to lay out
-     at desktop scale regardless of the device the user is holding. */
-  html,
-  body {
-    min-width: 1024px !important;
-    width: 1024px !important;
-    margin: 0 auto !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    display: block !important;
-    font-size: 14px !important;
-  }
-
   /* ── Un-clamp the app shell ──────────────────────────────────────────────
      The itinerary pages use h-screen + overflow-hidden to create the
      split-screen layout. These constraints clip print output to one page.
-     Force every wrapper back to auto height and visible overflow. */
+     Force every wrapper back to auto height and visible overflow.
+     Desktop canvas width is enforced via viewport meta swap in
+     ExportPdfButton.tsx (width=1024) before window.print() is called —
+     CSS min-width overrides alone are ignored by iOS/Android print renderers. */
+  html,
+  body,
   body > div {
     height: auto !important;
     max-height: none !important;
