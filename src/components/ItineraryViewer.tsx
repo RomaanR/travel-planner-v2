@@ -195,15 +195,21 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}
       {/*
-        Three-layer structure — structurally guarantees iOS native scroll:
-        1. motion.div  — sticky chrome (bg, border, md bleed). min-w-0 prevents
-                         flexbox min-width blowout from the parent column.
-        2. scroll track — flex overflow-x-auto snap-x snap-mandatory.
-                         w-full gives it a concrete containing width so iOS
-                         knows exactly how far content has overflowed.
-        3. inner track  — flex flex-nowrap w-max. w-max sizes itself to the
-                         sum of all button widths; this is the true scroll target.
-        Buttons: flex-none shrink-0 snap-start — never compress, each is a snap point.
+        Root cause of all previous failures:
+        A) snap-mandatory forces iOS to snap to a snap-point. Days 5-7's snap-start
+           positions exceed maxScrollLeft on a phone, so iOS snaps *back* to Day 4.
+           Fix: no snap at all — free-scroll only.
+        B) flex on the scroll-track makes the inner w-max div a flex-child that
+           flex-shrinks to fit its parent, nullifying w-max entirely.
+           Fix: scroll-track is block, not flex.
+
+        Correct structure:
+        1. motion.div  — sticky chrome. min-w-0 stops parent flex blowout.
+        2. scroll track — BLOCK overflow-x-auto (no flex, no snap). w-full gives
+                          iOS a concrete window width to measure overflow against.
+        3. inner track  — flex flex-nowrap w-max. As a block child it cannot
+                          flex-shrink, so w-max resolves to the true button sum.
+        Buttons: flex-none shrink-0 — belt-and-suspenders inside the flex row.
       */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -211,15 +217,15 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         transition={{ duration: 0.4, delay: 0.15 }}
         className="sticky top-0 z-20 w-full min-w-0 relative border-b border-ink/8 mb-8 md:-mx-10 md:px-10 print:hidden bg-paper/80 backdrop-blur-md"
       >
-        {/* Scroll track — overflow window */}
-        <div className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-none [-webkit-overflow-scrolling:touch]">
-          {/* Inner track — sized to buttons, px-6 aligns with page gutter on mobile */}
-          <div className="flex flex-nowrap w-max px-6 md:px-0">
+        {/* Scroll track: block (not flex) so inner w-max child cannot be shrunk */}
+        <div className="block w-full overflow-x-auto overflow-y-hidden scrollbar-none [-webkit-overflow-scrolling:touch]">
+          {/* Inner track: flex row sized to button sum. pr-6 lets the last tab breathe */}
+          <div className="flex flex-nowrap w-max pl-6 pr-6 md:pl-0 md:pr-4">
 
             {/* ALL DAYS toggle */}
             <button
               onClick={() => setActiveDay(null)}
-              className={`flex-none shrink-0 snap-start flex flex-col items-start mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+              className={`flex-none shrink-0 flex flex-col items-start mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
                 activeDay === null
                   ? "border-b-2 border-burnt-orange"
                   : "border-b-2 border-transparent hover:border-ink/20"
@@ -238,7 +244,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
               <button
                 key={day.day}
                 onClick={() => setActiveDay(i)}
-                className={`flex-none shrink-0 snap-start flex flex-col items-start mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
+                className={`flex-none shrink-0 flex flex-col items-start mr-5 sm:mr-8 pb-3 pt-1 transition-all cursor-pointer ${
                   activeDay === i
                     ? "border-b-2 border-burnt-orange"
                     : "border-b-2 border-transparent hover:border-ink/20"
