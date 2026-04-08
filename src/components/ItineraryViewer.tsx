@@ -188,12 +188,6 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         returnDate={returnDate}
       />
 
-      {/* Scroll sentinel — invisible 0-height div at the very top of the
-          screen content. scrollIntoView on tab change scrolls the nearest
-          scrollable ancestor to this position, resetting the view to the
-          top of the itinerary regardless of how far the user had scrolled. */}
-      <div ref={scrollSentinelRef} aria-hidden="true" />
-
       {/* Editorial opener */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -214,6 +208,10 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
           destination={itinerary.destination}
         />
       )}
+
+      {/* Scroll sentinel — sits immediately above the tab bar.
+          Tab changes scroll here, not to the top of the page. */}
+      <div ref={scrollSentinelRef} aria-hidden="true" />
 
       {/* ── SCREEN ONLY: Tabbed day navigation ── */}
       {/*
