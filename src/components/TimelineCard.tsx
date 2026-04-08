@@ -87,7 +87,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay }}
-      className="flex flex-col md:flex-row -mx-6 md:mx-0 border-y md:border border-ink/8 bg-paper overflow-hidden print:border print:mx-0 print:flex-row print:break-inside-avoid print:opacity-100"
+      className="flex flex-col md:flex-row mx-0 border-y md:border border-ink/8 bg-paper overflow-hidden print:border print:mx-0 print:flex-row print:break-inside-avoid print:opacity-100"
     >
       {/* Left: Photo */}
       <div className="w-full md:w-48 md:shrink-0 relative self-stretch min-h-[200px] md:min-h-[140px] overflow-hidden bg-paper-dark print:w-28 print:min-h-[140px]">

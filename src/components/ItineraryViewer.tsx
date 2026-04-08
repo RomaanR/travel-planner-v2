@@ -198,7 +198,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
-        className="sticky top-0 z-20 flex overflow-x-auto border-b border-ink/8 mb-8 -mx-6 md:-mx-10 px-6 md:px-10 scrollbar-none print:hidden bg-paper/80 backdrop-blur-md"
+        className="sticky top-0 z-20 flex overflow-x-auto overscroll-x-contain border-b border-ink/8 mb-8 md:-mx-10 md:px-10 scrollbar-none print:hidden bg-paper/80 backdrop-blur-md"
       >
         {/* ALL DAYS toggle — first pill */}
         <button

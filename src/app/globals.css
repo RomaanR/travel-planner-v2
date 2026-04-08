@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Global overflow lockdown ───────────────────────────────────────────────
+   Prevents any child element from creating horizontal scroll at the page level.
+   Negative-margin / bleed elements are clipped to the viewport; they must
+   scroll internally using overflow-x-auto on their own wrapper.             */
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
 :root {
   --background: #F5F0E8;
   --foreground: #0A0A0A;
