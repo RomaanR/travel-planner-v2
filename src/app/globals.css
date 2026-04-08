@@ -75,6 +75,20 @@ body {
     margin: 1.5cm 2cm;
   }
 
+  /* ── Un-clamp the app shell ──────────────────────────────────────────────
+     The itinerary pages use h-screen + overflow-hidden to create the
+     split-screen layout. These constraints clip print output to one page.
+     Force every wrapper back to auto height and visible overflow. */
+  html,
+  body,
+  body > div {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
   /* Reset Framer Motion inline opacity/transform — prevents animation initial
      states from hiding content in the print-only all-days section */
   [style*="opacity"] {

@@ -117,11 +117,14 @@ export default function ItineraryPage() {
   }, [itinerary]);
 
   return (
-    <div className="h-screen flex flex-col bg-paper overflow-hidden">
-      <Navbar />
+    <div className="h-screen flex flex-col bg-paper overflow-hidden print:h-auto print:overflow-visible print:block">
+      {/* Navbar — hidden in print (PrintItinerary handles the print header) */}
+      <div className="print:hidden">
+        <Navbar />
+      </div>
 
-      {/* Header strip */}
-      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
+      {/* Header strip — hidden in print */}
+      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
         <button
           onClick={() => router.push("/")}
           className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
@@ -157,15 +160,15 @@ export default function ItineraryPage() {
       </div>
 
       {/* Split-screen */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 print:block print:overflow-visible">
 
-        {/* LEFT: Scrollable timeline */}
-        <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip">
+        {/* LEFT: Scrollable timeline — full width in print */}
+        <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip print:w-full print:overflow-visible print:h-auto">
 
-          {/* Mobile map banner — fullscreen toggle */}
+          {/* Mobile map banner — hidden in print */}
           <MobileMapBanner center={mapCenter} points={mapPoints} />
 
-          <div className="px-6 md:px-10 py-8 w-full min-w-0">
+          <div className="px-6 md:px-10 py-8 w-full min-w-0 print:px-0 print:py-6">
 
             {/* Loading */}
             {loading && (
@@ -301,8 +304,8 @@ export default function ItineraryPage() {
           </div>
         </div>
 
-        {/* RIGHT: Sticky map */}
-        <div className="hidden md:block w-[45%] border-l border-ink/5 h-full">
+        {/* RIGHT: Sticky map — hidden in print */}
+        <div className="hidden md:block w-[45%] border-l border-ink/5 h-full print:hidden">
           <ItineraryMap center={mapCenter} points={mapPoints} />
         </div>
 

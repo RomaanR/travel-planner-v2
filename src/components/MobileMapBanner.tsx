@@ -21,7 +21,7 @@ export default function MobileMapBanner({ center, points }: MobileMapBannerProps
 
   return (
     <div
-      className={`md:hidden relative ${
+      className={`md:hidden print:hidden relative ${
         isFullscreen
           ? "fixed inset-0 z-[100] w-full h-[100dvh]"
           : "h-52 w-full border-b border-ink/5"
