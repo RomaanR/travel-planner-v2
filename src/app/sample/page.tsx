@@ -7,6 +7,7 @@ import type { ItineraryResponse } from "@/types/itinerary";
 import Navbar from "@/components/Navbar";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import ItineraryMap from "@/components/ItineraryMap";
+import MobileMapBanner from "@/components/MobileMapBanner";
 import ExportPdfButton from "@/components/ExportPdfButton";
 
 export const dynamic = "force-dynamic";
@@ -76,10 +77,8 @@ export default async function SamplePage() {
         {/* LEFT: scrollable timeline */}
         <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip">
 
-          {/* Mobile map banner */}
-          <div className="md:hidden h-52 w-full border-b border-ink/5">
-            <ItineraryMap center={mapCenter} points={mapPoints} />
-          </div>
+          {/* Mobile map banner — fullscreen toggle */}
+          <MobileMapBanner center={mapCenter} points={mapPoints} />
 
           <div className="px-6 md:px-10 py-8 w-full min-w-0">
             <ItineraryViewer

@@ -14,8 +14,6 @@ import {
   AlertCircle,
   Check,
   Sparkles,
-  Maximize2,
-  X,
 } from "lucide-react";
 import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
@@ -48,6 +46,7 @@ const StoredRequestSchema = z.object({
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
+import MobileMapBanner from "@/components/MobileMapBanner";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import GenerationLoader from "@/components/GenerationLoader";
 
@@ -62,7 +61,6 @@ export default function ItineraryPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [departureDate, setDepartureDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
-  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
   async function handleSave() {
     if (!itinerary || saveState !== "idle") return;
@@ -164,27 +162,10 @@ export default function ItineraryPage() {
         {/* LEFT: Scrollable timeline */}
         <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip">
 
-          {/* Mobile map banner — tap "View Map" to go fullscreen */}
-          <div className={`md:hidden relative ${
-            isMapFullscreen
-              ? "fixed inset-0 z-[100] w-full h-[100dvh]"
-              : "h-52 w-full border-b border-ink/5"
-          }`}>
-            <ItineraryMap center={mapCenter} points={mapPoints} />
-            <button
-              onClick={() => setIsMapFullscreen(!isMapFullscreen)}
-              aria-label={isMapFullscreen ? "Close map" : "View fullscreen map"}
-              className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-paper/90 backdrop-blur-sm border border-ink/10 px-3 py-1.5 micro-copy text-ink shadow-sm"
-            >
-              {isMapFullscreen
-                ? <><X size={11} strokeWidth={1.5} />Close</>
-                : <><Maximize2 size={11} strokeWidth={1.5} />View Map</>
-              }
-            </button>
-          </div>
+          {/* Mobile map banner — fullscreen toggle */}
+          <MobileMapBanner center={mapCenter} points={mapPoints} />
 
-          {/* Timeline content — hidden on mobile while map is fullscreen */}
-          <div className={`px-6 md:px-10 py-8 w-full min-w-0 ${isMapFullscreen ? "hidden md:block" : ""}`}>
+          <div className="px-6 md:px-10 py-8 w-full min-w-0">
 
             {/* Loading */}
             {loading && (
