@@ -207,7 +207,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
         - No motion.div (Framer can miscalculate hidden-overflow children widths)
       */}
       {visibleDays.length > 1 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 max-w-[calc(100%-2rem)] overflow-hidden rounded-full shadow-lg bg-black/90 backdrop-blur-md border border-white/10">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[110] max-w-[calc(100%-2rem)] overflow-hidden rounded-full shadow-lg bg-black/90 backdrop-blur-md border border-white/10">
           <div className="flex overflow-x-auto scrollbar-none [-webkit-overflow-scrolling:touch] px-2 py-1 gap-1">
             <button
               onClick={() => { setActiveDay("all"); setActiveMarker(null); }}
