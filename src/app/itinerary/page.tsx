@@ -120,7 +120,7 @@ export default function ItineraryPage() {
       <Navbar />
 
       {/* Header strip */}
-      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
+      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
         <button
           onClick={() => router.push("/")}
           className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"

@@ -58,7 +58,7 @@ export default async function SamplePage() {
       <Navbar />
 
       {/* Header strip */}
-      <div className="shrink-0 pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
+      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="micro-copy text-burnt-orange mb-1">Sample Itinerary</p>
