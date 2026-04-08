@@ -32,7 +32,7 @@ export default function MobileMapBanner({ center, points }: MobileMapBannerProps
       <button
         onClick={() => setIsFullscreen((prev) => !prev)}
         aria-label={isFullscreen ? "Close map" : "View fullscreen map"}
-        className="absolute bottom-4 left-4 z-50 flex items-center gap-1.5 bg-white border border-black px-3 py-1.5 micro-copy text-ink shadow-md"
+        className="absolute bottom-4 left-4 z-50 md:hidden flex items-center gap-1.5 bg-white border border-black px-3 py-1.5 micro-copy text-ink shadow-md"
       >
         {isFullscreen ? (
           <>
