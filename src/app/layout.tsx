@@ -61,12 +61,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body className="bg-paper text-ink antialiased overflow-x-hidden">
+      <body className="bg-paper text-ink antialiased overflow-x-clip">
+        <div className="w-full max-w-[100vw] overflow-x-clip relative">
         {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
           <ClerkProvider>{children}</ClerkProvider>
         ) : (
           children
         )}
+        </div>
         <Toaster
           position="bottom-right"
           expand={false}

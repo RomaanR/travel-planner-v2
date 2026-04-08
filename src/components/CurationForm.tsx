@@ -624,7 +624,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={transportMode === "walking-transit" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none">Walking &amp; Transit</span>
+                  <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">Walking &amp; Transit</span>
                   <span className={`font-sans text-xs leading-tight ${
                     transportMode === "walking-transit" ? "text-paper/70" : "text-ink-light"
                   }`}>
@@ -647,7 +647,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     strokeWidth={1.5}
                     className={transportMode === "car-driver" ? "text-paper/70" : "text-ink-light"}
                   />
-                  <span className="micro-copy leading-none">Car / Private Driver</span>
+                  <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">Car / Private Driver</span>
                   <span className={`font-sans text-xs leading-tight ${
                     transportMode === "car-driver" ? "text-paper/70" : "text-ink-light"
                   }`}>
@@ -777,8 +777,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     <span className={form.pace === opt.value ? "text-paper" : "text-ink-light"}>
                       {opt.icon}
                     </span>
-                    <span className="micro-copy leading-none">{opt.label}</span>
-                    <span className={`font-sans text-xs leading-tight ${form.pace === opt.value ? "text-paper/70" : "text-ink-light"}`}>
+                    <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">{opt.label}</span>
+                    <span className={`font-sans text-[10px] md:text-xs leading-tight ${form.pace === opt.value ? "text-paper/70" : "text-ink-light"}`}>
                       {opt.sub}
                     </span>
                   </button>
@@ -804,8 +804,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                     <span className={`font-serif italic text-2xl sm:text-3xl leading-none ${form.budgetTier === opt.value ? "text-paper" : "text-ink"}`}>
                       {opt.symbol}
                     </span>
-                    <span className="micro-copy leading-none">{opt.label}</span>
-                    <span className={`font-sans text-xs ${form.budgetTier === opt.value ? "text-paper/70" : "text-ink-light"}`}>
+                    <span className="text-[10px] md:text-xs tracking-wider md:tracking-widest uppercase font-bold leading-tight">{opt.label}</span>
+                    <span className={`font-sans text-[10px] md:text-xs leading-tight ${form.budgetTier === opt.value ? "text-paper/70" : "text-ink-light"}`}>
                       {opt.sub}
                     </span>
                   </button>
