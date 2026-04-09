@@ -1,15 +1,18 @@
 // ─── /api/photo — Google Places Photo Proxy ───────────────────────────────────
 //
-// Accepts a raw photo_reference token and redirects to the Google Places Photo
-// API with the server-side MAPS_SERVER_KEY. The key never reaches the browser —
-// Next.js Image Optimization follows the redirect server-side and caches the
-// result at Vercel's CDN edge.
+// Accepts a raw photo_reference token and proxies the image bytes from Google.
+// Supports both legacy Places API tokens and new Places API (v1) tokens
+// (AU_ / ATCDNf prefixes). Key never reaches the browser.
 //
 // Usage: /api/photo?ref=<photo_reference>
 
-// photo_reference tokens are base64url-safe strings — alphanumeric + _ and -
+// New Places API (v1) tokens start with AU_ or ATCDNf
+const isNewPlacesFormat = (ref: string) =>
+  ref.startsWith("AU_") || ref.startsWith("ATCDNf");
+
+// Tokens are base64url-safe — alphanumeric + _ and -
 const SAFE_REF = /^[A-Za-z0-9_\-]+$/;
-const MAX_REF_LEN = 2000; // Google tokens are typically 200–500 chars
+const MAX_REF_LEN = 2000;
 
 export async function GET(req: Request): Promise<Response> {
   const ref = new URL(req.url).searchParams.get("ref");
@@ -23,12 +26,34 @@ export async function GET(req: Request): Promise<Response> {
     return new Response(null, { status: 503 });
   }
 
-  const googleUrl =
-    `https://maps.googleapis.com/maps/api/place/photo` +
-    `?maxwidth=800&photo_reference=${ref}&key=${apiKey}`;
+  // New Places API (v1): places.googleapis.com/v1/{resourceName}/media
+  // Legacy Places API:   maps.googleapis.com/maps/api/place/photo
+  const googleUrl = isNewPlacesFormat(ref)
+    ? `https://places.googleapis.com/v1/${ref}/media?maxWidthPx=800&key=${apiKey}`
+    : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${ref}&key=${apiKey}`;
 
-  // 302 (temporary) — not cached by browsers, preventing the Google URL
-  // (which contains MAPS_SERVER_KEY) from being stored in browser cache or history.
-  // Next.js Image Optimization still follows the redirect server-side as before.
-  return Response.redirect(googleUrl, 302);
+  // Proxy the bytes — avoids Next.js Image failing to follow chained redirects
+  // and keeps MAPS_SERVER_KEY out of browser cache/history entirely.
+  try {
+    const upstream = await fetch(googleUrl, {
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (!upstream.ok) {
+      return new Response(null, { status: 502 });
+    }
+
+    const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
+    const buffer = await upstream.arrayBuffer();
+
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type":  contentType,
+        "Cache-Control": "public, max-age=2592000, immutable", // 30 days
+      },
+    });
+  } catch {
+    return new Response(null, { status: 502 });
+  }
 }
