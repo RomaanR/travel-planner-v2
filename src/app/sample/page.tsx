@@ -63,7 +63,7 @@ export default async function SamplePage() {
       </div>
 
       {/* Header strip — kept in print for destination title context */}
-      <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:pt-6 print:border-b print:border-black/15">
+      <div className="shrink-0 pt-28 md:pt-24 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:pt-6 print:border-b print:border-black/15">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <Link
