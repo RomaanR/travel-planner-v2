@@ -115,9 +115,9 @@ export default function PrivacyPage() {
                   training on API inputs by default.
                 </li>
                 <li>
-                  <strong className="text-ink">Google Maps Platform</strong>
+                  <strong className="text-ink">Mapping and Location Services</strong>
                   {" "}for destination search, interactive maps, and place information.
-                  Usage is subject to Google&apos;s Privacy Policy.
+                  Usage is subject to the respective provider&apos;s Privacy Policy.
                 </li>
                 <li>
                   <strong className="text-ink">Clerk</strong>
@@ -126,24 +126,25 @@ export default function PrivacyPage() {
                   Usage is subject to Clerk&apos;s Privacy Policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Stripe</strong>
-                  {" "}for payment processing. TravalBee never stores your card details
-                  &mdash; all payment data is handled exclusively by Stripe under
-                  PCI-DSS compliance. Usage is subject to Stripe&apos;s Privacy Policy.
+                  <strong className="text-ink">Secure Payment Processors</strong>
+                  {" "}for handling transactions. TravalBee never stores your card
+                  details &mdash; all payment data is handled exclusively by our
+                  PCI-DSS compliant payment partners.
                 </li>
                 <li>
-                  <strong className="text-ink">Booking.com (Affiliate Partner)</strong>
-                  {" "}for accommodation recommendations.{" "}
+                  <strong className="text-ink">Accommodation and Travel Partners</strong>
+                  {" "}for hotel and stay recommendations.{" "}
                   <strong className="text-ink">
                     TravalBee earns a commission if you complete a booking through
-                    our links.
+                    our affiliate links.
                   </strong>{" "}
                   This does not affect the price you pay. Any booking made is subject
-                  to Booking.com&apos;s own privacy policy.
+                  to the partner&apos;s own privacy policy.
                 </li>
                 <li>
-                  <strong className="text-ink">Vercel</strong>
-                  {" "}for application hosting, global content delivery, and serverless compute.
+                  <strong className="text-ink">Cloud Infrastructure Providers</strong>
+                  {" "}for application hosting, global content delivery, and secure
+                  server compute.
                 </li>
               </ul>
             </section>
