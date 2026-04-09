@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import type { ItineraryResponse } from "@/types/itinerary";
@@ -65,6 +66,13 @@ export default async function SamplePage() {
       <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:pt-6 print:border-b print:border-black/15">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
+            <Link
+              href="/"
+              className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3 print:hidden"
+            >
+              <ChevronLeft size={13} strokeWidth={1.5} />
+              BACK TO HOME
+            </Link>
             <p className="micro-copy text-burnt-orange mb-1">Sample Itinerary</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
               {trip.destination}
