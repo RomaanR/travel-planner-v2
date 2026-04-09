@@ -2168,3 +2168,144 @@ Embraces the native single-column mobile layout and makes it print-perfect rathe
 - `isFirstRender` ref guards initial mount — no scroll fires when the page first loads
 - Sentinel positioned above the tab bar (not page top) — scroll lands with the day selector visible at the top of the viewport, not the editorial opener
 
+---
+
+### 2026-04-08 — Pre-Launch Polish & Email Infrastructure
+
+**Commits:** `dd930ef` · `a785327` · `2e81f0a` · `bde9f70` · `e5fd7cd` · `b578b0f` · **Branch:** `main`
+
+---
+
+#### 1. Map Marker & Legend — High-Contrast Jewel Tone Palette
+
+**File:** `src/components/ItineraryMap.tsx`
+
+The previous `DAY_PALETTE` entries for days 1–5 used muted tones (Champagne, Slate, Midnight, Emerald, Rose) that blended into the Google Maps basemap. Replaced with high-contrast jewel tones that remain legible on all map backgrounds:
+
+| Day | Old | New | Name |
+|-----|-----|-----|------|
+| 1 | `#D4AF7A` | `#9C4300` / stroke `#7A3400` | Deep Terracotta |
+| 2 | `#64748B` | `#1E5631` / stroke `#163E24` | Forest Green |
+| 3 | `#1E293B` | `#0F254B` / stroke `#091A36` | Navy Blue |
+| 4 | `#059669` | `#B89741` / stroke `#8F7530` | Rich Gold |
+| 5 | `#E11D48` | `#4A2545` / stroke `#351A32` | Deep Plum |
+
+Both map markers and the day legend derive from `DAY_PALETTE`, so both update automatically. `CLAUDE.md` and `MEMORY.md` updated to reflect the new canonical palette.
+
+---
+
+#### 2. Mobile Date Picker — Enforced min/max Validation
+
+**File:** `src/components/CurationForm.tsx`
+
+**Problem:** iOS Safari and other mobile browsers ignore HTML `min`/`max` attributes on `<input type="date">`, allowing users to select a return date before the departure date or beyond the 3-day maximum.
+
+**Fix — `handleReturnChange`:** Now clamps the incoming value to `[minReturn, maxReturn]` in JavaScript before setting state. Mobile browsers cannot bypass an `onChange` clamp.
+
+**Fix — `handleDepartureChange`:** Now also clears `returnDate` if shifting the departure date pushes it above the new `maxReturn` (previously only cleared when `returnDate <= departureDate`). Computes `newMaxStr` and `newMinStr` from the new departure before evaluating.
+
+---
+
+#### 3. Auth Gate — "Begin Your Journey" & `/curate` Route
+
+**Files:** `src/components/BeginJourneyButton.tsx` (new), `src/components/HeroFloating.tsx`, `src/components/HeroClassic.tsx`, `src/app/curate/page.tsx`, `src/app/curate/CurateClient.tsx` (new)
+
+**Problem:** Unauthenticated users could click "Begin Your Journey" and access the curation form at `/curate` directly, bypassing auth entirely.
+
+**Solution — three layers:**
+
+1. **`BeginJourneyButton.tsx`** — new `"use client"` component using Clerk's `<SignedIn>` / `<SignedOut>`. Authenticated users get a direct `<Link href="/curate">`. Unauthenticated users get `<SignInButton mode="modal" forceRedirectUrl="/curate">` — Clerk opens the sign-in modal and redirects to `/curate` after a successful sign-in.
+
+2. **Hero components** — `HeroFloating.tsx` and `HeroClassic.tsx` both replace the bare `<Link href="/curate">` with `dynamic(() => import("./BeginJourneyButton"), { ssr: false })`. Mirrors the exact `NavbarAuth` pattern — prevents SSR throws when `ClerkProvider` is absent in keyless-mode builds. Loading fallback renders the button visually identical to prevent layout shift.
+
+3. **`curate/page.tsx` server component auth guard** — converted from `"use client"` to an `async` server component. `await auth()` runs server-side; unauthenticated direct URL access receives a hard `redirect("/")` before any form content renders. Client logic (`useRouter` + `CurationForm`) moved to `CurateClient.tsx`.
+
+---
+
+#### 4. Global Email Standardisation
+
+**Files:** `src/app/faq/page.tsx`, `src/app/privacy/page.tsx`, `src/app/terms/page.tsx`, `src/app/cookies/page.tsx`, `src/app/refunds/page.tsx`
+
+Replaced all placeholder contact emails with `travalbee@outlook.com` across all legal and support pages — 9 instances total:
+
+| Old address | Files affected |
+|---|---|
+| `hello@travalbee.com` | faq (x2), terms (x2), refunds (x2) |
+| `privacy@travalbee.com` | faq (x1), privacy (x2), cookies (x2) |
+
+`src/app/api/support/route.ts` was already routing to `travalbee@outlook.com` — confirmed correct, no change needed. Bonus fix: stray "Seek Wander" brand reference on `terms/page.tsx:34` corrected to "TravalBee".
+
+---
+
+#### 5. FAQ — Account & Billing Sync with Live Pricing
+
+**File:** `src/app/faq/page.tsx`
+
+The Account & Billing FAQ section contained stale copy that no longer matched the live Pricing page. Rewrote two answers:
+
+| Question | Before | After |
+|---|---|---|
+| Is there a free tier? | "First itinerary completely free" (implied one-time) | 5 itineraries/month, 3-day max, Basic PDF, Standard Routing |
+| What does the paid plan include? | "Unlimited itinerary generations" (incorrect) | $10.99/month, 10/month, 14-day max, AI Concierge, Advanced Transit |
+
+Account deletion email link in the FAQ accordion body updated to `travalbee@outlook.com` with a live `mailto:` anchor.
+
+---
+
+#### 6. Smart Back Button — `router.back()` with History Guard
+
+**File:** `src/components/BackButton.tsx`
+
+**Problem:** The shared `BackButton` component used a static `<Link href="/">`, forcing users who arrived via the footer back to the homepage top instead of their previous scroll position.
+
+**Fix:** Replaced `<Link>` with a `<button>` that calls `router.back()` when `window.history.length > 1`, falling back to `router.push(href)` for direct navigation (no history entry). Since all six legal/support pages (FAQ, Privacy, Terms, Cookies, Refunds, Support) already import `BackButton`, one file change covers the entire site.
+
+---
+
+#### 7. Privacy Policy — Tech Stack Obfuscation
+
+**File:** `src/app/privacy/page.tsx` — Section 4 "Third-Party Services"
+
+Replaced specific vendor names with generic category headings to reduce infrastructure fingerprinting. Anthropic and Clerk retained verbatim (required for legal transparency re: data processing and AI training policy).
+
+| Was | Now |
+|---|---|
+| Google Maps Platform | Mapping and Location Services |
+| Stripe | Secure Payment Processors |
+| Booking.com (Affiliate Partner) | Accommodation and Travel Partners |
+| Vercel | Cloud Infrastructure Providers |
+
+All legally material language preserved: PCI-DSS compliance, commission disclosure, no card storage, no AI training opt-in.
+
+---
+
+#### 8. Support Form Email Infrastructure — Resend + `travalbee.com` Domain
+
+**File:** `src/app/api/support/route.ts`
+
+**Problem:** Support form was silently failing to deliver emails. Root causes:
+1. `from: "onboarding@resend.dev"` (Resend sandbox) can only deliver to the Resend account email — not to `travalbee@outlook.com`.
+2. No guard for missing `RESEND_API_KEY` — failure was completely silent.
+
+**Fixes applied:**
+- `RESEND_API_KEY` guard: explicit `console.error` fires before any send attempt if the key is absent.
+- `RESEND_FROM_ADDRESS` env var: controls sender address; falls back to sandbox address.
+- `RESEND_TO_ADDRESS` env var: controls recipient inbox; defaults to `travalbee@outlook.com`. Both addresses configurable from Vercel without a code deploy.
+- Structured `.catch()` logging: surfaces exact Resend error name and message (`ValidationError`, `AuthenticationError`) in Vercel function logs.
+
+**Domain setup completed:**
+- `travalbee.com` verified in Resend via manual DNS — 3 records added to Vercel DNS (DKIM TXT, SPF MX, SPF TXT).
+- Vercel environment variables confirmed set: `RESEND_FROM_ADDRESS=support@travalbee.com`, `RESEND_TO_ADDRESS=travalbee@outlook.com`.
+- End-to-end delivery confirmed: support form → `/api/support` → Resend → `travalbee@outlook.com` ✓
+
+---
+
+## V1.1 Post-Launch Security Polish (To-Do)
+
+- [ ] **Framework Patch:** Upgrade Next.js to the latest 14.x patch to resolve CVEs.
+- [ ] **Strict TypeScript:** Remove `ignoreBuildErrors: true` and `ignoreDuringBuilds: true` from `next.config.mjs`, and resolve pre-existing TS errors in `api/itinerary/route.ts` and `api/stripe/webhook/route.ts`.
+- [ ] **Security Headers:** Add a Content-Security-Policy (CSP) to `next.config.mjs`.
+- [ ] **API Protection:** Add a Clerk `auth()` check to `GET /api/photo/route.ts`.
+- [ ] **Dependency Audit:** Run `npm audit fix` to clear transitive dev-dependency warnings.
+- [ ] **Email Delivery Audit:** Verify live Vercel environment variables for the Support page email routing API.
+
