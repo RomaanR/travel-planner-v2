@@ -27,10 +27,10 @@ export default async function TripsPage() {
       <div className="border-b border-ink/5">
         <div className="px-8 md:px-16 pt-24 md:pt-28 pb-12 md:pb-16">
 
-          {/* Mobile-only back button */}
+          {/* Back to home */}
           <Link
             href="/"
-            className="flex md:hidden items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-6"
+            className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-6"
           >
             <ChevronLeft size={13} strokeWidth={1.5} />
             BACK TO HOME
