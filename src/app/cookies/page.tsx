@@ -227,10 +227,10 @@ export default function CookiePolicyPage() {
                 If you have any questions about this Cookie Policy, email us
                 at{" "}
                 <a
-                  href="mailto:privacy@travalbee.com"
+                  href="mailto:travalbee@outlook.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  privacy@travalbee.com
+                  travalbee@outlook.com
                 </a>
               </p>
             </section>

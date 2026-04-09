@@ -31,9 +31,9 @@ export default function TermsPage() {
             </p>
 
             <p>
-              Please read these Terms of Service carefully before using Seek
-              Wander. By accessing or using the Service, you agree to be bound
-              by these Terms.
+              Please read these Terms of Service carefully before using
+              TravalBee. By accessing or using the Service, you agree to be
+              bound by these Terms.
             </p>
 
             <section>
@@ -189,10 +189,10 @@ export default function TermsPage() {
               <p>
                 For questions about these Terms, email us at{" "}
                 <a
-                  href="mailto:hello@travalbee.com"
+                  href="mailto:travalbee@outlook.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  hello@travalbee.com
+                  travalbee@outlook.com
                 </a>
               </p>
             </section>

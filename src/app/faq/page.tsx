@@ -67,11 +67,11 @@ const FAQS = [
     items: [
       {
         q: "Is there a free tier?",
-        a: "Yes. Your first itinerary curation is completely free, no credit card required. Sign up to save it to your archive.",
+        a: "Yes. The free tier includes <strong>5 AI-generated itineraries per month</strong>, trips of up to 3 days, Basic PDF Export, and Standard Transit Modes. No credit card required. Sign up to save itineraries to your archive.",
       },
       {
         q: "What does the paid plan include?",
-        a: "The paid plan gives you unlimited itinerary generations, unlimited archive storage, offline access, PDF export, and shareable links. Pricing is listed on our Pricing page.",
+        a: "The <strong>Premium plan ($10.99&thinsp;/&thinsp;month)</strong> gives you 10 itinerary generations per month, trips of up to 14 days, Advanced Transit modes (Car &amp; Regional), and a Dedicated AI Concierge for personalised travel enquiries. Credits reset on your monthly billing date.",
       },
       {
         q: "Can I cancel my subscription?",
@@ -83,7 +83,7 @@ const FAQS = [
       },
       {
         q: "How do I delete my account and data?",
-        a: "Email privacy@travalbee.com with the subject line \"Account Deletion Request\". All personal data and saved itineraries will be permanently removed from our database within 30 days.",
+        a: "Email <a href=\"mailto:travalbee@outlook.com\" class=\"text-emerald-accent hover:text-ink transition-colors\">travalbee@outlook.com</a> with the subject line &ldquo;Account Deletion Request&rdquo;. All personal data and saved itineraries will be permanently removed from our database within 30 days.",
       },
     ],
   },
@@ -156,7 +156,7 @@ export default function FaqPage() {
           <p className="font-sans text-sm text-ink-light leading-relaxed mb-10 max-w-md">
             Everything you need to know about TravalBee. Can&apos;t find your answer?{" "}
             <a
-              href="mailto:hello@travalbee.com"
+              href="mailto:travalbee@outlook.com"
               className="text-emerald-accent hover:text-ink transition-colors"
             >
               Email us
@@ -193,7 +193,7 @@ export default function FaqPage() {
               &larr; Back to TravalBee
             </Link>
             <a
-              href="mailto:hello@travalbee.com"
+              href="mailto:travalbee@outlook.com"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
               Contact Support

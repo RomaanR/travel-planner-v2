@@ -225,10 +225,10 @@ export default function PrivacyPage() {
                 For privacy-related enquiries or data deletion requests, email
                 us at{" "}
                 <a
-                  href="mailto:privacy@travalbee.com"
+                  href="mailto:travalbee@outlook.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  privacy@travalbee.com
+                  travalbee@outlook.com
                 </a>
               </p>
             </section>
