@@ -63,16 +63,21 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget — a failed email never blocks the user's success response.
   // The ticket is already saved to the DB, so no data is lost if Resend is down.
   //
-  // SENDER DOMAIN NOTE:
-  // "onboarding@resend.dev" is Resend's sandbox address — it can only deliver
-  // to the single email registered to your Resend account. To receive at
-  // travalbee@outlook.com you must either:
-  //   A) Verify a sending domain in Resend (resend.com/domains) and update
-  //      FROM_ADDRESS below to e.g. "support@yourdomain.com", OR
-  //   B) Add travalbee@outlook.com as a verified recipient in the Resend
-  //      dashboard (Audiences → Contacts) while still in sandbox mode.
-  // Until one of the above is done, emails will silently fail to deliver.
+  // SENDER / RECIPIENT CONFIG:
+  // Both addresses are driven by env vars so delivery can be changed in Vercel
+  // without a code deploy.
+  //
+  // RESEND_FROM_ADDRESS — must be a Resend-verified sender domain address.
+  //   Sandbox fallback "onboarding@resend.dev" only delivers to the Resend
+  //   account email (zenithai003@gmail.com). Set a verified domain address here
+  //   for production delivery to any recipient.
+  //
+  // RESEND_TO_ADDRESS — the inbox that receives support tickets.
+  //   Defaults to travalbee@outlook.com. While in sandbox mode, this must match
+  //   your Resend account email OR be added as a verified contact in the Resend
+  //   dashboard (Contacts → Add Contact).
   const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "onboarding@resend.dev";
+  const TO_ADDRESS   = process.env.RESEND_TO_ADDRESS   ?? "travalbee@outlook.com";
 
   if (!process.env.RESEND_API_KEY) {
     console.error("[support] RESEND_API_KEY is not set — email will not be sent. Ticket saved to DB.");
@@ -80,7 +85,7 @@ export async function POST(req: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     resend.emails.send({
       from:    FROM_ADDRESS,
-      to:      "travalbee@outlook.com",
+      to:      TO_ADDRESS,
       replyTo: email,
       subject: `New Support Ticket — ${email}`,
       html: `
@@ -117,7 +122,7 @@ export async function POST(req: NextRequest) {
       const detail = err instanceof Error
         ? `${err.name}: ${err.message}`
         : JSON.stringify(err);
-      console.error(`[support] Resend delivery failed — from: ${FROM_ADDRESS}, to: travalbee@outlook.com — ${detail}`);
+      console.error(`[support] Resend delivery failed — from: ${FROM_ADDRESS}, to: ${TO_ADDRESS} — ${detail}`);
     });
   }
 
