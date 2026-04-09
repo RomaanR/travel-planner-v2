@@ -125,17 +125,20 @@ const SCHEMA = `{
 }`;
 
 // Schema variant used when accommodationStatus !== "booked" — adds recommendedStays at root
-// EXACTLY 3 entries required: index 0 = Luxury (rating 5), index 1 = Mid-Range (rating 4), index 2 = Budget (rating 3)
-// All three must be distinct properties physically located within the requested destination city.
+// EXACTLY 6 entries required, grouped by tier so InteractiveStays can filter by minRating:
+//   indices 0-1 → Luxury    (rating: 5, priceTier: '$$$$$')
+//   indices 2-3 → Mid-Range (rating: 4, priceTier: '$$$$')
+//   indices 4-5 → Budget    (rating: 3, priceTier: '$$$')
+// All six must be distinct properties physically located within the requested destination city.
 const SCHEMA_WITH_STAYS = `{
   "destination": "string",
   "editorial": "string (one Vogue-style sentence, ≤25 words)",
   "recommendedStays": [
     {
-      "name": "string (real verified hotel name — NO fictional properties, NO duplicates across tiers)",
+      "name": "string (real verified hotel name — NO fictional properties, NO duplicates within or across tiers)",
       "description": "string (exactly 1 sentence — restrained editorial pitch, ≤20 words)",
       "neighborhood": "string (specific district within the destination city, e.g. 'Omotesandō, Tokyo')",
-      "rating": "integer — MUST be exactly 5 for index 0, 4 for index 1, 3 for index 2. No other values.",
+      "rating": "integer — 5 for indices 0-1, 4 for indices 2-3, 3 for indices 4-5. No other values.",
       "priceTier": "string — '$$$$$' for rating 5, '$$$$' for rating 4, '$$$' for rating 3"
     }
   ],
@@ -645,20 +648,20 @@ export async function POST(req: Request) {
       safeBody.accommodationStatus === "booked"
         ? `\n\nACCOMMODATION — CONFIRMED RESERVATION: The user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}.  CRITICAL GEOGRAPHY RULE: You MUST anchor the start and end of every single day around this exact hotel.  - Breakfast and morning activities MUST be within a strict 15-minute walk or 5-minute taxi ride from ${safeBody.hotelName || "the hotel"}. - Do NOT suggest any location that is more than a 30-minute transit ride away unless it is a world-renowned landmark. - Cluster activities geographically to avoid zig-zagging across the city.  DO NOT recommend any new hotels to stay at.`
         : `\n\nACCOMMODATION — CURATION REQUIRED:
-The user has not booked a hotel. You MUST include EXACTLY 3 accommodation options in a "recommendedStays" array at the root of your JSON response — one per tier, in this exact order:
+The user has not booked a hotel. You MUST include EXACTLY 6 accommodation options in a "recommendedStays" array at the root of your JSON response — two per tier, in this exact order:
 
-TIER 1 — LUXURY (rating: 5, priceTier: '$$$$$'):
-MUST be a verified 5-star hotel, world-renowned luxury brand (e.g. Four Seasons, Aman, Rosewood, Mandarin Oriental, Raffles), or a premium exclusive boutique with international recognition. No exceptions.
+TIER 1 — LUXURY × 2 (indices 0 and 1 — rating: 5, priceTier: '$$$$$'):
+BOTH entries MUST be verified 5-star hotels, world-renowned luxury brands (e.g. Four Seasons, Aman, Rosewood, Mandarin Oriental, Raffles), or premium exclusive boutiques with international recognition. No exceptions.
 
-TIER 2 — MID-RANGE (rating: 4, priceTier: '$$$$'):
-MUST be a solid, well-regarded 4-star hotel. High-quality, comfortable, with strong reviews. Not a budget property dressed up.
+TIER 2 — MID-RANGE × 2 (indices 2 and 3 — rating: 4, priceTier: '$$$$'):
+BOTH entries MUST be solid, well-regarded 4-star hotels. High-quality, comfortable, with strong reviews. Not budget properties dressed up.
 
-TIER 3 — BUDGET (rating: 3, priceTier: '$$$'):
-MUST be a highly-rated 3-star hotel, upscale private-room hostel, or clean economy chain with excellent guest scores. Genuinely good value.
+TIER 3 — BUDGET × 2 (indices 4 and 5 — rating: 3, priceTier: '$$$'):
+BOTH entries MUST be highly-rated 3-star hotels, upscale private-room hostels, or clean economy chains with excellent guest scores. Genuinely good value.
 
-ANTI-DUPLICATION RULE — CRITICAL: You MUST provide THREE COMPLETELY DISTINCT hotels. A hotel recommended in the Luxury tier CANNOT appear in the Mid-Range or Budget tier. Every single hotel name MUST be unique across all three entries. DO NOT repeat the same property under a different tier label.
+ANTI-DUPLICATION RULE — CRITICAL: You MUST provide SIX COMPLETELY DISTINCT hotels. Every single hotel name MUST be unique. You CANNOT duplicate a hotel within the same tier OR across different tiers. If you cannot name two genuinely different Luxury hotels in this city, choose the best one and fill the second slot with the next closest qualifying property — do NOT reuse the same name.
 
-GEOFENCE RULE — CRITICAL: ALL three recommended hotels MUST be physically located strictly within the exact destination city or area requested by the user. DO NOT recommend hotels in neighbouring cities, different districts far from the itinerary, or distant suburbs — no matter how highly rated they are. Proximity to the core itinerary activities is MANDATORY. If the destination is central Istanbul, every hotel must be in central Istanbul — not Kadıköy, not the Asian side, not the airport district.
+GEOFENCE RULE — CRITICAL: ALL six recommended hotels MUST be physically located strictly within the exact destination city or area requested by the user. DO NOT recommend hotels in neighbouring cities, different districts far from the itinerary, or distant suburbs — no matter how highly rated they are. Proximity to the core itinerary activities is MANDATORY. If the destination is central Istanbul, every hotel must be in central Istanbul — not Kadıköy, not the Asian side, not the airport district.
 
 Each entry MUST contain: name (real verified property — NO fictional hotels), neighborhood (specific district name, e.g. "Sultanahmet, Istanbul"), description (exactly 1 sentence ≤20 words, restrained editorial pitch), rating (integer — EXACTLY 3, 4, or 5 — no decimals, no other values), priceTier (string — exactly '$$$', '$$$$', or '$$$$$').`;
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
