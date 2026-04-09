@@ -1,6 +1,6 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { CacheFirst, ExpirationPlugin, Serwist } from "serwist";
+import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist } from "serwist";
 
 declare global {
   interface ServiceWorkerGlobalScope extends SerwistGlobalConfig {
@@ -16,6 +16,16 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
+    // Clerk auth domains — never cache, always network-only
+    // SW interception causes "no-response" errors for clerk.browser.js and auth flows
+    {
+      matcher: /^https:\/\/.*\.clerk\.com\//,
+      handler: new NetworkOnly(),
+    },
+    {
+      matcher: /^https:\/\/clerk\.travalbee\.com\//,
+      handler: new NetworkOnly(),
+    },
     // Google Places photo cache — destination images on /trips cards and location cards
     {
       matcher: /^https:\/\/maps\.googleapis\.com\/maps\/api\/place\/photo/,
