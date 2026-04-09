@@ -5,6 +5,7 @@ import UnauthenticatedState from "@/components/UnauthenticatedState";
 import Link from "next/link";
 import { MapPin, Zap, Calendar, Bookmark } from "lucide-react";
 import BackButton from "@/components/BackButton";
+import DashboardRefresher from "@/components/DashboardRefresher";
 import dynamicImport from "next/dynamic";
 import type { DestinationPin } from "@/components/WorldMap";
 import type { ItineraryResponse } from "@/types/itinerary";
@@ -140,6 +141,7 @@ export default async function DashboardPage() {
       <Navbar />
 
       <main className="min-h-screen bg-paper">
+        <DashboardRefresher />
         <div className="max-w-5xl mx-auto px-6 md:px-8 pt-28 pb-20">
 
           {/* ── Page header ── */}
