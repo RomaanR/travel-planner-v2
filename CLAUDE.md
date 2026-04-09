@@ -94,11 +94,11 @@ Markers are keyed by **day number**, not activity type. Legend shows only days p
 
 | Day | Name | Fill | Stroke |
 |-----|------|------|--------|
-| 1 | Champagne | `#D4AF7A` | `#B8924A` |
-| 2 | Slate | `#64748B` | `#475569` |
-| 3 | Midnight | `#1E293B` | `#0F172A` |
-| 4 | Emerald | `#059669` | `#047857` |
-| 5 | Rose | `#E11D48` | `#BE123C` |
+| 1 | Deep Terracotta | `#9C4300` | `#7A3400` |
+| 2 | Forest Green | `#1E5631` | `#163E24` |
+| 3 | Navy Blue | `#0F254B` | `#091A36` |
+| 4 | Rich Gold | `#B89741` | `#8F7530` |
+| 5 | Deep Plum | `#4A2545` | `#351A32` |
 
 Polyline: `strokeColor: #0A0A0A`, `strokeOpacity: 0.08`, `strokeWeight: 1`
 

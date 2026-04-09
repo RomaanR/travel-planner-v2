@@ -13,11 +13,11 @@ import type { MapPoint } from "@/types/itinerary";
 // ─── Day-centric color palette ────────────────────────────────────────────────
 
 const DAY_PALETTE: Record<number, { fill: string; stroke: string; label: string }> = {
-  1:  { fill: "#D4AF7A", stroke: "#B8924A", label: "Day 1"  },  // Champagne
-  2:  { fill: "#64748B", stroke: "#475569", label: "Day 2"  },  // Slate
-  3:  { fill: "#1E293B", stroke: "#0F172A", label: "Day 3"  },  // Midnight
-  4:  { fill: "#059669", stroke: "#047857", label: "Day 4"  },  // Emerald
-  5:  { fill: "#E11D48", stroke: "#BE123C", label: "Day 5"  },  // Rose
+  1:  { fill: "#9C4300", stroke: "#7A3400", label: "Day 1"  },  // Deep Terracotta
+  2:  { fill: "#1E5631", stroke: "#163E24", label: "Day 2"  },  // Forest Green
+  3:  { fill: "#0F254B", stroke: "#091A36", label: "Day 3"  },  // Navy Blue
+  4:  { fill: "#B89741", stroke: "#8F7530", label: "Day 4"  },  // Rich Gold
+  5:  { fill: "#4A2545", stroke: "#351A32", label: "Day 5"  },  // Deep Plum
   6:  { fill: "#7C3AED", stroke: "#6D28D9", label: "Day 6"  },  // Violet
   7:  { fill: "#0891B2", stroke: "#0E7490", label: "Day 7"  },  // Cyan
   8:  { fill: "#CA8A04", stroke: "#A16207", label: "Day 8"  },  // Amber

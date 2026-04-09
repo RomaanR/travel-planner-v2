@@ -260,13 +260,35 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   // ── Dates ────────────────────────────────────────────────────────────────────
   function handleDepartureChange(val: string) {
     setForm((f) => {
-      const returnDate = f.returnDate && new Date(f.returnDate) <= new Date(val) ? "" : f.returnDate;
+      if (!val) return { ...f, departureDate: "", returnDate: "" };
+      // Compute the new maxReturn for this departure date
+      const dep = parseDateLocal(val);
+      const newMax = new Date(dep);
+      newMax.setDate(dep.getDate() + (maxDays - 1));
+      const newMaxStr = formatDateLocal(newMax);
+      const newMin = new Date(dep);
+      newMin.setDate(dep.getDate() + 1);
+      const newMinStr = formatDateLocal(newMin);
+      // Clear returnDate if it falls outside the new valid window
+      const returnDate =
+        f.returnDate && (f.returnDate <= val || f.returnDate > newMaxStr || f.returnDate < newMinStr)
+          ? ""
+          : f.returnDate;
       return { ...f, departureDate: val, returnDate };
     });
   }
 
   function handleReturnChange(val: string) {
-    setForm((f) => ({ ...f, returnDate: val }));
+    if (!val) {
+      setForm((f) => ({ ...f, returnDate: "" }));
+      return;
+    }
+    // Enforce min/max in JS — mobile browsers (iOS Safari) ignore HTML min/max attributes
+    const clamped =
+      val < minReturn ? minReturn
+      : maxReturn && val > maxReturn ? maxReturn
+      : val;
+    setForm((f) => ({ ...f, returnDate: clamped }));
   }
 
   const maxDays = isPremium ? 14 : 3;
