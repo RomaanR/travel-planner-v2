@@ -34,7 +34,8 @@ model PlaceCache {
 
 model UserProfile {
   id               String   @id                    // Clerk userId
-  availableCredits Int      @default(1)             // free: mirrors 5-quota remaining; premium: 10 per billing cycle
+  availableCredits Int      @default(1)             // free: mirrors (5 + bonusCredits - used) remaining; premium: 10 per billing cycle
+  bonusCredits     Int      @default(0)             // manually granted extra credits — stacks on top of free quota; set in Supabase directly
   totalGenerations Int      @default(0)             // incremented on every successful AI generation (saved or not)
   isPremium        Boolean  @default(false)         // true while an active $10.99/month subscription exists
   stripeCustomerId String?  @unique                 // kept for refund/audit purposes

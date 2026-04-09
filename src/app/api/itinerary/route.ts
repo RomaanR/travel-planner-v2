@@ -591,11 +591,12 @@ export async function POST(req: Request) {
         }
       } else {
         // ── Free tier gate: rolling 30-day CostLog count ──────────────────
-        const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const windowStart  = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const bonusCredits = profile?.bonusCredits ?? 0;
         quotaCount = await prisma.costLog.count({
           where: { userId, createdAt: { gte: windowStart } },
         });
-        if (quotaCount >= 5) {
+        if (quotaCount >= 5 + bonusCredits) {
           return Response.json(
             {
               error:      "You have reached your limit of 5 free itineraries in the last 30 days. Upgrade to Premium for 10 itineraries/month.",

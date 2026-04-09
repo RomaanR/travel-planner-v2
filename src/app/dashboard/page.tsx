@@ -91,8 +91,10 @@ export default async function DashboardPage() {
       data: { id: userId, availableCredits: remainingGenerations },
     });
   } else if (!existingProfile.isPremium) {
-    // Free user — keep credits in sync with rolling quota
-    const remainingGenerations = Math.max(0, 5 - monthlyCount);
+    // Free user — keep credits in sync with rolling quota + any manually granted bonus credits.
+    // bonusCredits is set directly in Supabase and never overwritten here — only availableCredits is synced.
+    const bonus = existingProfile.bonusCredits ?? 0;
+    const remainingGenerations = Math.max(0, 5 - monthlyCount) + bonus;
     profile = await prisma.userProfile.update({
       where: { id: userId },
       data:  { availableCredits: remainingGenerations },
