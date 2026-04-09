@@ -3,6 +3,17 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Load auth-aware CTA client-side only — prevents SSR throws when ClerkProvider is absent
+const BeginJourneyButton = dynamic(() => import("./BeginJourneyButton"), {
+  ssr: false,
+  loading: () => (
+    <span className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4">
+      Begin Your Journey <span>&rarr;</span>
+    </span>
+  ),
+});
 
 export default function HeroClassic() {
   return (
@@ -88,13 +99,7 @@ export default function HeroClassic() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
           >
-            <Link
-              href="/curate"
-              className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4 hover:bg-burnt-orange/90 transition-colors duration-300"
-            >
-              Begin Your Journey
-              <span>&rarr;</span>
-            </Link>
+            <BeginJourneyButton />
           </motion.div>
 
           {/* Secondary CTA — sample itinerary */}
