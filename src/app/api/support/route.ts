@@ -62,40 +62,64 @@ export async function POST(req: NextRequest) {
   // ── Send notification email ─────────────────────────────────────────────────
   // Fire-and-forget — a failed email never blocks the user's success response.
   // The ticket is already saved to the DB, so no data is lost if Resend is down.
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  resend.emails.send({
-    from:    "onboarding@resend.dev",
-    to:      "travalbee@outlook.com",
-    replyTo: email,
-    subject: `New Support Ticket — ${email}`,
-    html: `
-      <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:32px;background:#F5F0E8;color:#0A0A0A;">
-        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6B6B6B;margin:0 0 8px;">
-          TravalBee &mdash; Client Support
-        </p>
-        <h1 style="font-size:28px;font-style:italic;font-weight:400;margin:0 0 24px;">
-          New Support Ticket
-        </h1>
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:0 0 4px;">From</td>
-          </tr>
-          <tr>
-            <td style="font-size:15px;padding:0 0 24px;border-bottom:1px solid rgba(10,10,10,0.1);">${email}</td>
-          </tr>
-          <tr>
-            <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:16px 0 4px;">Message</td>
-          </tr>
-          <tr>
-            <td style="font-size:15px;line-height:1.7;white-space:pre-wrap;">${message}</td>
-          </tr>
-        </table>
-        <p style="margin-top:32px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;">
-          Reply directly to this email to respond to the client.
-        </p>
-      </div>
-    `,
-  }).catch((err) => console.error("[support] Resend failed:", err));
+  //
+  // SENDER DOMAIN NOTE:
+  // "onboarding@resend.dev" is Resend's sandbox address — it can only deliver
+  // to the single email registered to your Resend account. To receive at
+  // travalbee@outlook.com you must either:
+  //   A) Verify a sending domain in Resend (resend.com/domains) and update
+  //      FROM_ADDRESS below to e.g. "support@yourdomain.com", OR
+  //   B) Add travalbee@outlook.com as a verified recipient in the Resend
+  //      dashboard (Audiences → Contacts) while still in sandbox mode.
+  // Until one of the above is done, emails will silently fail to deliver.
+  const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "onboarding@resend.dev";
+
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[support] RESEND_API_KEY is not set — email will not be sent. Ticket saved to DB.");
+  } else {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    resend.emails.send({
+      from:    FROM_ADDRESS,
+      to:      "travalbee@outlook.com",
+      replyTo: email,
+      subject: `New Support Ticket — ${email}`,
+      html: `
+        <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:32px;background:#F5F0E8;color:#0A0A0A;">
+          <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6B6B6B;margin:0 0 8px;">
+            TravalBee &mdash; Client Support
+          </p>
+          <h1 style="font-size:28px;font-style:italic;font-weight:400;margin:0 0 24px;">
+            New Support Ticket
+          </h1>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:0 0 4px;">From</td>
+            </tr>
+            <tr>
+              <td style="font-size:15px;padding:0 0 24px;border-bottom:1px solid rgba(10,10,10,0.1);">${email}</td>
+            </tr>
+            <tr>
+              <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:16px 0 4px;">Message</td>
+            </tr>
+            <tr>
+              <td style="font-size:15px;line-height:1.7;white-space:pre-wrap;">${message}</td>
+            </tr>
+          </table>
+          <p style="margin-top:32px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;">
+            Reply directly to this email to respond to the client.
+          </p>
+        </div>
+      `,
+    }).catch((err: unknown) => {
+      // Log the full Resend error so Vercel logs show exactly why delivery failed.
+      // Common causes: sandbox domain sending to unverified recipient (ValidationError),
+      // invalid/missing API key (AuthenticationError), or rate limit (RateLimitExceededError).
+      const detail = err instanceof Error
+        ? `${err.name}: ${err.message}`
+        : JSON.stringify(err);
+      console.error(`[support] Resend delivery failed — from: ${FROM_ADDRESS}, to: travalbee@outlook.com — ${detail}`);
+    });
+  }
 
   return Response.json({ success: true });
 }
