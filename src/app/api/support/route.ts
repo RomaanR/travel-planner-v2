@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   //
   // RESEND_FROM_ADDRESS — must be a Resend-verified sender domain address.
   //   Sandbox fallback "onboarding@resend.dev" only delivers to the Resend
-  //   account email (zenithai003@gmail.com). Set a verified domain address here
+  //   account email. Set a verified domain address here
   //   for production delivery to any recipient.
   //
   // RESEND_TO_ADDRESS — the inbox that receives support tickets.
