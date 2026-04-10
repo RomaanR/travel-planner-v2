@@ -1,14 +1,11 @@
 // ─── /api/photo — Google Places Photo Proxy ───────────────────────────────────
 //
-// Accepts a raw photo_reference token and proxies the image bytes from Google.
-// Supports both legacy Places API tokens and new Places API (v1) tokens
-// (AU_ / ATCDNf prefixes). Key never reaches the browser.
+// Accepts a raw photo_reference token from the legacy Places API (textsearch/json)
+// and proxies the image bytes from Google. Key never reaches the browser.
+// All token formats (legacy CmRa..., AU_..., ATCDNf...) use the same legacy
+// photo endpoint — they are all photo_reference values, not v1 resource names.
 //
 // Usage: /api/photo?ref=<photo_reference>
-
-// New Places API (v1) tokens start with AU_ or ATCDNf
-const isNewPlacesFormat = (ref: string) =>
-  ref.startsWith("AU_") || ref.startsWith("ATCDNf");
 
 // Tokens are base64url-safe — alphanumeric + _ and -
 const SAFE_REF = /^[A-Za-z0-9_\-]+$/;
@@ -26,11 +23,9 @@ export async function GET(req: Request): Promise<Response> {
     return new Response(null, { status: 503 });
   }
 
-  // New Places API (v1): places.googleapis.com/v1/{resourceName}/media
-  // Legacy Places API:   maps.googleapis.com/maps/api/place/photo
-  const googleUrl = isNewPlacesFormat(ref)
-    ? `https://places.googleapis.com/v1/${ref}/media?maxWidthPx=800&key=${apiKey}`
-    : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${ref}&key=${apiKey}`;
+  // All photo_reference tokens from the legacy Places API use this endpoint —
+  // regardless of prefix (AU_, ATCDNf, CmRa, etc.)
+  const googleUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${ref}&key=${apiKey}`;
 
   // Proxy the bytes — avoids Next.js Image failing to follow chained redirects
   // and keeps MAPS_SERVER_KEY out of browser cache/history entirely.
