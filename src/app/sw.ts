@@ -26,6 +26,12 @@ const serwist = new Serwist({
       matcher: /^https:\/\/clerk\.travalbee\.com\//,
       handler: new NetworkOnly(),
     },
+    // API routes — always network-only, never serve from SW cache
+    // Caching /api/* causes stale responses and no-response errors on dynamic routes
+    {
+      matcher: /\/api\//,
+      handler: new NetworkOnly(),
+    },
     // Google Places photo cache — destination images on /trips cards and location cards
     {
       matcher: /^https:\/\/maps\.googleapis\.com\/maps\/api\/place\/photo/,
