@@ -58,7 +58,7 @@ export default function MobileMenu() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
-              className="fixed inset-0 z-[100] bg-paper flex flex-col"
+              className="fixed inset-0 z-[9999] bg-paper flex flex-col"
               style={{ backgroundColor: "#F5F0E8" }}
             >
               {/* Header — mirrors Navbar layout */}
