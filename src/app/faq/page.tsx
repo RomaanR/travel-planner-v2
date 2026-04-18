@@ -71,7 +71,7 @@ const FAQS = [
       },
       {
         q: "What does the paid plan include?",
-        a: "The <strong>Premium plan ($10.99&thinsp;/&thinsp;month)</strong> gives you 10 itinerary generations per month, trips of up to 14 days, Advanced Transit modes (Car &amp; Regional), and a Dedicated AI Concierge for personalised travel enquiries. Credits reset on your monthly billing date.",
+        a: "The <strong>Premium plan</strong> gives you 10 itinerary generations per month, trips of up to 14 days, Advanced Transit modes (Car &amp; Regional), and a Dedicated AI Concierge for personalised travel enquiries. Credits reset on your monthly billing date.",
       },
       {
         q: "Can I cancel my subscription?",
