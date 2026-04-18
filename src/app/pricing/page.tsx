@@ -132,7 +132,8 @@ export default function PricingPage() {
           >
             <p className="micro-copy text-paper/50 mb-6">Premium</p>
             <div className="mb-8">
-              <span className="micro-copy text-paper/40">/ month</span>
+              <span className="font-serif italic text-5xl text-paper/30">&mdash;</span>
+              <span className="micro-copy text-paper/40 ml-3">/ month</span>
             </div>
             <ul className="space-y-3 mb-10 flex-1">
               {PRO_FEATURES.map((f) => (
