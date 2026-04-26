@@ -106,6 +106,51 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Demo Video ───────────────────────────────────── */}
+      <section className="px-8 md:px-16 py-24 max-w-screen-xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+
+          {/* Left — brand anchor */}
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="lg:w-[30%] shrink-0"
+          >
+            <p className="micro-copy text-ink-light mb-4">See It In Action</p>
+            <h2 className="font-serif italic text-5xl md:text-6xl text-ink leading-none mb-5">
+              TravalBee
+            </h2>
+            <p className="font-sans text-sm text-ink-light leading-relaxed">
+              Watch the concierge craft a complete luxury itinerary&nbsp;&mdash; hidden gems, live maps, and curated restaurant picks&nbsp;&mdash; in under two minutes.
+            </p>
+          </motion.div>
+
+          {/* Right — video showcase */}
+          <motion.div
+            initial={{ opacity: 0, x: 24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
+            className="flex-1 w-full"
+          >
+            <div className="max-w-5xl w-full mx-auto overflow-hidden rounded-xl border border-zinc-800 shadow-[0_32px_80px_rgba(0,0,0,0.28)] bg-zinc-950">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-auto block"
+              >
+                <source src="/demo.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
       {/* ── Bento Grid ───────────────────────────────────── */}
       <BentoGrid />
 
