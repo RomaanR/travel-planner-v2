@@ -13,17 +13,17 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
   const result = await prisma.placeCache.deleteMany({
-    where: { updatedAt: { lt: fourteenDaysAgo } },
+    where: { updatedAt: { lt: ninetyDaysAgo } },
   });
 
   console.log(`[cron/cleanup] deleted ${result.count} stale PlaceCache records`);
 
   return Response.json({
     deleted: result.count,
-    cutoff: fourteenDaysAgo.toISOString(),
+    cutoff: ninetyDaysAgo.toISOString(),
   });
 }

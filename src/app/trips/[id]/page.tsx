@@ -66,6 +66,48 @@ export async function generateMetadata({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function buildCacheKey(name: string, city: string): string {
+  const normalize = (s: string) =>
+    s.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `${normalize(name)}|${normalize(city)}`;
+}
+
+// Overlays fresh photoReference tokens from PlaceCache onto the saved itinerary.
+// Trip.itineraryData bakes in tokens at generation time; Google expires them.
+// This reads the DB (no Google API calls) and swaps in the freshest token available.
+async function refreshPhotoRefs(
+  itinerary: ItineraryResponse,
+  destination: string
+): Promise<ItineraryResponse> {
+  const days = (itinerary.days ?? []).map(normalizeDayPlan);
+
+  const allKeys = new Set<string>();
+  for (const day of days) {
+    for (const item of day.timeline ?? []) {
+      if (item.title) allKeys.add(buildCacheKey(item.title, destination));
+    }
+  }
+  if (allKeys.size === 0) return itinerary;
+
+  const rows = await prisma.placeCache
+    .findMany({ where: { cacheKey: { in: Array.from(allKeys) } } })
+    .catch(() => []);
+
+  const cacheMap = new Map(rows.map((r) => [r.cacheKey, r]));
+
+  const refreshedDays = days.map((day) => ({
+    ...day,
+    timeline: (day.timeline ?? []).map((item) => {
+      if (!item.title) return item;
+      const cached = cacheMap.get(buildCacheKey(item.title, destination));
+      if (!cached?.photoReference) return item;
+      return { ...item, photoReference: cached.photoReference };
+    }),
+  }));
+
+  return { ...itinerary, days: refreshedDays };
+}
+
 function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString("en-US", {
     month: "long",
@@ -94,7 +136,11 @@ export default async function TripViewPage({
   if (!trip || trip.userId !== userId) notFound();
 
   // ── Data preparation ────────────────────────────────────────────────────────
-  const itinerary = trip.itineraryData as unknown as ItineraryResponse;
+  // Overlay fresh PlaceCache photo tokens — no Google API calls, DB-only.
+  const itinerary = await refreshPhotoRefs(
+    trip.itineraryData as unknown as ItineraryResponse,
+    trip.destination
+  );
 
   // Compute map points server-side — mirrors the useMemo in itinerary/page.tsx
   const mapPoints: MapPoint[] = computeMapPoints(itinerary.days ?? []);
