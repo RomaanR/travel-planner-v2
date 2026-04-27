@@ -14,7 +14,7 @@ import ExportPdfButton from "@/components/ExportPdfButton";
 export const dynamic = "force-dynamic";
 
 // ── Swap this UUID for the "golden" trip ID from your database ─────────────
-const SAMPLE_TRIP_ID = "7d88a6f1-fef5-4145-bee1-cc165b178d2a";
+const SAMPLE_TRIP_ID = "930920cd-a172-4a1e-bbd5-e3b73ccd8762";
 
 export const metadata: Metadata = {
   title: "Sample Itinerary | TravalBee",

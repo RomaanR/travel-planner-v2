@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -51,6 +54,7 @@ interface TimelineCardProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TimelineCard({ item, delay }: TimelineCardProps) {
+  const [imgError, setImgError] = useState(false);
   const displayName = item.title ?? "";
   const displayDesc = item.description ?? item.cuisine ?? "";
   const endTime     = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
@@ -93,7 +97,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
       <div className="w-full md:w-48 md:shrink-0 relative self-stretch min-h-[200px] md:min-h-[140px] overflow-hidden bg-paper-dark print:w-28 print:min-h-[140px]">
         {/* photoReference (new) → /api/photo proxy → Vercel CDN cached, key never reaches browser.
             photoUrl (legacy) → direct Google URL on old saved trips — backward compat only. */}
-        {(item.photoReference || item.photoUrl) ? (
+        {(item.photoReference || item.photoUrl) && !imgError ? (
           <Image
             src={item.photoReference ? `/api/photo?ref=${item.photoReference}` : item.photoUrl!}
             alt={displayName}
@@ -102,6 +106,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
             quality={95}
             className="object-cover img-grayscale"
             sizes="(max-width: 768px) 100vw, 192px"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
