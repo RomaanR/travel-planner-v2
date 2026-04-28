@@ -44,6 +44,15 @@ export function generateMetadata(): Metadata {
       description:
         "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
     },
+     icons: {
+      apple: [
+        {
+          url: "/apple-icon.png",
+          sizes: "180x180",
+          type: "image/png",
+        },
+      ],
+    },
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
