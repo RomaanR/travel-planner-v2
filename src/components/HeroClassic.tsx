@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import LaunchCountdown from "./LaunchCountdown";
 
 // Load auth-aware CTA client-side only — prevents SSR throws when ClerkProvider is absent
 const BeginJourneyButton = dynamic(() => import("./BeginJourneyButton"), {
@@ -81,10 +82,11 @@ export default function HeroClassic() {
           >
             Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
+
         </div>
 
         {/* Bottom-right — CTA buttons (absolute on desktop, flow on mobile) */}
-        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-20 md:pb-0 flex flex-col items-end gap-6">
+        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-20 md:pb-0 flex w-full flex-col items-end gap-4 md:w-[340px] md:gap-6">
           {/* Thin vertical accent line */}
           <motion.div
             initial={{ scaleY: 0 }}
@@ -107,14 +109,24 @@ export default function HeroClassic() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.95 }}
+            className="w-[260px]"
           >
             <Link
               href="/sample"
-              className="micro-copy inline-flex items-center gap-2 bg-white/15 border border-white/60 text-white hover:bg-white/25 px-6 py-3 backdrop-blur-sm transition-all duration-300"
+              className="micro-copy inline-flex w-full items-center justify-center gap-2 whitespace-nowrap bg-white/15 border border-white/60 text-white hover:bg-white/25 px-6 py-3 backdrop-blur-sm transition-all duration-300"
             >
               <span>View Sample Itinerary</span>
               <span className="text-white/60">&rarr;</span>
             </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 1.05 }}
+            className="mt-4 w-full"
+          >
+            <LaunchCountdown variant="compact" />
           </motion.div>
         </div>
 
