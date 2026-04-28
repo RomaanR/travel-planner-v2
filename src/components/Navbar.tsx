@@ -26,7 +26,7 @@ export default function Navbar() {
           alt="TravalBee Logo"
           width={60}
           height={60}
-          className="md:hidden w-[80px] h-[60px] object-contain rounded-none flex-shrink-0"
+          className="md:hidden w-[60px] h-[60px] object-contain rounded-none flex-shrink-0"
           style={{ marginTop: "-8px", marginBottom: "-8px" }}
           priority
         />
