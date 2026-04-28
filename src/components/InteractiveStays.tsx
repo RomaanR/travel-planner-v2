@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import StayCard from "@/components/StayCard";
-import { createAffiliateUrl } from "@/lib/affiliate";
 import type { RecommendedStay } from "@/types/itinerary";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -91,7 +90,7 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
                 name={stay.name}
                 description={stay.description}
                 neighborhood={stay.neighborhood}
-                affiliateUrl={createAffiliateUrl(stay.name, destination)}
+                destination={destination}
               />
             ))}
           </motion.div>
