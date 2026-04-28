@@ -51,6 +51,22 @@ const ItinerarySchema = z.object({
   // Ignored entirely when transportMode === "car-driver".
   walkingTolerance:     z.enum(["strict", "relaxed"]).optional(),
   isRegion:             z.boolean().optional(),
+  planningMode:         z.enum(["inspire", "tailor"]).optional(),
+  // Blocklist mirrors hotelName — permits all international chars, blocks shell
+  // metacharacters and template literals. Backtick excluded for prompt safety.
+  anchorPoints:         z
+    .string()
+    .max(2000)
+    .regex(/^[^<>{}\\|]+$/, "Invalid characters in anchor points")
+    .optional(),
+}).superRefine((val, ctx) => {
+  if (val.planningMode === "tailor" && (!val.anchorPoints || val.anchorPoints.trim().length < 10)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["anchorPoints"],
+      message: "Anchor points required for Tailor mode (minimum 10 characters)",
+    });
+  }
 });
 
 type ItineraryRequest = z.infer<typeof ItinerarySchema>;
@@ -264,6 +280,94 @@ Travel dates: ${departureDate} to ${returnDate}
 ━━━ JSON SCHEMA ━━━
 Return ONLY valid JSON. No markdown, no code fences, no preamble:
 ${needsHotel ? SCHEMA_WITH_STAYS : SCHEMA}`;
+}
+
+// ─── Tailor prompt builder (Mode B) ──────────────────────────────────────────
+
+function buildTailorPrompt(data: ItineraryRequest): string {
+  const {
+    destination, duration, travelParty, budgetTier,
+    departureDate, returnDate, anchorPoints, isRegion,
+  } = data;
+
+  // Best-effort hotel extraction for baseCamp injection
+  const hotelMatch = anchorPoints?.match(
+    /(?:staying at|hotel|resort|villa|hostel)\s+([^,\n.]+)/i
+  );
+  const detectedHotel = hotelMatch ? hotelMatch[1].trim() : null;
+
+  const baseCampLine = detectedHotel
+    ? `- Base Camp: The user is staying at: ${detectedHotel}. Treat as geographic anchor for ALL days.`
+    : `- Base Camp: Derived from anchor points below — treat the user's named accommodation (if any) as Base Camp.`;
+
+  // Mode B always uses relaxed walking tolerance (anchor points may force cross-neighbourhood moves)
+  const neighborhoodLockRule = isRegion
+    ? "The user has selected a broad geographical region. For each day, anchor in ONE specific city/town. Arrange days in logical geographical sequence to minimise backtracking. Day-to-day travel between towns is expected."
+    : "ALL activities for the ENTIRE TRIP must stay within the exact same city and its immediate neighbourhoods. Do NOT suggest regional day trips, neighbouring towns, or attractions requiring highway travel. Every activity must be reachable on foot or by local public transit within the city.";
+
+  const transitTimeRule = isRegion
+    ? "Within each day's anchor city, keep consecutive stops within a comfortable 30-minute walk or short taxi ride. Widen startTime gaps on travel days. Do not schedule a full activity slate on a heavy travel day."
+    : "You may place consecutive stops up to 4km / 45 minutes walking apart, allowing the itinerary to span adjacent neighbourhoods. The city-boundary rule (Rule 11) still applies. Anchor fidelity takes priority — if an anchor forces a longer transit, widen the startTime gap to reflect reality.";
+
+  const familyRule = travelParty === "family"
+    ? "\n9. FAMILY RULE: Every activity must be suitable for children. Avoid 18+ venues and anything requiring adult-only access."
+    : "";
+
+  return `You are an ultra-elite luxury travel concierge — the intersection of a private Rolls-Royce attaché and Condé Nast Traveller's chief editor.
+
+Curate a ${duration}-day bespoke itinerary for: **${destination}**
+Travel dates: ${departureDate} to ${returnDate}
+
+━━━ CLIENT PROFILE ━━━
+- Travel Party: ${travelParty} — ${partyDescriptions[travelParty]}
+- Pace: moderate — honour anchor points first; fill gaps with curated depth
+- Budget: ${budgetDescriptions[budgetTier]}
+${baseCampLine}
+- Mobility: Walking & Public Transit (relaxed tolerance — up to 4km/45min between stops)
+
+━━━ ANCHOR POINTS — HARD CONSTRAINTS ━━━
+The user has provided fixed plans. These are NON-NEGOTIABLE.
+Lock every named place, restaurant, activity, or hotel into the itinerary
+exactly as specified, at the stated day/time or at the most logical placement.
+
+---BEGIN ANCHOR POINTS---
+${anchorPoints}
+---END ANCHOR POINTS---
+
+ANCHOR RULES:
+1. Every named item MUST appear in the output — do not drop any anchor.
+2. A named hotel = Base Camp for all days (same spatial anchor behaviour as a booked hotel).
+3. "Day 2 — Colosseum" → Colosseum MUST be on day 2, period.
+4. Time-specified anchors → place at that time; shift surrounding items to maintain sequential startTime order.
+5. Unscheduled anchors → choose the most geographically coherent placement.
+6. Anchor fidelity overrides pace — dense anchor days stay dense.
+
+━━━ GAP FILLING ━━━
+After placing all anchors, fill remaining time slots with luxury curation that:
+- Matches budget tier and travel party above.
+- Clusters geographically with the nearest anchor for that day.
+- Respects spatial rules below (neighbourhood lock, transit time reality).
+- Does not duplicate any anchor item.
+
+━━━ MANDATORY RULES ━━━
+1. Generate EXACTLY ${duration} day objects in the "days" array.
+2. All dining aligns with ${budgetTier} price tier.
+3. COORDINATES: Every timeline item and hiddenGem MUST include real, accurate GPS coordinates as numbers. These plot on a live map — incorrect coordinates are unacceptable.
+4. startTime: Provide a realistic HH:MM for every timeline item. Times MUST be strictly sequential through the day (e.g. "08:00", "09:30", "12:30", "14:00", "19:30").
+5. category: Assign an uppercase category to every activity-type item (SIGHTSEEING, MUSEUM, CULTURE, NATURE, WELLNESS, ADVENTURE, SHOPPING). Omit for meals.
+6. Meals: Include 1–2 meal items per day (breakfast, lunch, or dinner) interwoven with activities at realistic times. Use real, named restaurants for the "title" field.
+7. Hidden gem: hyper-specific named place, 95% of tourists never find, exact name + 1 sentence.
+8. Writing: restrained elegance, no hyperbole. Every description is exactly 2 sentences, each sentence ≤15 words. Brevity is luxury.
+9. THE NEIGHBOURHOOD LOCK: ${neighborhoodLockRule}
+10. TRANSIT TIME REALITY: ${transitTimeRule}
+11. CURATED PACING: Prioritise 3–4 deeply curated, geographically clustered stops per day over raw quantity. Every stop must be exceptional and worthy of a dedicated visit.
+12. CHAIN OF THOUGHT — SPATIAL VALIDATION (MANDATORY): For EVERY timeline item, you MUST fill in the "spatialReasoning" field FIRST before writing the title or coordinates. Explicitly state: (a) the neighbourhood/district of the PREVIOUS stop, or "Start of day" for the first item; (b) the neighbourhood/district you are considering for THIS stop; (c) your estimated transit time between them; (d) whether this PASSES or VIOLATES the user's mobility rule. If it violates the rule, write "VIOLATION — choosing closer alternative:" followed by your replacement choice.
+13. NO recommendedStays array — the user's accommodation is handled in their anchor points.
+14. ANCHOR FIDELITY: Every item from the ANCHOR POINTS block must appear in the output exactly as named. Anchor fidelity takes priority over all constraints except GPS accuracy and sequential startTime ordering.${familyRule}
+
+━━━ JSON SCHEMA ━━━
+Return ONLY valid JSON. No markdown, no code fences, no preamble:
+${SCHEMA}`;
 }
 
 // ─── Cache helpers ────────────────────────────────────────────────────────────
@@ -640,12 +744,19 @@ export async function POST(req: Request) {
     }
     const safeBody = parsed.data;
     capturedDestination = safeBody.destination;
+    const isTailor = safeBody.planningMode === "tailor";
+    const userPrompt = isTailor ? buildTailorPrompt(safeBody) : buildPrompt(safeBody);
 
     const apiKey = process.env.MAPS_SERVER_KEY ?? "";
 
     // ── Step 1: Anthropic AI generation ──────────────────────────────────────
     // Build accommodation-aware system prompt — appended after the immutable security rules
-    const accommodationInstruction =
+    // Mode B always suppresses recommendedStays — accommodation is in anchor points
+    let accommodationInstruction: string;
+    if (isTailor) {
+      accommodationInstruction = `\n\nACCOMMODATION: The user's accommodation is specified in their anchor points. Treat it as their booked base camp. Do NOT generate a recommendedStays array.`;
+    } else {
+    accommodationInstruction =
       safeBody.accommodationStatus === "booked"
         ? `\n\nACCOMMODATION — CONFIRMED RESERVATION: The user is confirmed to be staying at ${safeBody.hotelName || "their chosen hotel"}.  CRITICAL GEOGRAPHY RULE: You MUST anchor the start and end of every single day around this exact hotel.  - Breakfast and morning activities MUST be within a strict 15-minute walk or 5-minute taxi ride from ${safeBody.hotelName || "the hotel"}. - Do NOT suggest any location that is more than a 30-minute transit ride away unless it is a world-renowned landmark. - Cluster activities geographically to avoid zig-zagging across the city.  DO NOT recommend any new hotels to stay at.`
         : `\n\nACCOMMODATION — CURATION REQUIRED:
@@ -665,6 +776,7 @@ ANTI-DUPLICATION RULE — CRITICAL: You MUST provide SIX COMPLETELY DISTINCT hot
 GEOFENCE RULE — CRITICAL: ALL six recommended hotels MUST be physically located strictly within the exact destination city or area requested by the user. DO NOT recommend hotels in neighbouring cities, different districts far from the itinerary, or distant suburbs — no matter how highly rated they are. Proximity to the core itinerary activities is MANDATORY. If the destination is central Istanbul, every hotel must be in central Istanbul — not Kadıköy, not the Asian side, not the airport district.
 
 Each entry MUST contain: name (real verified property — NO fictional hotels), neighborhood (specific district name, e.g. "Sultanahmet, Istanbul"), description (exactly 1 sentence ≤20 words, restrained editorial pitch), rating (integer — EXACTLY 3, 4, or 5 — no decimals, no other values), priceTier (string — exactly '$$$', '$$$$', or '$$$$$').`;
+    } // end else (Mode A)
     const dynamicSystemPrompt = SYSTEM_PROMPT + accommodationInstruction;
 
     const t0Claude = Date.now();
@@ -675,7 +787,7 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
       model:      "claude-sonnet-4-6",
       max_tokens: 8192,
       system:     dynamicSystemPrompt,
-      messages:   [{ role: "user", content: buildPrompt(safeBody) }],
+      messages:   [{ role: "user", content: userPrompt }],
     }, { signal: req.signal, timeout: 180_000 });
     console.info(
       `[itinerary] Claude generation: ${Date.now() - t0Claude}ms | ` +

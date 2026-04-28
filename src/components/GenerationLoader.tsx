@@ -6,26 +6,40 @@ import { motion, AnimatePresence } from "framer-motion";
 // ── Loading copy ───────────────────────────────────────────────────────────────
 
 const STEPS = [
-  "Reviewing your preferences\u2026",
-  "Sourcing vetted luxury accommodations\u2026",
-  "Cross-referencing Michelin guides\u2026",
-  "Mapping realistic routes and transit times\u2026",
-  "Finalising your bespoke itinerary\u2026",
+  "Reviewing your preferences…",
+  "Sourcing vetted luxury accommodations…",
+  "Cross-referencing Michelin guides…",
+  "Mapping realistic routes and transit times…",
+  "Finalising your bespoke itinerary…",
+];
+
+const TAILOR_STEPS = [
+  "Reading your anchor points…",
+  "Locking in your fixed plans…",
+  "Filling gaps with luxury curation…",
+  "Mapping routes around your anchors…",
+  "Finalising your bespoke dossier…",
 ];
 
 const INTERVAL_MS = 3500;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function GenerationLoader() {
+interface GenerationLoaderProps {
+  mode?: "inspire" | "tailor";
+}
+
+export default function GenerationLoader({ mode = "inspire" }: GenerationLoaderProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const steps = mode === "tailor" ? TAILOR_STEPS : STEPS;
 
   useEffect(() => {
+    setStepIndex(0);
     const id = setInterval(() => {
-      setStepIndex((i) => (i + 1) % STEPS.length);
+      setStepIndex((i) => (i + 1) % steps.length);
     }, INTERVAL_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [mode, steps.length]);
 
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center text-center px-6 gap-8">
@@ -52,7 +66,7 @@ export default function GenerationLoader() {
             transition={{ duration: 0.8, ease: "easeInOut" }}
             className="font-serif italic text-lg sm:text-2xl text-ink leading-tight max-w-xs"
           >
-            {STEPS[stepIndex]}
+            {steps[stepIndex]}
           </motion.p>
         </AnimatePresence>
       </div>

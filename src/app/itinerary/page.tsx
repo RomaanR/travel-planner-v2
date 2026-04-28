@@ -42,6 +42,9 @@ const StoredRequestSchema = z.object({
   exactHotelAddress:   z.string().max(300).optional(),
   transportMode:       z.enum(["walking-transit", "car-driver"]).optional(),
   walkingTolerance:    z.enum(["strict", "relaxed"]).optional(),
+  isRegion:            z.boolean().optional(),
+  planningMode:        z.enum(["inspire", "tailor"]).optional(),
+  anchorPoints:        z.string().max(2000).optional(),
 });
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import Navbar from "@/components/Navbar";
@@ -61,6 +64,7 @@ export default function ItineraryPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [departureDate, setDepartureDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
+  const [planningMode, setPlanningMode] = useState<"inspire" | "tailor">("inspire");
 
   async function handleSave() {
     if (!itinerary || saveState !== "idle") return;
@@ -104,6 +108,7 @@ export default function ItineraryPage() {
     if (data.transportMode === "walking-transit" || data.transportMode === "car-driver") {
       setTransportMode(data.transportMode);
     }
+    if (data.planningMode === "tailor") setPlanningMode("tailor");
     generateItinerary(data);
 
     // Abort in-flight generation if user navigates away
@@ -177,7 +182,7 @@ export default function ItineraryPage() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4 }}
               >
-                <GenerationLoader />
+                <GenerationLoader mode={planningMode} />
               </motion.div>
             )}
 
