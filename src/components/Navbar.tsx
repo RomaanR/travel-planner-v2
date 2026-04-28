@@ -22,7 +22,7 @@ export default function Navbar() {
       <Link href="/" className="flex items-center gap-2 md:gap-3">
         {/* Mobile logo — 60px, small margins */}
         <Image
-          src="/icon-192x192.png"
+          src="/bee2.png"
           alt="TravalBee Logo"
           width={60}
           height={60}
