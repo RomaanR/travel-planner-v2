@@ -32,7 +32,7 @@ export default function Navbar() {
         />
         {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
         <Image
-          src="/icon-192x192.png"
+          src="/bee2.png"
           alt="TravalBee Logo"
           width={120}
           height={120}
