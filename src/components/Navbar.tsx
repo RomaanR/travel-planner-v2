@@ -20,14 +20,14 @@ export default function Navbar() {
     >
       {/* Wordmark */}
       <Link href="/" className="flex items-center gap-2 md:gap-3">
-        {/* Mobile logo — 60px, small margins */}
+        {/* Mobile logo */}
         <Image
           src="/bee2.png"
           alt="TravalBee Logo"
-          width={60}
-          height={60}
-          className="md:hidden w-[60px] h-[60px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-8px", marginBottom: "-8px" }}
+          width={80}
+          height={80}
+          className="md:hidden w-[80px] h-[80px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-12px", marginBottom: "-12px" }}
           priority
         />
         {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
@@ -36,7 +36,7 @@ export default function Navbar() {
           alt="TravalBee Logo"
           width={120}
           height={120}
-          className="hidden md:block w-[120px] h-[120px] object-contain rounded-none flex-shrink-0"
+          className="hidden md:block w-[130px] h-[120px] object-contain rounded-none flex-shrink-0"
           style={{ marginTop: "-32px", marginBottom: "-32px" }}
           priority
         />
