@@ -314,20 +314,23 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   }
 
   // ── Validation ────────────────────────────────────────────────────────────────
-  const isComplete = !!(
-    form.destination &&
-    form.departureDate &&
-    form.returnDate &&
-    form.returnDate > form.departureDate &&
-    form.travelParty &&
-    form.pace &&
-    form.budgetTier &&
-    form.interests?.length
-  );
+  const missingFields = [
+    !form.destination                                                              && "Destination",
+    (!form.departureDate || !form.returnDate || form.returnDate <= form.departureDate) && "Travel Dates",
+    !form.travelParty                                                              && "Travel Party",
+    !form.pace                                                                     && "Travel Pace",
+    !form.budgetTier                                                               && "Budget Tier",
+    !form.interests?.length                                                        && "Interests",
+  ].filter(Boolean) as string[];
+
+  const isComplete = missingFields.length === 0;
+
+  const [showErrors, setShowErrors] = useState(false);
 
   // ── Submit ────────────────────────────────────────────────────────────────────
   async function handleSubmit() {
-    if (!isComplete || loading) return;
+    if (!isComplete) { setShowErrors(true); return; }
+    if (loading) return;
     await onGenerate({
       ...(form as ItineraryRequest),
       duration,
@@ -844,42 +847,54 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             </div>
 
             {/* ── CTA ── */}
-            <AnimatePresence>
-              {isComplete && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 py-5 bg-burnt-orange text-white micro-copy hover:bg-ink transition-colors duration-300 disabled:opacity-60"
+            <div>
+              {/* Validation errors */}
+              <AnimatePresence>
+                {showErrors && !isComplete && (
+                  <motion.div
+                    key="errors"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="mb-4 border border-red-200 bg-red-50 px-4 py-3"
                   >
-                    {loading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <ArrowRight size={16} strokeWidth={2} />
-                    )}
-                    {loading ? "Curating Your Journey…" : "Curate My Bespoke Itinerary"}
-                  </button>
-                  <p className="mt-3 text-center micro-copy text-ink-light">
-                    {duration} day{duration !== 1 ? "s" : ""} ·{" "}
-                    {form.travelParty} · {form.pace} · {form.budgetTier}
-                    {form.interests && form.interests.length > 0 && (
-                      <> · {form.interests.length} interest{form.interests.length !== 1 ? "s" : ""}</>
-                    )}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <p className="micro-copy text-red-600 mb-2">Please complete the following:</p>
+                    <ul className="flex flex-col gap-1">
+                      {missingFields.map((field) => (
+                        <li key={field} className="font-sans text-xs text-red-500 flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-red-400 shrink-0" />
+                          {field}
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-            {!isComplete && (
-              <p className="micro-copy text-ink/30 text-center">
-                Complete all fields above to generate your itinerary
-              </p>
-            )}
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-5 bg-burnt-orange text-white micro-copy hover:bg-ink transition-colors duration-300 disabled:opacity-60"
+              >
+                {loading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <ArrowRight size={16} strokeWidth={2} />
+                )}
+                {loading ? "Curating Your Journey…" : "Curate My Bespoke Itinerary"}
+              </button>
+
+              {isComplete && (
+                <p className="mt-3 text-center micro-copy text-ink-light">
+                  {duration} day{duration !== 1 ? "s" : ""} ·{" "}
+                  {form.travelParty} · {form.pace} · {form.budgetTier}
+                  {form.interests && form.interests.length > 0 && (
+                    <> · {form.interests.length} interest{form.interests.length !== 1 ? "s" : ""}</>
+                  )}
+                </p>
+              )}
+            </div>
 
           </motion.div>
         )}
