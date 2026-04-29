@@ -16,23 +16,23 @@ export default function Navbar() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-5 border-b border-black/5 bg-paper/80 backdrop-blur-sm print:hidden"
-    >
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-3 md:py-5 border-b border-black/5 bg-paper/80 backdrop-blur-sm print:hidden"
+      >
       {/* Wordmark */}
       <Link href="/" className="flex items-center gap-2 md:gap-3">
         {/* Mobile logo */}
         <Image
-          src="/bee2.png"
+          src="/bee_menu_192x192_transparent.png"
           alt="TravalBee Logo"
-          width={80}
-          height={80}
-          className="md:hidden w-[80px] h-[80px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-12px", marginBottom: "-12px" }}
+          width={92}
+          height={92}
+          className="md:hidden w-[92px] h-[92px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-20px", marginBottom: "-20px", marginLeft: "-12px" }}
           priority
         />
         {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
         <Image
-          src="/bee2.png"
+          src="/bee_menu_512x512_transparent.png"
           alt="TravalBee Logo"
           width={120}
           height={120}
@@ -84,6 +84,7 @@ export default function Navbar() {
         <MobileMenu />
 
       </div>
+
     </motion.nav>
   );
 }
