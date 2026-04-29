@@ -65,7 +65,7 @@ export default function MobileMenu() {
               <div className="flex items-center justify-between px-8 py-5 border-b border-ink/5">
                 <Link href="/" onClick={close} className="flex items-center gap-3">
                   <Image
-                    src="/icon-192x192.png"
+                    src="/bee_menu_192x192_transparent.png"
                     alt="TravalBee Logo"
                     width={36}
                     height={36}

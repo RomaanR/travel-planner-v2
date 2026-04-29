@@ -25,6 +25,8 @@ function buildFingerprint(data: ItineraryRequest): string {
     hotelName:           data.hotelName ?? null,
     transportMode:       data.transportMode ?? null,
     walkingTolerance:    data.walkingTolerance ?? null,
+    planningMode:        data.planningMode ?? "inspire",
+    anchorPoints:        data.anchorPoints ?? null,
   });
 }
 
@@ -112,6 +114,9 @@ export function useItinerary() {
       });
       return result;
     } catch (e) {
+      // Stale request superseded by a new generateItinerary call — leave state alone.
+      // The new request owns loading state; touching it here would clobber loading=true.
+      if (abortRef.current !== controller) return null;
       // User navigated away or manually cancelled — silent dismiss
       if (e instanceof DOMException && e.name === "AbortError") {
         toast.dismiss("curate-task");
@@ -125,7 +130,9 @@ export function useItinerary() {
       });
       return null;
     } finally {
-      setLoading(false);
+      // Only reset loading if we are still the active request — a superseding
+      // request (React 18 Strict Mode double-mount) has its own loading=true.
+      if (abortRef.current === controller) setLoading(false);
     }
   }
 

@@ -27,46 +27,14 @@ import type {
   DietaryOption,
   Interest,
 } from "@/types/itinerary";
+import {
+  getLocalToday,
+  parseDateLocal,
+  formatDateLocal,
+  computeDuration,
+} from "@/lib/dateUtils";
 
 const LIBRARIES: ("places")[] = ["places"];
-
-// ─── Timezone-safe today string ───────────────────────────────────────────────
-
-function getLocalToday(): string {
-  const d = new Date();
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
-// Parse a YYYY-MM-DD string as a LOCAL date (avoids UTC midnight → previous-day
-// rollback in negative-offset timezones like US/Eastern, US/Pacific, etc.)
-function parseDateLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d); // local midnight — no UTC offset applied
-}
-
-function formatDateLocal(d: Date): string {
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
-function computeDuration(departure: string, returnDate: string, maxDays: number): number {
-  if (!departure || !returnDate) return 1;
-  // Math.round instead of Math.ceil guards against DST hour-shift (±1 h)
-  // causing a fractional day to ceil up to an extra day.
-  const diff = Math.round(
-    (parseDateLocal(returnDate).getTime() - parseDateLocal(departure).getTime()) / 86400000
-  );
-  // +1 for inclusive counting: departure day counts as Day 1.
-  // July 1 → July 3 = 2 nights = 3 inclusive days.
-  return Math.min(maxDays, Math.max(1, diff + 1));
-}
 
 // ─── Option data ──────────────────────────────────────────────────────────────
 
@@ -212,7 +180,7 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
   function onPlaceChanged() {
     if (!autocompleteRef.current) return;
     const place = autocompleteRef.current.getPlace();
-    if (!place.geometry?.location || !place.place_id) return;
+    if (!place?.geometry?.location || !place?.place_id) return;
 
     // Use place.name ("Istanbul") not formatted_address ("Istanbul, İstanbul, Türkiye").
     // Guard against Google returning administrative area names like

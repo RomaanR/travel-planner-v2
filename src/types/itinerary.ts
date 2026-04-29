@@ -43,6 +43,9 @@ export type ItineraryRequest = {
   transportMode?: string;      // "walking-transit" | "car-driver"
   walkingTolerance?: "strict" | "relaxed"; // walking-transit only — "strict" ≤20 min/1.5km, "relaxed" ≤45 min/4km; defaults to "strict"
   isRegion?: boolean;  // true when destination is a region/area rather than a single city
+  // Planning mode — added for dual-mode curate page
+  planningMode?: "inspire" | "tailor"; // absent is treated as "inspire" (backward compat)
+  anchorPoints?: string;               // Mode B only — free-form anchor constraints, max 2000 chars
 };
 
 // ─── Response ─────────────────────────────────────────────────────────────────
