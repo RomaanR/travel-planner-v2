@@ -2309,3 +2309,229 @@ All legally material language preserved: PCI-DSS compliance, commission disclosu
 - [ ] **Dependency Audit:** Run `npm audit fix` to clear transitive dev-dependency warnings.
 - [ ] **Email Delivery Audit:** Verify live Vercel environment variables for the Support page email routing API.
 
+---
+
+## April 26, 2026 — 11:25 PM EDT
+
+### Session Summary: Dual Planning Modes, Sample Itinerary Fixes & Resilience Patches
+
+---
+
+#### 1. Dual Planning Modes — "Inspire Me" & "Tailor My Trip" (Frontend Architecture)
+
+A second entry point was added to the `/curate` page alongside the existing "Inspire Me" flow. The mode toggle is an inline pill selector rendered in `CurateClient.tsx` with `AnimatePresence` swapping both the editorial header copy and the form component.
+
+**`CurateClient.tsx`** — updated with:
+- `mode: "inspire" | "tailor"` state
+- Mode toggle UI: two-button pill group (`Inspire Me` / `Tailor My Trip`) with `bg-ink text-paper` active state
+- `AnimatePresence mode="wait"` keyed header swap (kicker, headline, sub-copy per mode)
+- `AnimatePresence mode="wait"` keyed form swap (`CurationForm` for Inspire, `TailorForm` for Tailor)
+- `loading` state + `handleGenerate` that writes to `sessionStorage` and pushes to `/itinerary`
+
+**`src/lib/dateUtils.ts`** — NEW FILE. Four date utility functions extracted from `CurationForm.tsx` to eliminate duplication and allow `TailorForm` to share them:
+- `getLocalToday(): string` — timezone-safe today date in `YYYY-MM-DD`
+- `parseDateLocal(dateStr: string): Date`
+- `formatDateLocal(d: Date): string`
+- `computeDuration(departure: string, returnDate: string, maxDays: number): number`
+
+`CurationForm.tsx` updated to import from `@/lib/dateUtils` — zero logic change.
+
+**`src/components/TailorForm.tsx`** — NEW FILE. Full Mode B intake form:
+- Google Places Autocomplete destination field (same pattern as `CurationForm`)
+- Departure / return date pickers (uses `dateUtils`)
+- Travel party pills (`solo` / `couple` / `family` / `group`)
+- Budget tier cards (`premium` / `luxury` / `ultra-luxury`)
+- `anchorPoints` textarea — auto-expanding, 2000-char limit with live counter (turns burnt-orange at >1800 chars), placeholder: *"Going to Rome, staying at Hotel Eden, must visit the Colosseum on Day 2…"*
+- `isComplete` guard requires destination, dates, party, budget, and ≥10 chars of anchor text
+- Submit payload hardcodes `pace: "moderate"`, `dietary: ["none"]`, `walkingTolerance: "relaxed"`, `planningMode: "tailor"`, and passes `anchorPoints` verbatim
+- Framer Motion fade-in-up root `motion.div`; staged expansion (destination first → rest unlocks)
+
+---
+
+#### 2. Backend AI Prep — Tailor Mode Architecture (Not Yet Wired)
+
+The API route (`src/app/api/itinerary/route.ts`) has been architecturally prepared for Mode B but **the prompt branching is not yet active**. What was planned and will be completed in the next session:
+
+- `ItinerarySchema` Zod additions: `planningMode: z.enum(["inspire", "tailor"]).optional()` and `anchorPoints: z.string().max(2000).regex(…).optional()` with a `.superRefine()` requiring anchor text when mode is `"tailor"`
+- `buildTailorPrompt(data: ItineraryRequest): string` — new function alongside `buildPrompt()`. Structures anchor points inside `---BEGIN/END ANCHOR POINTS---` fences with five explicit anchor fidelity rules. Gap-filling instructions cluster new items geographically around the anchors. Hotel extraction via regex injects a `baseCamp` into the client profile block.
+- POST handler branch: `const isTailor = safeBody.planningMode === "tailor"` → routes to `buildTailorPrompt` or `buildPrompt`. Mode B always suppresses `recommendedStays`.
+- `useItinerary.ts` fingerprint update: add `planningMode` and `anchorPoints` to `buildFingerprint()` so identical Mode B submissions hit the cache.
+- `StoredRequestSchema` in `itinerary/page.tsx`: add `planningMode` and `anchorPoints` fields.
+- `GenerationLoader.tsx`: add `mode` prop + `TAILOR_STEPS` copy variant ("Reading your anchor points…", "Locking in your fixed plans…", etc.).
+
+The output JSON schema (`ItineraryResponse`) is **unchanged** — Mode B produces the identical `timeline[]`-based shape, so `ItineraryViewer`, the map, PDF export, and sharing all work without modification.
+
+---
+
+#### 3. Loading Screen Race Condition Fix (`useItinerary.ts`)
+
+**Problem:** In React 18 Strict Mode, `useEffect` runs twice on mount (mount → cleanup → mount). The first mount's `AbortController` is cancelled during cleanup, triggering the `catch` block's `setLoading(false)` and the `finally` block's `setLoading(false)` — both of which overwrite the second (real) request's `loading=true`. Result: the page sits blank for the full AI generation time (~60s) with no spinner and no error.
+
+**Fix:** Two staleness guards added:
+- `catch` block: `if (abortRef.current !== controller) return null` — stale aborted requests exit immediately without touching state
+- `finally` block: `if (abortRef.current === controller) setLoading(false)` — only the active request may clear the loading flag
+
+This fix applies to both "Inspire Me" and "Tailor My Trip" modes.
+
+---
+
+#### 4. Missing PDF Export Button on Live Itinerary Page (`itinerary/page.tsx`)
+
+**Problem:** `ExportPdfButton` (which calls `window.print()`) existed on saved trips (`/trips/[id]` via `TripHeaderActions`) and the sample page, but was never added to the live `/itinerary` page. Neither Inspire Me nor Tailor My Trip had a download option.
+
+**Fix:** `ExportPdfButton` added in two locations inside `itinerary/page.tsx`:
+- **Desktop header strip** — inside the `{itinerary && (…)}` block, left of the Save button, wrapped in `hidden md:flex items-center gap-2`
+- **Mobile bottomSection** — inside `md:hidden mb-8`, above the "Explore another destination?" CTA
+
+---
+
+#### 5. Sample Itinerary — Trip ID Swap & Photo 502 Fix
+
+**Committed to Git (commit `84c9011`):**
+
+**`src/app/sample/page.tsx`:** `SAMPLE_TRIP_ID` updated from `7d88a6f1-…` to `930920cd-a172-4a1e-bbd5-e3b73ccd8762` (New York City trip). The previous trip's `photoReference` tokens had been cleaned up by the nightly Vercel cron job, causing all card photos to return 502.
+
+**`src/components/TimelineCard.tsx`:** Added `"use client"` directive and `useState(false)` for `imgError`. The `<Image>` component now carries `onError={() => setImgError(true)}`; when fired (e.g. expired `ATCDNf…` token → 502 from `/api/photo`), the component falls back to the `ImageOff` / `Utensils` placeholder icon. This makes all itinerary photo cards resilient to expired Google Places photo references without any database changes.
+
+---
+
+**Note: The Dual Planning Modes feature (items 1–4 above) is currently being tested on the local machine only and has NOT been committed or pushed to Git yet. Only the sample trip ID swap and TimelineCard photo fix (item 5) have been committed and pushed.**
+
+---
+
+## April 26, 2026 — (follow-up) — PlaceCache Photo Refresh & Cron TTL Extension
+
+**Committed to Git (commit `3479525`) — pushed to main.**
+
+### Problem
+
+`Trip.itineraryData` bakes `photoReference` tokens in at generation time. Google Places photo_reference tokens expire on their own timeline (weeks to months). When they expire, `/api/photo?ref=<token>` returns 502, causing cards in saved trips (`/trips/[id]`) to lose their photos permanently — even though the rest of the itinerary data is intact.
+
+The `onError` fallback added to `TimelineCard` (commit `84c9011`) already prevents UI breakage by swapping to the `ImageOff` placeholder gracefully. This follow-up restores the actual photos where a fresh token is available.
+
+### Fix 1 — `refreshPhotoRefs()` in `src/app/trips/[id]/page.tsx`
+
+New async helper added to the server component. Runs between the DB fetch and the render — no Google API calls, reads `PlaceCache` only:
+
+1. Iterates all days (via `normalizeDayPlan`) and collects cache keys for every timeline item using the same `buildCacheKey()` normalization as `enrichPlace()`: `normalize(name)|normalize(destination)`.
+2. Batch `findMany` against `PlaceCache` — one DB round-trip for all items.
+3. For each item with a cache hit, overlays the cached `photoReference` onto the item. Items with no cache hit are left untouched (placeholder fallback handles them).
+4. Returns the refreshed `ItineraryResponse` — `Trip.itineraryData` in the database is never modified.
+
+```ts
+// Called in TripViewPage before passing itinerary to ItineraryViewer:
+const itinerary = await refreshPhotoRefs(
+  trip.itineraryData as unknown as ItineraryResponse,
+  trip.destination
+);
+```
+
+This fix also applies to the `/shared/[id]` page — that page should receive the same treatment in a future session.
+
+### Fix 2 — Cron TTL extended from 14 → 90 days (`src/app/api/cron/cleanup/route.ts`)
+
+Changed `fourteenDaysAgo` → `ninetyDaysAgo`. `PlaceCache` entries now persist for 90 days of inactivity instead of 14. Combined with the `@updatedAt` auto-refresh on every cache hit, popular places stay alive indefinitely. The extended window gives `refreshPhotoRefs()` a much wider coverage for trips viewed infrequently.
+
+### Architecture Note
+
+`/shared/[id]` (public read-only shared trips) does not yet have `refreshPhotoRefs()`. It renders `Trip.itineraryData` directly without a photo overlay. Should be added in the next session — same pattern, no auth required there.
+
+
+---
+
+## Tuesday, April 28, 2026 - 7:11 AM EDT
+
+### Session Summary: Numbered Map Markers, Travelpayouts Affiliate Flow & Local QA
+
+---
+
+#### 1. Itinerary Map - Numbered Day Stop Markers
+
+**File:** `src/components/ItineraryMap.tsx`
+
+**Problem:** The map could already isolate stops by day using the pill selector (`All`, `Day 1`, `Day 2`, etc.), but the markers only displayed semantic icons such as camera, fork/knife, wine glass, and pin. When users filtered to a single day, there was no visual indication of the order of stops in that day's itinerary.
+
+**Fix applied:**
+- Updated `buildSvgMarker()` so marker badges render the visible itinerary sequence number in the center of the day-colored circle.
+- The marker number is derived from the filtered point index: `i + 1`.
+- When a user selects `Day 2`, the visible Day 2 markers start at `1`, then `2`, then `3`, etc. rather than continuing from the full-trip sequence.
+- The same behavior applies to existing itineraries, saved trips, shared trips, sample trips, and newly generated trips because it is a render-layer change only.
+
+**Implementation notes:**
+- `filteredPoints` remains the source of truth, preserving the existing polyline order and day isolation behavior.
+- Marker colors still come from the day-centric `DAY_PALETTE`.
+- The old semantic icon helper remains in the file for now, but the displayed marker state is the numbered badge.
+
+**Local QA:**
+- Verified on localhost after resolving a stale dev-server process that was still serving the old marker bundle.
+- Final working local URL used for verification: `http://localhost:3000/sample?fresh=numbered4`.
+- Confirmed by browser testing that Day 2 markers display numbered stop order.
+
+---
+
+#### 2. Travelpayouts Affiliate Booking Flow
+
+**Files:** `src/app/actions/affiliate.ts`, `src/components/StayCard.tsx`, `src/components/InteractiveStays.tsx`
+
+**Problem:** Hotel recommendation cards were still wired around the old Booking.com affiliate helper (`createAffiliateUrl()`), while the project is moving to Travelpayouts / HotelLook deep links.
+
+**Fix applied:**
+- Added a new Server Action in `src/app/actions/affiliate.ts`:
+
+```ts
+generateBookingLink(hotelName: string, city: string)
+```
+
+- The action reads `TRAVELPAYOUTS_MARKER` from the server environment.
+- It builds a HotelLook search URL using:
+
+```txt
+https://search.hotellook.com/hotels?destination=[ENCODED_QUERY]&marker=[MARKER]
+```
+
+- The destination query combines the hotel name and city, then encodes it safely with `encodeURIComponent()`.
+- If `TRAVELPAYOUTS_MARKER` is missing in local development, the action falls back to a basic HotelLook search URL without a marker so the UI can still be tested.
+
+**UI integration:**
+- `InteractiveStays.tsx` no longer passes a prebuilt Booking.com URL into `StayCard`.
+- `StayCard.tsx` now receives the destination and calls `generateBookingLink()` from a `Reserve` button.
+- The button manages an `isRedirecting` loading state and shows a spinner while the booking link is generated.
+- The button opens a blank tab synchronously before awaiting the Server Action, then redirects that tab to the returned URL. This avoids popup blocking from async tab creation.
+- Button styling was updated to a minimalist luxury treatment: white background, black text, thin black border, and dark hover state.
+
+**Local QA:**
+- Added a temporary local marker value: `TRAVELPAYOUTS_MARKER=123456`.
+- Confirmed the Reserve button generates a Travelpayouts / HotelLook URL and then redirects onward to Booking.com, which is expected partner behavior.
+- Confirmed the temporary marker is for local testing only and must be replaced with the real Travelpayouts marker before production use.
+
+---
+
+#### 3. Localhost / Browser State Debugging
+
+**Issue investigated:** The itinerary page showed the "maximum number of luxury curations for this hour" message even though no new curation had intentionally been submitted.
+
+**Findings:**
+- Local server logs showed real `POST /api/itinerary` requests returning `429`.
+- The `/itinerary` page automatically reads `sessionStorage.getItem("itineraryRequest")` and calls `generateItinerary(data)` on mount.
+- An old Istanbul request was still present in browser `sessionStorage`, so visiting or refreshing `/itinerary` retried the stored generation request.
+- The hourly Upstash limiter correctly returned `429` once the local quota was exhausted.
+
+**Recommended browser cleanup command:**
+
+```js
+sessionStorage.removeItem("itineraryRequest");
+sessionStorage.removeItem("seek_wander_itinerary_cache");
+location.href = "/";
+```
+
+---
+
+#### 4. Local Development Status
+
+**Verification completed locally:**
+- `npm.cmd run lint` passes with no ESLint warnings or errors.
+- `http://localhost:3000/sample` compiles and serves successfully.
+- Numbered map markers were visually confirmed in the browser.
+- Travelpayouts Reserve flow was locally tested with a temporary marker.
+
+**Important:** These updates are currently in the local development environment only. None of these changes have been pushed to Git yet.

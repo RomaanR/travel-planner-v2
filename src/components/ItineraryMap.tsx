@@ -87,13 +87,16 @@ function getIconSvg(type: string): string {
   }
 }
 
-// Build an inline SVG marker: day-colored circle + semantic type icon
-function buildSvgMarker(day: number, type: string): string {
+// Build an inline SVG marker: day-colored circle + visible itinerary order
+function buildSvgMarker(day: number, type: string, sequence: number): string {
   const { fill } = getDayColor(day);
   const icon = getIconSvg(type);
+  const label = String(sequence);
+  const fontSize = label.length >= 3 ? 11 : label.length === 2 ? 13 : 15;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
     <circle cx="16" cy="16" r="14" fill="${fill}" stroke="white" stroke-width="2"/>
-    <g transform="translate(8,8)">${icon}</g>
+    <g transform="translate(8,8)" opacity="0">${icon}</g>
+    <text x="16" y="20" text-anchor="middle" font-family="DM Sans, Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="white">${label}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -258,13 +261,13 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
           />
         )}
 
-        {/* Markers — filtered by active day, colored by day */}
+        {/* Markers — filtered by active day, colored by day, numbered in visible itinerary order */}
         {filteredPoints.map((point, i) => (
           <Marker
             key={`day${point.day}-${point.type}-${i}`}
             position={{ lat: point.lat, lng: point.lng }}
             icon={{
-              url: buildSvgMarker(point.day, point.type),
+              url: buildSvgMarker(point.day, point.type, i + 1),
               scaledSize: new window.google.maps.Size(32, 32),
               anchor: new window.google.maps.Point(16, 16),
             }}

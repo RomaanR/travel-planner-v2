@@ -18,6 +18,7 @@ import {
 import { SignedIn } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { useItinerary } from "@/hooks/useItinerary";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
 
 // ─── sessionStorage re-validation schema ──────────────────────────────────────
@@ -150,16 +151,19 @@ export default function ItineraryPage() {
             </h1>
           </div>
           {itinerary && (
-            <SignedIn>
-              <button
-                onClick={handleSave}
-                disabled={saveState === "saving" || saveState === "saved"}
-                className="hidden md:flex items-center gap-2 micro-copy border border-ink/20 px-4 py-2.5 hover:bg-ink hover:text-paper transition-all disabled:opacity-50 disabled:cursor-default"
-              >
-                {saveState === "saved" ? <Check size={13} /> : <BookmarkPlus size={13} />}
-                {saveState === "saving" ? "Saving..." : saveState === "saved" ? "Saved" : "Save"}
-              </button>
-            </SignedIn>
+            <div className="hidden md:flex items-center gap-2">
+              <ExportPdfButton />
+              <SignedIn>
+                <button
+                  onClick={handleSave}
+                  disabled={saveState === "saving" || saveState === "saved"}
+                  className="flex items-center gap-2 micro-copy border border-ink/20 px-4 py-2.5 hover:bg-ink hover:text-paper transition-all disabled:opacity-50 disabled:cursor-default"
+                >
+                  {saveState === "saved" ? <Check size={13} /> : <BookmarkPlus size={13} />}
+                  {saveState === "saving" ? "Saving..." : saveState === "saved" ? "Saved" : "Save"}
+                </button>
+              </SignedIn>
+            </div>
           )}
         </motion.div>
       </div>
@@ -290,6 +294,11 @@ export default function ItineraryPage() {
                       </div>
                       <div className="w-8 h-px bg-ink/10 mx-auto mb-10" />
                     </SignedIn>
+
+                    {/* PDF export — always visible on mobile (desktop has header button) */}
+                    <div className="md:hidden mb-8">
+                      <ExportPdfButton />
+                    </div>
 
                     {/* New destination CTA — always visible */}
                     <p className="font-serif italic text-3xl text-ink mb-4">
