@@ -72,9 +72,14 @@ export default function GenerationLoader({ mode = "inspire" }: GenerationLoaderP
       </div>
 
       {/* Persistent sub-label */}
-      <p className="micro-copy text-ink-light">
-        This will take about 2 minutes
-      </p>
+      <div className="flex flex-col items-center gap-2">
+        <p className="micro-copy text-ink-light">
+          Go grab a coffee &mdash; I&apos;ll have your itinerary ready when you&apos;re back.
+        </p>
+        <p className="micro-copy text-ink/40">
+          Just don&apos;t close this tab.
+        </p>
+      </div>
 
     </div>
   );
