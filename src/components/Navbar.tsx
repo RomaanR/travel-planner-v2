@@ -22,22 +22,22 @@ export default function Navbar() {
       <Link href="/" className="flex items-center gap-2 md:gap-3">
         {/* Mobile logo */}
         <Image
-          src="/bee_menu_192x192_transparent.png"
+          src="/bee_compass_192_transparent.png"
           alt="TravalBee Logo"
-          width={92}
-          height={92}
-          className="md:hidden w-[92px] h-[92px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-20px", marginBottom: "-20px", marginLeft: "-12px" }}
+          width={86}
+          height={86}
+          className="md:hidden w-[86px] h-[86px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-17px", marginBottom: "-17px", marginLeft: "-12px" }}
           priority
         />
         {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
         <Image
-          src="/bee_menu_512x512_transparent.png"
+          src="/bee_compass_512_transparent.png"
           alt="TravalBee Logo"
-          width={120}
-          height={120}
-          className="hidden md:block w-[130px] h-[120px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-32px", marginBottom: "-32px" }}
+          width={108}
+          height={108}
+          className="hidden md:block w-[112px] h-[104px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-24px", marginBottom: "-24px" }}
           priority
         />
         <span className="font-serif italic text-2xl md:text-4xl text-ink leading-none">
