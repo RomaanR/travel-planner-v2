@@ -198,10 +198,11 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
         </div>
       )}
 
-      {/* ── Day map ── */}
+      {/* ── Day map + legend ── */}
       {mapSrc && (
         <div className="mt-8 break-inside-avoid">
           <p className="text-xs tracking-widest uppercase text-black/40 mb-3">Day {day.day} Map</p>
+
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={mapSrc}
@@ -209,6 +210,43 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
             loading="eager"
             style={{ width: "100%", height: "auto", display: "block", border: "1px solid rgba(0,0,0,0.08)" }}
           />
+
+          {/* Legend — numbered markers matching the map */}
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+            {items
+              .filter(item => item.coordinates?.lat && item.coordinates?.lng)
+              .map((item, i) => (
+                <div
+                  key={i}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                >
+                  {/* Burnt-orange circle matching map marker */}
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    width: 18, height: 18, borderRadius: "50%",
+                    backgroundColor: "#C2410C", color: "#fff",
+                    fontSize: 9, fontWeight: 700, flexShrink: 0,
+                  }}>
+                    {i + 1}
+                  </span>
+                  {/* Time */}
+                  {item.startTime && (
+                    <span style={{ fontSize: 9, color: "rgba(0,0,0,0.35)", fontFamily: "monospace", flexShrink: 0, width: 36 }}>
+                      {item.startTime}
+                    </span>
+                  )}
+                  {/* Place name */}
+                  <span style={{ fontSize: 11, color: "#0A0A0A", fontStyle: "italic", flex: 1 }}>
+                    {item.title}
+                  </span>
+                  {/* Type badge */}
+                  <span style={{ fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,0,0,0.3)", flexShrink: 0 }}>
+                    {isMealType(item.type) ? item.type : (item.category ?? "activity")}
+                  </span>
+                </div>
+              ))
+            }
+          </div>
         </div>
       )}
 
