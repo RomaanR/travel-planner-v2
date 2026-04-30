@@ -4,18 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 // Accepts repeated `m=lat,lng` params — one per timeline stop.
 // Returns a PNG image suitable for eager-loading inside PrintItinerary.
 
-// Editorial paper-tone map style matching WorldMap.tsx aesthetic.
+// Minimal style overrides — keep all city/neighbourhood/road labels visible.
+// Only hide the cluttered POI icons (shopping carts, hospital H, etc.).
 const STYLES = [
-  "feature:all|element:labels.icon|visibility:off",
-  "feature:poi|visibility:off",
-  "feature:transit|visibility:off",
-  "feature:road.local|element:labels|visibility:off",
-  "feature:road.arterial|element:labels|visibility:off",
-  "feature:landscape|element:geometry|color:0xede8dc",
-  "feature:water|element:geometry|color:0xd6d0c4",
-  "feature:road|element:geometry|color:0xe0d8cc",
-  "feature:road.highway|element:geometry|color:0xd4ccbf",
-  "feature:administrative|element:geometry.stroke|color:0xc8c2b6",
+  "feature:poi|element:labels.icon|visibility:off",
+  "feature:transit|element:labels.icon|visibility:off",
 ];
 
 export async function GET(req: NextRequest) {
