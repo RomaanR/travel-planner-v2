@@ -24,8 +24,8 @@ export default function Navbar() {
         <Image
           src="/bee_compass_192_transparent.png"
           alt="TravalBee Logo"
-          width={86}
-          height={86}
+          width={82}
+          height={82}
           className="md:hidden w-[86px] h-[86px] object-contain rounded-none flex-shrink-0"
           style={{ marginTop: "-17px", marginBottom: "-17px", marginLeft: "-12px" }}
           priority
