@@ -221,9 +221,13 @@ export default function PrintItinerary({
 
         {/* Top bar */}
         <div className="flex items-center justify-between border-b border-black/20 pb-4">
-          <span className="text-[10px] tracking-[0.4em] uppercase font-bold text-black">
-            Curated Roam
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/bee_compass_512_transparent.png"
+            alt="TravalBee"
+            loading="eager"
+            style={{ height: 32, width: "auto", display: "block" }}
+          />
           <span className="text-[10px] tracking-[0.2em] uppercase text-black/40">
             Curated Luxury Itinerary
           </span>
@@ -258,10 +262,17 @@ export default function PrintItinerary({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-black/10 pt-4">
-          <p className="text-[9px] tracking-[0.2em] uppercase text-black/30">
-            curatedroam.com
-          </p>
+        <div className="border-t border-black/10 pt-4 flex items-center justify-between">
+          <a
+            href="https://travalbee.com"
+            className="text-[9px] tracking-[0.2em] uppercase text-black/30 no-underline"
+            style={{ textDecoration: "none" }}
+          >
+            travalbee.com
+          </a>
+          <span className="text-[9px] tracking-[0.15em] uppercase text-black/20">
+            Plan your next journey
+          </span>
         </div>
       </div>
 
