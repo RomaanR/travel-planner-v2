@@ -97,6 +97,13 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
   const day   = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
+  // Build static map URL from all timeline coordinates (filters out missing coords)
+  const coordParams = items
+    .filter(item => item.coordinates?.lat && item.coordinates?.lng)
+    .map(item => `m=${item.coordinates.lat},${item.coordinates.lng}`)
+    .join("&");
+  const mapSrc = coordParams ? `/api/staticmap?${coordParams}` : null;
+
   return (
     <div
       className={isFirst ? "" : "print:break-before-page"}
@@ -188,6 +195,20 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
           <p className="font-sans text-sm text-black/70 leading-relaxed italic">
             {day.hiddenGem}
           </p>
+        </div>
+      )}
+
+      {/* ── Day map ── */}
+      {mapSrc && (
+        <div className="mt-8 break-inside-avoid">
+          <p className="text-xs tracking-widest uppercase text-black/40 mb-3">Day {day.day} Map</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={mapSrc}
+            alt={`Day ${day.day} map`}
+            loading="eager"
+            style={{ width: "100%", height: "auto", display: "block", border: "1px solid rgba(0,0,0,0.08)" }}
+          />
         </div>
       )}
 
