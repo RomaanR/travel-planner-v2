@@ -24,10 +24,10 @@ export default function Navbar() {
         <Image
           src="/bee_compass_192_transparent.png"
           alt="TravalBee Logo"
-          width={82}
-          height={82}
-          className="md:hidden w-[86px] h-[86px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-17px", marginBottom: "-17px", marginLeft: "-12px" }}
+          width={78}
+          height={78}
+          className="md:hidden w-[78px] h-[78px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-13px", marginBottom: "-13px", marginLeft: "-10px" }}
           priority
         />
         {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
