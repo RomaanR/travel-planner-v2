@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
-import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
@@ -79,17 +78,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <Script
-        id="travelpayouts-drive"
-        src="https://tp-em.com/NTIzNTM1.js?t=523535"
-        strategy="beforeInteractive"
-        nowprocket=""
-        data-noptimize="1"
-        data-cfasync="false"
-        data-wpfc-render="false"
-        seraph-accel-crit="1"
-        data-no-defer="1"
-      />
       <body className="bg-paper text-ink antialiased overflow-x-clip print:overflow-visible print:h-auto">
         <div className="w-full max-w-[100vw] overflow-x-clip relative print:overflow-visible print:h-auto print:block">
         {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
