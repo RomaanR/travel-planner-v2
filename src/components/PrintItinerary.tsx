@@ -216,63 +216,61 @@ export default function PrintItinerary({
         }
       `}</style>
 
-      {/* ── COVER PAGE — p-16 is the physical page margin ── */}
-      <div className="print:break-after-page min-h-screen flex flex-col p-16">
+      {/* ── COVER PAGE ── */}
+      <div
+        className="print:break-after-page font-sans"
+        style={{ minHeight: "100vh", display: "flex", flexDirection: "column", padding: 64, backgroundColor: "#fff", color: "#000" }}
+      >
 
-        {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-black/20 pb-4">
+        {/* Header: logo left | TRAVALBEE right */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,0,0,0.15)", paddingBottom: 14 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/bee_compass_512_transparent.png"
             alt="TravalBee"
             loading="eager"
-            style={{ height: 32, width: "auto", display: "block" }}
+            style={{ height: 26, width: 26, maxWidth: 26, maxHeight: 26, objectFit: "contain", display: "block", flexShrink: 0 }}
           />
-          <span className="text-[10px] tracking-[0.2em] uppercase text-black/40">
-            Curated Luxury Itinerary
+          <span style={{ fontSize: 10, letterSpacing: "0.4em", textTransform: "uppercase", fontWeight: 700, color: "#0A0A0A" }}>
+            TRAVALBEE
           </span>
         </div>
 
-        {/* Centre block */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <p className="text-xs tracking-widest uppercase text-black/40 mb-8">
+        {/* Centre block — tightly grouped around the destination */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+          <p style={{ fontSize: 10, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 18 }}>
             Your Bespoke Journey
           </p>
 
-          <h1 className="font-serif italic text-8xl leading-none text-black mb-8">
+          <h1 className="font-serif" style={{ fontStyle: "italic", fontSize: 72, lineHeight: 1, color: "#000", marginBottom: 16 }}>
             {itinerary.destination}
           </h1>
 
           {hasDates && (
-            <p className="text-sm tracking-[0.15em] uppercase text-black/50 mb-1">
+            <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(0,0,0,0.45)", marginBottom: 4 }}>
               {formatDate(departureDate!)} &ndash; {formatDate(returnDate!)}
             </p>
           )}
 
-          <p className="text-sm tracking-[0.15em] uppercase text-black/40">
-            {itinerary.days.length}&nbsp;
-            {itinerary.days.length === 1 ? "Day" : "Days"}
+          <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 28 }}>
+            {itinerary.days.length}&nbsp;{itinerary.days.length === 1 ? "Day" : "Days"}
           </p>
 
-          <div className="w-12 h-px bg-black/25 my-10" />
+          <div style={{ width: 40, height: 1, backgroundColor: "rgba(0,0,0,0.2)", margin: "0 auto 28px" }} />
 
-          <blockquote className="font-serif italic text-2xl text-black/70 leading-relaxed max-w-xl">
+          <blockquote className="font-serif" style={{ fontStyle: "italic", fontSize: 20, color: "rgba(0,0,0,0.65)", lineHeight: 1.65, maxWidth: 440 }}>
             &quot;{itinerary.editorial}&quot;
           </blockquote>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-black/10 pt-4 flex items-center justify-between">
+        {/* Footer: travalbee.com centred */}
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 14, display: "flex", justifyContent: "center" }}>
           <a
             href="https://travalbee.com"
-            className="text-[9px] tracking-[0.2em] uppercase text-black/30 no-underline"
-            style={{ textDecoration: "none" }}
+            style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(0,0,0,0.55)", textDecoration: "none" }}
           >
             travalbee.com
           </a>
-          <span className="text-[9px] tracking-[0.15em] uppercase text-black/20">
-            Plan your next journey
-          </span>
         </div>
       </div>
 
