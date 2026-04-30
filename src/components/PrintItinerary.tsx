@@ -28,7 +28,7 @@ const GRID_COLS = "80px 1fr 80px";
 const GRID_GAP  = "0 24px";
 
 // Shared page padding — used on every page so margins are consistent
-const PAGE_PAD = "36px 56px";
+const PAGE_PAD = "20px 56px";
 
 // ─── Shared header / footer ───────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ function PageHeader() {
         src="/bee_compass_512_transparent.png"
         alt="TravalBee"
         loading="eager"
-        style={{ height: 44, width: 44, maxWidth: 44, maxHeight: 44, objectFit: "contain", display: "block", flexShrink: 0 }}
+        style={{ height: 60, width: 60, maxWidth: 60, maxHeight: 60, objectFit: "contain", display: "block", flexShrink: 0 }}
       />
       <span style={{ fontSize: 10, letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 700, color: "#0A0A0A" }}>
         TRAVALBEE
