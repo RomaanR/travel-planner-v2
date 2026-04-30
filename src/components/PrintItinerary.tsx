@@ -11,9 +11,6 @@ function formatDate(iso: string): string {
   });
 }
 
-// Returns a guaranteed premium Unsplash fallback keyed by activity type.
-// Ensures every image column has a beautiful photo even when Google Places
-// enrichment is absent (e.g. sample itinerary meals, offline saved trips).
 function getFallbackImage(type: string): string {
   if (["breakfast", "lunch", "dinner", "snack", "drinks"].includes(type)) {
     return "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80";
@@ -27,10 +24,43 @@ function getFallbackImage(type: string): string {
   return "https://images.unsplash.com/photo-1488646953014-85cb84e24328?w=400&q=80";
 }
 
-// Grid column definition reused across activity rows and transit connectors
-// so both always align perfectly: 80px (time) | 1fr (content) | 80px (image)
 const GRID_COLS = "80px 1fr 80px";
-const GRID_GAP  = "0 24px"; // gap-x-6 = 24px; no row-gap needed
+const GRID_GAP  = "0 24px";
+
+// Shared page padding — used on every page so margins are consistent
+const PAGE_PAD = "36px 56px";
+
+// ─── Shared header / footer ───────────────────────────────────────────────────
+
+function PageHeader() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,0,0,0.15)", paddingBottom: 12, marginBottom: 28 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/bee_compass_512_transparent.png"
+        alt="TravalBee"
+        loading="eager"
+        style={{ height: 44, width: 44, maxWidth: 44, maxHeight: 44, objectFit: "contain", display: "block", flexShrink: 0 }}
+      />
+      <span style={{ fontSize: 10, letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 700, color: "#0A0A0A" }}>
+        TRAVALBEE
+      </span>
+    </div>
+  );
+}
+
+function PageFooter() {
+  return (
+    <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 12, marginTop: 28, display: "flex", justifyContent: "center" }}>
+      <a
+        href="https://travalbee.com"
+        style={{ fontSize: 9, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(0,0,0,0.5)", textDecoration: "none" }}
+      >
+        travalbee.com
+      </a>
+    </div>
+  );
+}
 
 // ─── Transit connector ────────────────────────────────────────────────────────
 
@@ -41,30 +71,13 @@ function TransitRow({ transit }: { transit: TransitInfo }) {
   if (parts.length === 0) return null;
 
   return (
-    // Shares the same grid template as the activity rows above/below so the
-    // dashed line sits perfectly beneath the time column and the text starts
-    // at the content column — no manual padding arithmetic needed.
-    <div
-      className="grid py-1"
-      style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}
-    >
-      {/* Time column: centred dashed vertical line */}
+    <div className="grid py-1" style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}>
       <div className="flex justify-center">
-        <div
-          style={{
-            width: 1,
-            height: 20,
-            borderLeft: "1px dashed rgba(0,0,0,0.18)",
-          }}
-        />
+        <div style={{ width: 1, height: 20, borderLeft: "1px dashed rgba(0,0,0,0.18)" }} />
       </div>
-      {/* Content column: transit label */}
       <div className="flex items-center">
-        <span className="text-[9px] text-black/40 italic">
-          {parts.join(" · ")}
-        </span>
+        <span className="text-[9px] text-black/40 italic">{parts.join(" · ")}</span>
       </div>
-      {/* Image column: empty */}
       <div />
     </div>
   );
@@ -78,18 +91,21 @@ interface PrintItineraryProps {
   returnDate?: string;
 }
 
-// ─── Print-only day page ──────────────────────────────────────────────────────
+// ─── Day page ─────────────────────────────────────────────────────────────────
 
 function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }) {
   const day   = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
   return (
-    // p-16 is the physical page margin — required because @page { margin: 0 }
-    <div className={`p-16${isFirst ? "" : " print:break-before-page"}`}>
+    <div
+      className={isFirst ? "" : "print:break-before-page"}
+      style={{ padding: PAGE_PAD, backgroundColor: "#fff" }}
+    >
+      <PageHeader />
 
       {/* ── Day header ── */}
-      <div className="border-b-2 border-black pb-5 mb-10">
+      <div className="border-b-2 border-black pb-5 mb-8">
         <p className="text-xs tracking-widest uppercase text-black/40 mb-3">
           Day {day.day}
         </p>
@@ -106,8 +122,6 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
       {/* ── Timeline ── */}
       <div>
         {items.map((item: TimelineItem, i: number) => {
-          // Resolve image: proxy ref → legacy url → category fallback.
-          // Never null — every row is guaranteed a photo.
           const imageUrl =
             item.photoReference
               ? `/api/photo?ref=${item.photoReference}`
@@ -116,41 +130,30 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
 
           return (
             <div key={i}>
-              {/* Transit connector between activities */}
               {i > 0 && item.transitFromPrevious && (
                 <TransitRow transit={item.transitFromPrevious} />
               )}
-
-              {/* Activity row — CSS Grid: 80px (time) | 1fr (content) | 80px (image) */}
               <div
                 className="grid border-t border-black/20 py-5 break-inside-avoid"
                 style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}
               >
-                {/* Time column */}
                 <div>
                   <span className="font-mono text-[10px] text-black/40 leading-none">
                     {item.startTime ?? ""}
                   </span>
                 </div>
-
-                {/* Content column */}
                 <div>
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <h3 className="font-serif italic text-2xl leading-tight text-black">
                       {item.title}
                     </h3>
                     <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
-                      {isMealType(item.type)
-                        ? item.type
-                        : (item.category ?? "activity")}
+                      {isMealType(item.type) ? item.type : (item.category ?? "activity")}
                     </span>
                   </div>
-
                   <p className="text-sm text-black/60 leading-relaxed mb-3">
                     {item.description}
                   </p>
-
-                  {/* Meta tags — grouped so they never scatter */}
                   {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
                     <div className="flex flex-row flex-wrap gap-3 text-[10px] text-black/40">
                       {item.duration && <span>{item.duration}</span>}
@@ -158,14 +161,10 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
                         <span>&#9733;&nbsp;{item.rating.toFixed(1)}</span>
                       )}
                       {item.pricePoint && <span>{item.pricePoint}</span>}
-                      {item.dietaryNote && (
-                        <span className="italic">{item.dietaryNote}</span>
-                      )}
+                      {item.dietaryNote && <span className="italic">{item.dietaryNote}</span>}
                     </div>
                   )}
                 </div>
-
-                {/* Image column — always populated; eager-loaded for print */}
                 <div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -185,14 +184,14 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
       {/* ── Hidden gem ── */}
       {day.hiddenGem && (
         <div className="border-t border-black/20 pt-6 mt-4 break-inside-avoid">
-          <p className="text-xs tracking-widest uppercase text-black/40 mb-2">
-            Hidden Gem
-          </p>
+          <p className="text-xs tracking-widest uppercase text-black/40 mb-2">Hidden Gem</p>
           <p className="font-sans text-sm text-black/70 leading-relaxed italic">
             {day.hiddenGem}
           </p>
         </div>
       )}
+
+      <PageFooter />
     </div>
   );
 }
@@ -218,25 +217,12 @@ export default function PrintItinerary({
 
       {/* ── COVER PAGE ── */}
       <div
-        className="print:break-after-page font-sans"
-        style={{ minHeight: "100vh", display: "flex", flexDirection: "column", padding: 64, backgroundColor: "#fff", color: "#000" }}
+        className="print:break-after-page"
+        style={{ minHeight: "100vh", display: "flex", flexDirection: "column", padding: PAGE_PAD, backgroundColor: "#fff", color: "#000" }}
       >
+        <PageHeader />
 
-        {/* Header: logo left | TRAVALBEE right */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,0,0,0.15)", paddingBottom: 14 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/bee_compass_512_transparent.png"
-            alt="TravalBee"
-            loading="eager"
-            style={{ height: 26, width: 26, maxWidth: 26, maxHeight: 26, objectFit: "contain", display: "block", flexShrink: 0 }}
-          />
-          <span style={{ fontSize: 10, letterSpacing: "0.4em", textTransform: "uppercase", fontWeight: 700, color: "#0A0A0A" }}>
-            TRAVALBEE
-          </span>
-        </div>
-
-        {/* Centre block — tightly grouped around the destination */}
+        {/* Centre block */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
           <p style={{ fontSize: 10, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 18 }}>
             Your Bespoke Journey
@@ -263,18 +249,10 @@ export default function PrintItinerary({
           </blockquote>
         </div>
 
-        {/* Footer: travalbee.com centred */}
-        <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 14, display: "flex", justifyContent: "center" }}>
-          <a
-            href="https://travalbee.com"
-            style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(0,0,0,0.55)", textDecoration: "none" }}
-          >
-            travalbee.com
-          </a>
-        </div>
+        <PageFooter />
       </div>
 
-      {/* ── DAY PAGES — padding lives inside PrintDayPage ── */}
+      {/* ── DAY PAGES ── */}
       {itinerary.days.map((day, i) => (
         <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} />
       ))}
