@@ -329,9 +329,21 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
 
   const [showErrors, setShowErrors] = useState(false);
 
+  // Returns true when the user has attempted to submit and this section is still incomplete.
+  // Used to apply red highlight styling to unfilled sections.
+  const isError = (field: string) => showErrors && missingFields.includes(field);
+
   // ── Submit ────────────────────────────────────────────────────────────────────
   async function handleSubmit() {
-    if (!isComplete) { setShowErrors(true); return; }
+    if (!isComplete) {
+      setShowErrors(true);
+      // Scroll to the first errored section so the red highlight is immediately visible
+      setTimeout(() => {
+        const el = document.querySelector("[data-form-error='true']");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
+      return;
+    }
     if (loading) return;
     await onGenerate({
       ...(form as ItineraryRequest),
@@ -448,8 +460,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
           >
 
             {/* ── Row 1: Travel Dates ── */}
-            <div className="mb-8">
-              <p className="micro-copy text-ink-light mb-4">Travel Dates</p>
+            <div data-form-error={isError("Travel Dates") || undefined} className={`mb-8 transition-all duration-300 ${isError("Travel Dates") ? "border-l-[3px] border-red-400 pl-4 bg-red-50/30" : ""}`}>
+              <p className={`micro-copy mb-4 transition-colors duration-300 ${isError("Travel Dates") ? "text-red-500" : "text-ink-light"}`}>Travel Dates</p>
               <div className="relative z-50 grid grid-cols-2 gap-4 items-end">
                 <div>
                   <label className="font-sans text-xs text-ink-light block mb-1.5">
@@ -746,8 +758,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             </div>
 
             {/* ── Row 2: Travel Party ── */}
-            <div className="mb-8">
-              <p className="micro-copy text-ink-light mb-4">Travel Party</p>
+            <div data-form-error={isError("Travel Party") || undefined} className={`mb-8 transition-all duration-300 ${isError("Travel Party") ? "border-l-[3px] border-red-400 pl-4 bg-red-50/30" : ""}`}>
+              <p className={`micro-copy mb-4 transition-colors duration-300 ${isError("Travel Party") ? "text-red-500" : "text-ink-light"}`}>Travel Party</p>
               <div className="flex flex-wrap gap-2">
                 {PARTY_OPTIONS.map((opt) => (
                   <PillButton
@@ -763,8 +775,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             </div>
 
             {/* ── Row 3: Pace ── */}
-            <div className="mb-8">
-              <p className="micro-copy text-ink-light mb-4">Travel Pace</p>
+            <div data-form-error={isError("Travel Pace") || undefined} className={`mb-8 transition-all duration-300 ${isError("Travel Pace") ? "border-l-[3px] border-red-400 pl-4 bg-red-50/30" : ""}`}>
+              <p className={`micro-copy mb-4 transition-colors duration-300 ${isError("Travel Pace") ? "text-red-500" : "text-ink-light"}`}>Travel Pace</p>
               <div className="grid grid-cols-3 gap-2">
                 {PACE_OPTIONS.map((opt) => (
                   <button
@@ -790,8 +802,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             </div>
 
             {/* ── Row 4: Budget Tier ── */}
-            <div className="mb-8">
-              <p className="micro-copy text-ink-light mb-4">Budget Tier</p>
+            <div data-form-error={isError("Budget Tier") || undefined} className={`mb-8 transition-all duration-300 ${isError("Budget Tier") ? "border-l-[3px] border-red-400 pl-4 bg-red-50/30" : ""}`}>
+              <p className={`micro-copy mb-4 transition-colors duration-300 ${isError("Budget Tier") ? "text-red-500" : "text-ink-light"}`}>Budget Tier</p>
               <div className="grid grid-cols-3 gap-2">
                 {BUDGET_OPTIONS.map((opt) => (
                   <button
@@ -833,8 +845,8 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
             </div>
 
             {/* ── Row 6: Interests ── */}
-            <div className="mb-8">
-              <p className="micro-copy text-ink-light mb-1">Interests</p>
+            <div data-form-error={isError("Interests") || undefined} className={`mb-8 transition-all duration-300 ${isError("Interests") ? "border-l-[3px] border-red-400 pl-4 bg-red-50/30" : ""}`}>
+              <p className={`micro-copy mb-1 transition-colors duration-300 ${isError("Interests") ? "text-red-500" : "text-ink-light"}`}>Interests</p>
               <p className="font-sans text-xs text-ink-light mb-4">
                 Select all that apply
               </p>
@@ -858,27 +870,19 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
 
             {/* ── CTA ── */}
             <div>
-              {/* Validation errors */}
+              {/* Validation hint — sections above are already highlighted in red */}
               <AnimatePresence>
                 {showErrors && !isComplete && (
-                  <motion.div
+                  <motion.p
                     key="errors"
-                    initial={{ opacity: 0, y: -6 }}
+                    initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
+                    exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="mb-4 border border-red-200 bg-red-50 px-4 py-3"
+                    className="mb-4 font-sans text-xs text-red-500 text-center"
                   >
-                    <p className="micro-copy text-red-600 mb-2">Please complete the following:</p>
-                    <ul className="flex flex-col gap-1">
-                      {missingFields.map((field) => (
-                        <li key={field} className="font-sans text-xs text-red-500 flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-red-400 shrink-0" />
-                          {field}
-                        </li>
-                      ))}
-                    </ul>
-                  </motion.div>
+                    Please complete the sections highlighted above.
+                  </motion.p>
                 )}
               </AnimatePresence>
 
