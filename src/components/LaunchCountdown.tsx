@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const LAUNCH_AT = "2026-05-06T12:00:00-04:00";
+const LAUNCH_AT = "2026-05-25T12:00:00-04:00";
 
 type TimeLeft = {
   days: number;
@@ -63,7 +63,7 @@ export default function LaunchCountdown({ variant = "hero" }: LaunchCountdownPro
               <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-burnt-orange shadow-[0_0_12px_rgba(211,70,14,0.85)]" />
             </p>
             <p className="mt-0.5 truncate font-sans text-[10px] leading-none text-ink-light">
-              May 6, 12 PM EDT
+              May 25, 12 PM EDT
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export default function LaunchCountdown({ variant = "hero" }: LaunchCountdownPro
         <div>
           <p className="micro-copy text-white/60">Going Live</p>
           <p className="mt-1 font-sans text-xs leading-relaxed text-white/70">
-            Wednesday, May 6 at 12:00 PM EDT
+            Sunday, May 25 at 12:00 PM EDT
           </p>
         </div>
         <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-burnt-orange shadow-[0_0_18px_rgba(211,70,14,0.9)]" />
