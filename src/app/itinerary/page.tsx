@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -14,11 +14,13 @@ import {
   AlertCircle,
   Check,
   Sparkles,
+  SlidersHorizontal,
 } from "lucide-react";
-import { SignedIn } from "@clerk/nextjs";
+import { SignedIn, useAuth } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { useItinerary } from "@/hooks/useItinerary";
 import ExportPdfButton from "@/components/ExportPdfButton";
+import RefinePanel from "@/components/RefinePanel";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
 
 // ─── sessionStorage re-validation schema ──────────────────────────────────────
@@ -58,6 +60,7 @@ import GenerationLoader from "@/components/GenerationLoader";
 
 export default function ItineraryPage() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { itinerary, loading, error, paywalled, generateItinerary, abort } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
@@ -66,6 +69,8 @@ export default function ItineraryPage() {
   const [departureDate, setDepartureDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
   const [planningMode, setPlanningMode] = useState<"inspire" | "tailor">("inspire");
+  const [refineOpen, setRefineOpen]       = useState(false);
+  const [storedRequest, setStoredRequest] = useState<ItineraryRequest | null>(null);
 
   async function handleSave() {
     if (!itinerary || saveState !== "idle") return;
@@ -84,6 +89,29 @@ export default function ItineraryPage() {
       setTimeout(() => setSaveState("idle"), 3000);
     }
   }
+
+  const handleRefine = useCallback(async (updated: ItineraryRequest) => {
+    setRefineOpen(false);
+
+    // Auto-save the current itinerary before regenerating (fire-and-forget — don't block generation)
+    if (isSignedIn && itinerary && saveState === "idle") {
+      saveTripToDb(itinerary.destination, itinerary.days.length, itinerary)
+        .then(() => toast.success("Previous journey archived", {
+          description: "Your original itinerary is safe in My Trips.",
+        }))
+        .catch(() => { /* non-fatal — user can save manually */ });
+    }
+
+    // Persist updated params so back-navigation and refreshes stay consistent
+    sessionStorage.setItem("itineraryRequest", JSON.stringify(updated));
+    setStoredRequest(updated);
+
+    // Reset save state — the new itinerary hasn't been saved yet
+    setSaveState("idle");
+
+    // Kick off the new generation
+    generateItinerary(updated);
+  }, [isSignedIn, itinerary, saveState, generateItinerary]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("itineraryRequest");
@@ -110,6 +138,7 @@ export default function ItineraryPage() {
       setTransportMode(data.transportMode);
     }
     if (data.planningMode === "tailor") setPlanningMode("tailor");
+    setStoredRequest(data);
     generateItinerary(data);
 
     // Abort in-flight generation if user navigates away
@@ -152,6 +181,13 @@ export default function ItineraryPage() {
           </div>
           {itinerary && (
             <div className="hidden md:flex items-center gap-2">
+              <button
+                onClick={() => setRefineOpen(true)}
+                className="flex items-center gap-2 micro-copy border border-ink/20 px-4 py-2.5 hover:bg-ink hover:text-paper transition-all"
+              >
+                <SlidersHorizontal size={13} />
+                Refine
+              </button>
               <ExportPdfButton />
               <SignedIn>
                 <button
@@ -295,8 +331,15 @@ export default function ItineraryPage() {
                       <div className="w-8 h-px bg-ink/10 mx-auto mb-10" />
                     </SignedIn>
 
-                    {/* PDF export — always visible on mobile (desktop has header button) */}
-                    <div className="md:hidden mb-8">
+                    {/* Refine + PDF — always visible on mobile (desktop has header buttons) */}
+                    <div className="md:hidden flex flex-col items-center gap-3 mb-8">
+                      <button
+                        onClick={() => setRefineOpen(true)}
+                        className="flex items-center gap-2 micro-copy border border-ink/20 px-6 py-3 hover:bg-ink hover:text-paper transition-all w-full justify-center"
+                      >
+                        <SlidersHorizontal size={13} />
+                        Refine Journey
+                      </button>
                       <ExportPdfButton />
                     </div>
 
@@ -324,6 +367,18 @@ export default function ItineraryPage() {
         </div>
 
       </div>
+
+      {/* Refine panel — portal, renders above everything */}
+      {storedRequest && (
+        <RefinePanel
+          isOpen={refineOpen}
+          onClose={() => setRefineOpen(false)}
+          currentRequest={storedRequest}
+          onRegenerate={handleRefine}
+          isSaved={saveState === "saved"}
+          isSignedIn={!!isSignedIn}
+        />
+      )}
     </div>
   );
 }
