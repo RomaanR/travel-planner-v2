@@ -785,7 +785,7 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
     // comfortable headroom while still failing fast enough for a clean UX error.
     const message = await client.messages.create({
       model:      "claude-sonnet-4-6",
-      max_tokens: 8192,
+      max_tokens: 16000,
       system:     dynamicSystemPrompt,
       messages:   [{ role: "user", content: userPrompt }],
     }, { signal: req.signal, timeout: 180_000 });
