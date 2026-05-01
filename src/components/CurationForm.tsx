@@ -127,6 +127,8 @@ interface CurationFormProps {
 export default function CurationForm({ onGenerate, loading }: CurationFormProps) {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const hotelAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const departureDateRef = useRef<HTMLInputElement>(null);
+  const returnDateRef    = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState("");
   const [showCreditsHint, setShowCreditsHint] = useState(false);
   const [stage, setStage] = useState<0 | 1>(0);
@@ -453,9 +455,13 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   <label className="font-sans text-xs text-ink-light block mb-1.5">
                     Departure
                   </label>
-                  <div className="flex items-center gap-2 border-b border-ink/20 pb-2">
+                  <div
+                    className="flex items-center gap-2 border-b border-ink/20 pb-2 cursor-pointer"
+                    onClick={() => departureDateRef.current?.showPicker?.()}
+                  >
                     <Calendar size={13} strokeWidth={1.5} className="text-ink-light shrink-0" />
                     <input
+                      ref={departureDateRef}
                       type="date"
                       min={localToday}
                       value={form.departureDate ?? ""}
@@ -469,9 +475,13 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                   <label className="font-sans text-xs text-ink-light block mb-1.5">
                     Return
                   </label>
-                  <div className="flex items-center gap-2 border-b border-ink/20 pb-2">
+                  <div
+                    className="flex items-center gap-2 border-b border-ink/20 pb-2 cursor-pointer"
+                    onClick={() => { if (form.departureDate) returnDateRef.current?.showPicker?.(); }}
+                  >
                     <Calendar size={13} strokeWidth={1.5} className="text-ink-light shrink-0" />
                     <input
+                      ref={returnDateRef}
                       type="date"
                       min={minReturn}
                       max={maxReturn}
