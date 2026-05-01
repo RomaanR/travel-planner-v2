@@ -5,8 +5,6 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import {
-  ImageOff,
-  Utensils,
   Star,
   Clock,
   CalendarCheck,
@@ -44,6 +42,33 @@ function formatRatingCount(n: number): string {
   return String(n);
 }
 
+// Returns a curated Unsplash fallback image when Google Places has no photo.
+// Keyed by meal type or activity category so the image is always contextually relevant.
+function getFallbackImage(item: TimelineItem): string {
+  if (isMealType(item.type)) {
+    if (item.type === "drinks") {
+      return "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80";
+    }
+    // breakfast / lunch / dinner / snack → elegant table setting
+    return "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80";
+  }
+  const cat = (item.category ?? "").toUpperCase();
+  if (["MUSEUM", "CULTURE"].includes(cat)) {
+    return "https://images.unsplash.com/photo-1518998053401-878c7356cecb?w=800&q=80";
+  }
+  if (["NATURE", "ADVENTURE"].includes(cat)) {
+    return "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80";
+  }
+  if (cat === "WELLNESS") {
+    return "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80";
+  }
+  if (cat === "SHOPPING") {
+    return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80";
+  }
+  // SIGHTSEEING / default → travel editorial
+  return "https://images.unsplash.com/photo-1488646953014-85cb44e24328?w=800&q=80";
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface TimelineCardProps {
@@ -55,6 +80,12 @@ interface TimelineCardProps {
 
 export default function TimelineCard({ item, delay }: TimelineCardProps) {
   const [imgError, setImgError] = useState(false);
+  // True when a real Google photo is available and hasn't errored yet.
+  // When false, we fall back to a curated Unsplash image — never show a blank placeholder.
+  const hasGooglePhoto = !!(item.photoReference || item.photoUrl) && !imgError;
+  const imageSrc = hasGooglePhoto
+    ? (item.photoReference ? `/api/photo?ref=${item.photoReference}` : item.photoUrl!)
+    : getFallbackImage(item);
   const displayName = item.title ?? "";
   const displayDesc = item.description ?? item.cuisine ?? "";
   const endTime     = item.startTime ? computeEndTime(item.startTime, item.duration) : null;
@@ -95,27 +126,19 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
     >
       {/* Left: Photo */}
       <div className="w-full md:w-48 md:shrink-0 relative self-stretch min-h-[200px] md:min-h-[140px] overflow-hidden bg-paper-dark print:w-28 print:min-h-[140px]">
-        {/* photoReference (new) → /api/photo proxy → Vercel CDN cached, key never reaches browser.
-            photoUrl (legacy) → direct Google URL on old saved trips — backward compat only. */}
-        {(item.photoReference || item.photoUrl) && !imgError ? (
-          <Image
-            src={item.photoReference ? `/api/photo?ref=${item.photoReference}` : item.photoUrl!}
-            alt={displayName}
-            fill
-            loading="lazy"
-            quality={95}
-            className="object-cover img-grayscale"
-            sizes="(max-width: 768px) 100vw, 192px"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            {isMeal
-              ? <Utensils size={22} className="text-ink/15" strokeWidth={1} />
-              : <ImageOff  size={22} className="text-ink/15" strokeWidth={1} />
-            }
-          </div>
-        )}
+        {/* photoReference (new) → /api/photo proxy, key never reaches browser.
+            photoUrl (legacy) → direct URL on old saved trips — backward compat only.
+            Fallback → curated Unsplash image keyed by category; never shows a blank placeholder. */}
+        <Image
+          src={imageSrc}
+          alt={displayName}
+          fill
+          loading="lazy"
+          quality={95}
+          className="object-cover img-grayscale"
+          sizes="(max-width: 768px) 100vw, 192px"
+          onError={hasGooglePhoto ? () => setImgError(true) : undefined}
+        />
       </div>
 
       {/* Right: Content */}
