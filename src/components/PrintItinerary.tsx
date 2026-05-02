@@ -1,6 +1,11 @@
 import type { ItineraryResponse, DayPlan, TimelineItem, TransitInfo } from "@/types/itinerary";
 import { normalizeDayPlan, isMealType } from "@/lib/itineraryUtils";
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+
+const BEIGE = "#F5F0E8";
+const INK   = "#0A0A0A";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
@@ -32,17 +37,31 @@ const PAGE_PAD = "20px 56px";
 
 // ─── Shared header / footer ───────────────────────────────────────────────────
 
+/** Compact running header for day pages — logo left, wordmark right */
 function PageHeader() {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,0,0,0.15)", paddingBottom: 12, marginBottom: 28 }}>
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderBottom: `1px solid rgba(10,10,10,0.12)`,
+      paddingBottom: 12,
+      marginBottom: 28,
+    }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/bee_compass_512_transparent.png"
         alt="TravalBee"
         loading="eager"
-        style={{ height: 60, width: 60, maxWidth: 60, maxHeight: 60, objectFit: "contain", display: "block", flexShrink: 0 }}
+        style={{ width: 52, objectFit: "contain", display: "block", flexShrink: 0 }}
       />
-      <span style={{ fontSize: 10, letterSpacing: "0.45em", textTransform: "uppercase", fontWeight: 700, color: "#0A0A0A" }}>
+      <span style={{
+        fontSize: 10,
+        letterSpacing: "0.45em",
+        textTransform: "uppercase",
+        fontWeight: 700,
+        color: `rgba(10,10,10,0.45)`,
+      }}>
         TRAVALBEE
       </span>
     </div>
@@ -51,10 +70,22 @@ function PageHeader() {
 
 function PageFooter() {
   return (
-    <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 12, marginTop: 28, display: "flex", justifyContent: "center" }}>
+    <div style={{
+      borderTop: `1px solid rgba(10,10,10,0.08)`,
+      paddingTop: 12,
+      marginTop: 28,
+      display: "flex",
+      justifyContent: "center",
+    }}>
       <a
         href="https://travalbee.com"
-        style={{ fontSize: 9, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(0,0,0,0.5)", textDecoration: "none" }}
+        style={{
+          fontSize: 9,
+          letterSpacing: "0.3em",
+          textTransform: "uppercase",
+          color: `rgba(10,10,10,0.4)`,
+          textDecoration: "none",
+        }}
       >
         travalbee.com
       </a>
@@ -73,10 +104,12 @@ function TransitRow({ transit }: { transit: TransitInfo }) {
   return (
     <div className="grid py-1" style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}>
       <div className="flex justify-center">
-        <div style={{ width: 1, height: 20, borderLeft: "1px dashed rgba(0,0,0,0.18)" }} />
+        <div style={{ width: 1, height: 20, borderLeft: "1px dashed rgba(10,10,10,0.18)" }} />
       </div>
       <div className="flex items-center">
-        <span className="text-[9px] text-black/40 italic">{parts.join(" · ")}</span>
+        <span style={{ fontSize: 9, color: `rgba(10,10,10,0.4)`, fontStyle: "italic" }}>
+          {parts.join(" · ")}
+        </span>
       </div>
       <div />
     </div>
@@ -107,20 +140,20 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
   return (
     <div
       className={isFirst ? "" : "print:break-before-page"}
-      style={{ padding: PAGE_PAD, backgroundColor: "#fff" }}
+      style={{ padding: PAGE_PAD, backgroundColor: BEIGE }}
     >
       <PageHeader />
 
       {/* ── Day header ── */}
-      <div className="border-b-2 border-black pb-5 mb-8">
-        <p className="text-xs tracking-widest uppercase text-black/40 mb-3">
+      <div style={{ borderBottom: `2px solid ${INK}`, paddingBottom: 20, marginBottom: 32 }}>
+        <p style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.4)`, marginBottom: 12 }}>
           Day {day.day}
         </p>
-        <div className="flex items-end justify-between gap-6">
-          <h2 className="font-serif italic text-5xl leading-none text-black">
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24 }}>
+          <h2 className="font-serif" style={{ fontStyle: "italic", fontSize: 48, lineHeight: 1, color: INK, margin: 0 }}>
             {day.theme}
           </h2>
-          <span className="text-xs tracking-widest uppercase text-black/30 shrink-0 mb-1">
+          <span style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.3)`, flexShrink: 0, marginBottom: 4 }}>
             {day.pace}
           </span>
         </div>
@@ -141,45 +174,55 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
                 <TransitRow transit={item.transitFromPrevious} />
               )}
               <div
-                className="grid border-t border-black/20 py-5 break-inside-avoid"
-                style={{ gridTemplateColumns: GRID_COLS, gap: GRID_GAP }}
+                className="grid break-inside-avoid"
+                style={{
+                  gridTemplateColumns: GRID_COLS,
+                  gap: GRID_GAP,
+                  borderTop: `1px solid rgba(10,10,10,0.12)`,
+                  paddingTop: 20,
+                  paddingBottom: 20,
+                }}
               >
+                {/* Time */}
                 <div>
-                  <span className="font-mono text-[10px] text-black/40 leading-none">
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: `rgba(10,10,10,0.4)`, lineHeight: 1 }}>
                     {item.startTime ?? ""}
                   </span>
                 </div>
+
+                {/* Content */}
                 <div>
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <h3 className="font-serif italic text-2xl leading-tight text-black">
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 8 }}>
+                    <h3 className="font-serif" style={{ fontStyle: "italic", fontSize: 22, lineHeight: 1.2, color: INK, margin: 0 }}>
                       {item.title}
                     </h3>
-                    <span className="text-[9px] tracking-widest uppercase text-black/30 shrink-0 mt-1.5">
+                    <span style={{ fontSize: 8, letterSpacing: "0.2em", textTransform: "uppercase", color: `rgba(10,10,10,0.3)`, flexShrink: 0, marginTop: 6 }}>
                       {isMealType(item.type) ? item.type : (item.category ?? "activity")}
                     </span>
                   </div>
-                  <p className="text-sm text-black/60 leading-relaxed mb-3">
+                  <p style={{ fontSize: 12, color: `rgba(10,10,10,0.6)`, lineHeight: 1.65, marginBottom: 10 }}>
                     {item.description}
                   </p>
                   {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
-                    <div className="flex flex-row flex-wrap gap-3 text-[10px] text-black/40">
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: 10, color: `rgba(10,10,10,0.4)` }}>
                       {item.duration && <span>{item.duration}</span>}
                       {item.rating !== undefined && (
                         <span>&#9733;&nbsp;{item.rating.toFixed(1)}</span>
                       )}
                       {item.pricePoint && <span>{item.pricePoint}</span>}
-                      {item.dietaryNote && <span className="italic">{item.dietaryNote}</span>}
+                      {item.dietaryNote && <span style={{ fontStyle: "italic" }}>{item.dietaryNote}</span>}
                     </div>
                   )}
                 </div>
+
+                {/* Photo */}
                 <div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={imageUrl}
                     alt={item.title}
                     loading="eager"
-                    className="w-20 h-20 object-cover rounded-sm"
-                    style={{ display: "block" }}
+                    style={{ width: 80, height: 80, objectFit: "cover", display: "block" }}
                   />
                 </div>
               </div>
@@ -190,9 +233,16 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
 
       {/* ── Hidden gem ── */}
       {day.hiddenGem && (
-        <div className="border-t border-black/20 pt-6 mt-4 break-inside-avoid">
-          <p className="text-xs tracking-widest uppercase text-black/40 mb-2">Hidden Gem</p>
-          <p className="font-sans text-sm text-black/70 leading-relaxed italic">
+        <div style={{
+          borderTop: `1px solid rgba(10,10,10,0.12)`,
+          paddingTop: 24,
+          marginTop: 16,
+          breakInside: "avoid",
+        }}>
+          <p style={{ fontSize: 9, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.4)`, marginBottom: 8 }}>
+            Hidden Gem
+          </p>
+          <p style={{ fontSize: 13, color: `rgba(10,10,10,0.7)`, lineHeight: 1.65, fontStyle: "italic" }}>
             {day.hiddenGem}
           </p>
         </div>
@@ -200,27 +250,28 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
 
       {/* ── Day map + legend ── */}
       {mapSrc && (
-        <div className="mt-8 break-inside-avoid">
-          <p className="text-xs tracking-widest uppercase text-black/40 mb-3">Day {day.day} Map</p>
+        <div style={{ marginTop: 32, breakInside: "avoid" }}>
+          <p style={{ fontSize: 9, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.4)`, marginBottom: 12 }}>
+            Day {day.day} Map
+          </p>
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={mapSrc}
             alt={`Day ${day.day} map`}
             loading="eager"
-            style={{ width: "100%", height: "auto", display: "block", border: "1px solid rgba(0,0,0,0.08)" }}
+            style={{ width: "100%", height: "auto", display: "block", border: `1px solid rgba(10,10,10,0.08)` }}
           />
 
           {/* Legend — numbered markers matching the map */}
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 0, borderTop: `1px solid rgba(10,10,10,0.06)` }}>
             {items
               .filter(item => item.coordinates?.lat && item.coordinates?.lng)
               .map((item, i) => (
                 <div
                   key={i}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: `1px solid rgba(10,10,10,0.04)` }}
                 >
-                  {/* Burnt-orange circle matching map marker */}
                   <span style={{
                     display: "inline-flex", alignItems: "center", justifyContent: "center",
                     width: 18, height: 18, borderRadius: "50%",
@@ -229,18 +280,15 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
                   }}>
                     {i + 1}
                   </span>
-                  {/* Time */}
                   {item.startTime && (
-                    <span style={{ fontSize: 9, color: "rgba(0,0,0,0.35)", fontFamily: "monospace", flexShrink: 0, width: 36 }}>
+                    <span style={{ fontSize: 9, color: `rgba(10,10,10,0.35)`, fontFamily: "monospace", flexShrink: 0, width: 36 }}>
                       {item.startTime}
                     </span>
                   )}
-                  {/* Place name */}
-                  <span style={{ fontSize: 11, color: "#0A0A0A", fontStyle: "italic", flex: 1 }}>
+                  <span style={{ fontSize: 11, color: INK, fontStyle: "italic", flex: 1 }}>
                     {item.title}
                   </span>
-                  {/* Type badge */}
-                  <span style={{ fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,0,0,0.3)", flexShrink: 0 }}>
+                  <span style={{ fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: `rgba(10,10,10,0.3)`, flexShrink: 0 }}>
                     {isMealType(item.type) ? item.type : (item.category ?? "activity")}
                   </span>
                 </div>
@@ -265,7 +313,7 @@ export default function PrintItinerary({
   const hasDates = !!departureDate && !!returnDate;
 
   return (
-    <div className="hidden print:block bg-white text-black font-sans">
+    <div className="hidden print:block font-sans" style={{ backgroundColor: BEIGE, color: INK }}>
 
       {/* Kill browser chrome (URLs, dates, page numbers) */}
       <style>{`
@@ -277,33 +325,125 @@ export default function PrintItinerary({
       {/* ── COVER PAGE ── */}
       <div
         className="print:break-after-page"
-        style={{ minHeight: "100vh", display: "flex", flexDirection: "column", padding: PAGE_PAD, backgroundColor: "#fff", color: "#000" }}
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          padding: PAGE_PAD,
+          backgroundColor: BEIGE,
+          color: INK,
+        }}
       >
-        <PageHeader />
+        {/* Minimal top strip — wordmark only, no logo (logo is in center block) */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: `1px solid rgba(10,10,10,0.1)`,
+          paddingBottom: 14,
+        }}>
+          <span style={{ fontSize: 9, letterSpacing: "0.5em", textTransform: "uppercase", fontWeight: 700, color: `rgba(10,10,10,0.35)` }}>
+            TRAVALBEE
+          </span>
+          <span style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: `rgba(10,10,10,0.3)` }}>
+            Bespoke Itinerary
+          </span>
+        </div>
 
-        {/* Centre block */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-          <p style={{ fontSize: 10, letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 18 }}>
+        {/* ── Centre block ── */}
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "48px 0",
+        }}>
+
+          {/* Logo — centred, prominent, directly above destination */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/bee_compass_512_transparent.png"
+            alt="TravalBee"
+            loading="eager"
+            style={{ width: 88, objectFit: "contain", display: "block", marginBottom: 16 }}
+          />
+
+          {/* Brand name below logo */}
+          <p style={{
+            fontSize: 9,
+            letterSpacing: "0.55em",
+            textTransform: "uppercase",
+            fontWeight: 700,
+            color: `rgba(10,10,10,0.4)`,
+            marginBottom: 40,
+          }}>
+            TRAVALBEE
+          </p>
+
+          {/* Thin rule separating brand from content */}
+          <div style={{ width: 36, height: 1, backgroundColor: `rgba(10,10,10,0.18)`, marginBottom: 32 }} />
+
+          {/* Kicker */}
+          <p style={{
+            fontSize: 9,
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+            color: `rgba(10,10,10,0.35)`,
+            marginBottom: 20,
+          }}>
             Your Bespoke Journey
           </p>
 
-          <h1 className="font-serif" style={{ fontStyle: "italic", fontSize: 72, lineHeight: 1, color: "#000", marginBottom: 16 }}>
+          {/* Destination — the hero type */}
+          <h1 className="font-serif" style={{
+            fontStyle: "italic",
+            fontSize: 76,
+            lineHeight: 0.95,
+            color: INK,
+            marginBottom: 20,
+            letterSpacing: "-0.01em",
+          }}>
             {itinerary.destination}
           </h1>
 
+          {/* Dates */}
           {hasDates && (
-            <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(0,0,0,0.45)", marginBottom: 4 }}>
+            <p style={{
+              fontSize: 11,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: `rgba(10,10,10,0.45)`,
+              marginBottom: 6,
+            }}>
               {formatDate(departureDate!)} &ndash; {formatDate(returnDate!)}
             </p>
           )}
 
-          <p style={{ fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)", marginBottom: 28 }}>
+          {/* Day count */}
+          <p style={{
+            fontSize: 10,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: `rgba(10,10,10,0.3)`,
+            marginBottom: 36,
+          }}>
             {itinerary.days.length}&nbsp;{itinerary.days.length === 1 ? "Day" : "Days"}
           </p>
 
-          <div style={{ width: 40, height: 1, backgroundColor: "rgba(0,0,0,0.2)", margin: "0 auto 28px" }} />
+          {/* Divider */}
+          <div style={{ width: 36, height: 1, backgroundColor: `rgba(10,10,10,0.18)`, marginBottom: 32 }} />
 
-          <blockquote className="font-serif" style={{ fontStyle: "italic", fontSize: 20, color: "rgba(0,0,0,0.65)", lineHeight: 1.65, maxWidth: 440 }}>
+          {/* Editorial quote */}
+          <blockquote className="font-serif" style={{
+            fontStyle: "italic",
+            fontSize: 19,
+            color: `rgba(10,10,10,0.6)`,
+            lineHeight: 1.7,
+            maxWidth: 460,
+            margin: 0,
+          }}>
             &quot;{itinerary.editorial}&quot;
           </blockquote>
         </div>

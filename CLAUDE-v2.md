@@ -2535,3 +2535,307 @@ location.href = "/";
 - Travelpayouts Reserve flow was locally tested with a temporary marker.
 
 **Important:** These updates are currently in the local development environment only. None of these changes have been pushed to Git yet.
+
+---
+
+### Tuesday, April 29, 2026 — PDF Branding, TravelPayouts Removal & Static Maps
+
+**Branch:** `main` · **Pushed:** ✅
+
+---
+
+#### 1. PDF Export Branding — Logo, Wordmark & Footer Link
+
+**Files changed:** `src/components/PrintItinerary.tsx`
+
+Two shared components extracted and applied to **every printed page** (cover + all day pages):
+
+**`PageHeader`** — renders at the top of every page above all content:
+- Left: `bee_compass_512_transparent.png` at exactly 60×60px (explicit `maxWidth`, `maxHeight`, and `objectFit: contain` set as inline styles — Tailwind classes are unreliable in print context due to cascade override)
+- Right: `"TRAVALBEE"` in 10px uppercase DM Sans, letter-spacing 0.45em, weight 700
+
+**`PageFooter`** — renders at the bottom of every page below all content:
+- Centred `<a href="https://travalbee.com">` link styled at 9px uppercase, letter-spacing 0.3em, `color: rgba(0,0,0,0.5)`
+
+**Shared page padding constant** introduced:
+```ts
+const PAGE_PAD = "20px 56px";
+```
+Used on the cover page wrapper and `PrintDayPage` wrapper to ensure consistent physical margins across all pages.
+
+**Cover page rewrite:** Replaced Tailwind class-based layout with fully inline styles to eliminate print CSS cascade issues. The `flex-1 justify-center` approach was spreading content incorrectly in print preview — switching to explicit inline `flex/column/center` alignment fixed both the overflow-to-next-page bug and the off-centre heading.
+
+**Sizing iteration summary:** Logo went through 26px → 44px → 60px. Final 60px was chosen to be clearly visible at A4 print resolution without competing with the wordmark text.
+
+---
+
+#### 2. TravelPayouts Drive Script Removal
+
+**File changed:** `src/app/layout.tsx`
+
+**Problem:** After adding the TravelPayouts Drive script (`tp-em.com/NTIzNTM1.js`), every click on Navbar buttons was opening random travel affiliate sites (Kiwi.com, Klook, etc.) in new tabs. The script is a **global click interceptor** — it attaches to `document` and intercepts all anchor and button interactions site-wide, not just designated affiliate zones.
+
+**Root cause:** `strategy="beforeInteractive"` caused it to load before any other JavaScript, giving it first-mover advantage on the event listener queue. No per-element exclusion configuration exists for this script type.
+
+**Fix:** Removed the script block entirely:
+```tsx
+// REMOVED — hijacked all navbar/link clicks
+<Script
+  id="travelpayouts-drive"
+  src="https://tp-em.com/NTIzNTM1.js?t=523535"
+  strategy="beforeInteractive"
+  ...
+/>
+```
+
+Also removed the now-unused `import Script from "next/script"` import.
+
+**Affiliate strategy going forward:** Use targeted widgets or server actions per placement (e.g. the existing `generateBookingLink()` server action for hotel cards) rather than a global click interceptor.
+
+---
+
+#### 3. Per-Day Static Map in PDF Export
+
+**New file:** `src/app/api/staticmap/route.ts`
+**File changed:** `src/components/PrintItinerary.tsx`
+
+##### `/api/staticmap` — Server-Side Proxy Route
+
+A new `GET` route that proxies Google Static Maps API requests server-side, keeping `MAPS_SERVER_KEY` out of the browser entirely.
+
+**Request shape:** Accepts repeated `?m=lat,lng` query parameters — one per timeline stop with GPS coordinates.
+
+**Map configuration:**
+- Size: `600x260`, Scale: `2` (retina-quality for print)
+- Map type: `roadmap`
+- Markers: burnt-orange (`color:0xC2410C`) numbered `1`–`9`, then `•` for stops beyond 9
+
+**Caching:** `Cache-Control: public, max-age=86400, stale-while-revalidate=3600` — repeated prints do not re-fetch the map image.
+
+**Timeout:** `AbortSignal.timeout(6000)` — returns `502` cleanly if Google is slow.
+
+**Style configuration (final):**
+```ts
+const STYLES = [
+  "feature:poi|element:labels.icon|visibility:off",
+  "feature:transit|element:labels.icon|visibility:off",
+];
+```
+
+Initial implementation used heavy style overrides (paper-tone backgrounds, hidden road/neighbourhood labels) for an editorial aesthetic. This made the maps practically unreadable — no city names, no street names, no neighbourhood context. Reverted to near-default roadmap with only POI and transit **icon** suppression, keeping all text labels fully visible.
+
+##### `PrintDayPage` — Map + Legend Section
+
+Added below the hidden gem section on each day page:
+
+```tsx
+const coordParams = items
+  .filter(item => item.coordinates?.lat && item.coordinates?.lng)
+  .map(item => `m=${item.coordinates.lat},${item.coordinates.lng}`)
+  .join("&");
+const mapSrc = coordParams ? `/api/staticmap?${coordParams}` : null;
+```
+
+The map image renders full-width with `loading="eager"` (required — browser print preview fires before lazy images load).
+
+Below the map image, a **numbered legend** lists every mapped stop:
+- Burnt-orange `18×18px` circle with white number (matching the map marker)
+- Monospace time in `9px` (when `startTime` is present)  
+- Place name in `11px` italic
+- Type/category badge in `8px` uppercase
+
+The legend uses hairline `1px rgba(0,0,0,0.04)` dividers and is wrapped in `break-inside-avoid` so it never splits across a page break.
+
+##### Google Cloud Console — API Key Update
+
+`MAPS_SERVER_KEY` required a manual update in Google Cloud Console:
+
+- **Before:** API restrictions listed "Places API" only
+- **After:** Added "Maps Static API" to the allowed list
+
+Without this change the proxy returned `"This API key is not authorized to use this service or API"` and the map rendered as a broken image.
+
+---
+
+#### 4. Git — Merge Resolution
+
+**Context:** When pushing the worktree branch to `main`, local `main` was 4 commits behind `origin/main` with uncommitted changes (`Navbar.tsx`, `CLAUDE-v2.md`) and untracked PNG files already present on origin.
+
+**Resolution sequence:**
+1. `git stash` — stashed uncommitted local changes
+2. Removed untracked PNG files already present on origin
+3. `git pull --ff-only origin main` — fast-forward succeeded
+4. `git stash drop` — discarded stale stash (changes already in origin)
+5. `git merge nifty-driscoll-81c539` — merged worktree branch cleanly
+6. `git push origin main` — all changes pushed
+
+---
+
+### Thursday, May 1, 2026 — Bug Fixes, UX Polish, Privacy Rewrite & Refine Journey Feature
+
+**Branch:** `main` · **Pushed:** ✅
+
+---
+
+#### 1. Max Tokens Fix — Itinerary Truncation Error
+
+**File changed:** `src/app/api/itinerary/route.ts`
+
+**Problem:** Users were hitting "Our concierge ran out of space generating your itinerary" on longer (4–5 day) or Packed-pace trips. This was a hard `stop_reason === "max_tokens"` error — Claude was hitting the 8192-token ceiling before finishing the JSON, producing a truncated and unparseable response.
+
+**Fix:** Raised `max_tokens` from `8192` → `16000`. `claude-sonnet-4-6` supports up to 16k output tokens natively — no beta flag required. A 5-day Packed itinerary generates approximately 30–35 timeline items at ~150 tokens each (~5,000–7,500 tokens of JSON), plus structure overhead. 16,000 provides sufficient headroom for all supported trip lengths.
+
+---
+
+#### 2. Date Picker UX — Click Anywhere to Open Calendar
+
+**File changed:** `src/components/CurationForm.tsx`
+
+**Problem:** The browser's native date picker only opened when the user clicked the calendar icon at the far right of the input field. Clicking the `mm`, `dd`, or `yyyy` text segments activated keyboard-editing mode but did not open the calendar popup — confusing for less tech-savvy users.
+
+**Fix:**
+- Added `departureDateRef` and `returnDateRef` (`useRef<HTMLInputElement>`) to both date inputs.
+- Wrapped each date row in a `div` with an `onClick` handler that calls `inputRef.current?.showPicker?.()`.
+- Clicking anywhere in the row — the Lucide `Calendar` icon, the `mm/dd/yyyy` text, or the surrounding area — now instantly opens the native calendar popup.
+- Return date `showPicker` is guarded: only fires if a departure date is already selected, matching the existing `disabled` state on the input.
+- `?.` optional chaining on `showPicker` ensures graceful degradation on older browsers.
+
+---
+
+#### 3. Form Validation — Section-Level Red Highlighting
+
+**File changed:** `src/components/CurationForm.tsx`
+
+**Problem:** Submitting the form with missing fields showed a bullet-point list at the bottom of the form. This was easy to miss after scrolling and confusing for older or less experienced users.
+
+**Fix:** Replaced the error list with per-section red highlighting:
+
+- Added `isError(field: string)` helper: returns `true` when `showErrors` is active and the field is in `missingFields`.
+- Five sections now receive conditional classes when errored: `border-l-[3px] border-red-400 pl-4 bg-red-50/30` — a 3px red left accent bar and a subtle red background tint.
+- Each section label (`Travel Dates`, `Travel Party`, `Travel Pace`, `Budget Tier`, `Interests`) transitions to `text-red-500` when its section is errored.
+- All transitions use `transition-all duration-300` so highlights animate in smoothly rather than snapping.
+- The verbose error list box was replaced with a single centred line: `"Please complete the sections highlighted above."`
+- `data-form-error="true"` attribute added to each errored section so `handleSubmit` can `querySelector` the first one and call `scrollIntoView({ behavior: "smooth", block: "center" })` — auto-scrolling to the first problem section on submit.
+
+---
+
+#### 4. Timeline Card — Category-Based Fallback Images
+
+**File changed:** `src/components/TimelineCard.tsx`
+
+**Problem:** When Google Places has no photo for a place (remote destinations, lesser-known restaurants, hidden gems), the card displayed a grey background with a small `ImageOff` or `Utensils` icon. This looked broken and unprofessional, especially on a luxury product.
+
+**Decision rationale:** Restricting recommendations to only places with Google photos was rejected — it would bias itineraries toward over-touristy, over-photographed spots and filter out hidden gems. Showing a "too remote" message was also rejected as it destroys the luxury aesthetic. The correct approach: always show a beautiful image.
+
+**Fix:** Added `getFallbackImage(item: TimelineItem): string` function returning a curated Unsplash URL keyed by `type` and `category`:
+
+| Type / Category | Fallback |
+|---|---|
+| `drinks` | Cocktail bar photography |
+| `breakfast / lunch / dinner / snack` | Elegant table setting |
+| `MUSEUM / CULTURE` | Architectural interior |
+| `NATURE / ADVENTURE` | Landscape photography |
+| `WELLNESS` | Spa / natural light |
+| `SHOPPING` | Boutique lifestyle |
+| Default (sightseeing, etc.) | Travel editorial |
+
+- `hasGooglePhoto` boolean computed from `(item.photoReference || item.photoUrl) && !imgError`.
+- `imageSrc` resolves to the Google photo URL when available, otherwise the Unsplash fallback.
+- `onError` is only attached when showing a Google photo — prevents infinite error loops when falling back.
+- `ImageOff` and `Utensils` placeholder imports removed entirely. Blank cards are now impossible.
+- Fallback images receive the same `img-grayscale` hover treatment as real Google photos — visually indistinguishable.
+
+---
+
+#### 5. Privacy Policy — Full GDPR/CCPA/Global Rewrite
+
+**File changed:** `src/app/privacy/page.tsx`
+
+**Problem:** A user flagged GDPR non-compliance — the existing policy lacked legal bases for processing, had a vague rights section with no response timeframes, gave no supervisory authority contacts, and didn't address international data transfers or non-EU jurisdictions.
+
+**Fix:** Complete rewrite from 10 thin sections to a 15-section production-grade policy. Key additions:
+
+**GDPR / UK GDPR:**
+- Section 2: Legal basis for every processing activity under Art. 6 — contract performance, legitimate interests, legal obligation, consent.
+- Section 8: All 8 data subject rights spelled out in plain English — access, rectification, erasure, restriction, portability, objection, opt-out of sale, non-discrimination.
+- Section 9: Response timeframes — 72-hour acknowledgement, 30-day full response (GDPR), 45-day response (CCPA).
+- Section 10: Supervisory authority links — ICO (UK), EDPB member list (EU), OAIC (Australia), OPC (Canada), ANPD (Brazil), CPPA (California).
+- Section 5: International transfer safeguards — Standard Contractual Clauses (SCCs) and UK IDTA, addressing the fact that Anthropic, Vercel, Clerk, and Supabase are US-based processors.
+- Section 11: Automated decision-making disclosure (GDPR Art. 22) — the AI is an assistive tool, not a decision-maker affecting rights.
+
+**CCPA/CPRA (California):**
+- Explicit "we do not sell your personal information" statement.
+- 45-day CCPA response commitment.
+- Right to non-discrimination confirmed.
+
+**All jurisdictions:**
+- Section 1: Precise categorical breakdown of every data type collected, with an explicit "we do not collect" list (card numbers, passport details, precise GPS, special-category data).
+- Section 6: Per-category retention schedule — itinerary data (30-day deletion on request), PlaceCache (14-day auto-purge), rate-limit counters (1-hour auto-expire), cost logs (financial records).
+- Section 13: Security measures described — HTTPS, encryption at rest, API key split, RBAC, rate limiting.
+- Children's age thresholds: 13 globally, 16 in EEA/UK.
+- Material change notification commitment for signed-in users.
+
+---
+
+#### 6. Refine Journey Panel
+
+**New file:** `src/components/RefinePanel.tsx`
+**File changed:** `src/app/itinerary/page.tsx`
+
+**Feature:** After an itinerary is generated, users can adjust their preferences and regenerate without starting from scratch.
+
+##### `RefinePanel.tsx`
+
+A `createPortal(…, document.body)` slide-up panel (same pattern as `MobileMenu` and `DeleteDialog`) with three editable sections:
+
+- **Budget Tier** — same 3-card grid as `CurationForm` (`$$` / `$$$` / `$$$$`)
+- **Travel Pace** — same 3-card grid (`Relaxed` / `Moderate` / `Packed`) with Feather/Zap/Flame icons
+- **Interests** — all 10 interest pills, toggleable
+
+Destination and dates are shown read-only with a note explaining they are fixed. Changing destination or dates requires a new journey.
+
+**Regenerate button behaviour:**
+- Disabled (`opacity-35 cursor-not-allowed`) until at least one preference differs from the stored request — prevents accidental identical re-runs. Comparison uses sorted JSON stringify for interests array.
+- On click: calls `onRegenerate(updatedRequest)` and the parent handles close + generation.
+
+**Archive notice** — context-aware message shown above the CTA:
+- Signed in, not saved → "Your current itinerary will be automatically saved to your archive before the new one is generated."
+- Signed in, already saved → "Your saved itinerary will not be overwritten — the new version can be saved separately."
+- Not signed in → "Sign in to archive your itineraries. The current version will be replaced when you regenerate."
+
+**Accessibility:** Escape key closes the panel (`keydown` listener); backdrop click closes; body scroll locked while open (`document.body.style.overflow = "hidden"`).
+
+**Responsive layout:**
+- Mobile: full-width bottom sheet (`bottom-0 left-0 right-0`)
+- Desktop (md+): anchored card, bottom-right (`md:max-w-xl md:right-6 md:bottom-6`)
+
+**Z-index fix:** Initial implementation used `z-40` (backdrop) and `z-50` (panel). The `ItineraryMap` day-filter pill uses `z-[110]`, causing it to bleed through the backdrop. Fixed by raising backdrop to `z-[120]` and panel to `z-[130]`.
+
+##### `itinerary/page.tsx` changes
+
+- `useAuth` imported from `@clerk/nextjs` to determine sign-in state for the archive notice and auto-save logic.
+- `SlidersHorizontal` imported from `lucide-react` for the Refine button icon.
+- `refineOpen: boolean` state controls panel visibility.
+- `storedRequest: ItineraryRequest | null` state holds the parsed sessionStorage request (set when the page loads from sessionStorage, updated on each refine).
+- **`handleRefine(updated: ItineraryRequest)`** — `useCallback`-wrapped async function:
+  1. Closes panel immediately.
+  2. If signed in and current itinerary is unsaved (`saveState === "idle"`): fires `saveTripToDb` as fire-and-forget (non-blocking), shows "Previous journey archived" success toast on completion.
+  3. Writes updated params to `sessionStorage("itineraryRequest")` for back-navigation consistency.
+  4. Resets `saveState` to `"idle"` so the Save button works for the new itinerary.
+  5. Calls `generateItinerary(updated)` — identical pipeline to the initial generation.
+- **Refine button** added to the header strip (desktop, alongside Export and Save) and to the mobile bottom section (full-width, above ExportPdfButton).
+- `<RefinePanel>` rendered at the bottom of the page return, gated by `storedRequest !== null`.
+
+**Cost impact:** A refinement on the same destination costs ~$0.08–0.12 (Claude only). The PlaceCache absorbs all Google Places lookups since the destination is fixed — approximately 90% cheaper than the initial generation.
+
+---
+
+#### 7. Launch Date Update
+
+**File changed:** `src/components/LaunchCountdown.tsx`
+
+Updated all three date references from **May 6, 2026** to **May 25, 2026**:
+
+- `LAUNCH_AT` constant: `"2026-05-06T12:00:00-04:00"` → `"2026-05-25T12:00:00-04:00"`
+- Compact variant label: `"May 6, 12 PM EDT"` → `"May 25, 12 PM EDT"`
+- Hero variant label: `"Wednesday, May 6 at 12:00 PM EDT"` → `"Sunday, May 25 at 12:00 PM EDT"`
