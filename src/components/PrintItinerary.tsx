@@ -146,7 +146,7 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
 
       {/* ── Day header ── */}
       <div style={{ borderBottom: `2px solid ${INK}`, paddingBottom: 20, marginBottom: 32 }}>
-        <p style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.4)`, marginBottom: 12 }}>
+        <p style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: "#C2410C", marginBottom: 12 }}>
           Day {day.day}
         </p>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24 }}>
@@ -239,7 +239,7 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
           marginTop: 16,
           breakInside: "avoid",
         }}>
-          <p style={{ fontSize: 9, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.4)`, marginBottom: 8 }}>
+          <p style={{ fontSize: 9, letterSpacing: "0.35em", textTransform: "uppercase", color: "#C2410C", marginBottom: 8 }}>
             Hidden Gem
           </p>
           <p style={{ fontSize: 13, color: `rgba(10,10,10,0.7)`, lineHeight: 1.65, fontStyle: "italic" }}>
@@ -399,14 +399,14 @@ export default function PrintItinerary({
           </a>
 
           {/* Thin rule separating brand from content */}
-          <div style={{ width: 36, height: 1, backgroundColor: `rgba(10,10,10,0.18)`, marginBottom: 32 }} />
+          <div style={{ width: 36, height: 1, backgroundColor: "#C2410C", marginBottom: 32 }} />
 
           {/* Kicker */}
           <p style={{
             fontSize: 9,
             letterSpacing: "0.3em",
             textTransform: "uppercase",
-            color: `rgba(10,10,10,0.35)`,
+            color: "#C2410C",
             marginBottom: 20,
           }}>
             Your Bespoke Journey
@@ -449,7 +449,7 @@ export default function PrintItinerary({
           </p>
 
           {/* Divider */}
-          <div style={{ width: 36, height: 1, backgroundColor: `rgba(10,10,10,0.18)`, marginBottom: 32 }} />
+          <div style={{ width: 36, height: 1, backgroundColor: "#C2410C", marginBottom: 32 }} />
 
           {/* Editorial quote */}
           <blockquote className="font-serif" style={{
