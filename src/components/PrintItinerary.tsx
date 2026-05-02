@@ -367,7 +367,7 @@ export default function PrintItinerary({
             src="/bee_compass_512_transparent.png"
             alt="TravalBee"
             loading="eager"
-            style={{ width: 88, objectFit: "contain", display: "block", marginBottom: 16 }}
+            style={{ width: 140, objectFit: "contain", display: "block", marginBottom: 20 }}
           />
 
           {/* Brand name below logo */}
