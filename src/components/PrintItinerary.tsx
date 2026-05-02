@@ -3,7 +3,7 @@ import { normalizeDayPlan, isMealType } from "@/lib/itineraryUtils";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-const BEIGE = "#F5F0E8";
+const BEIGE = "#EDE8DC";
 const INK   = "#0A0A0A";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
