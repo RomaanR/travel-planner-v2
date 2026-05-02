@@ -377,10 +377,26 @@ export default function PrintItinerary({
             textTransform: "uppercase",
             fontWeight: 700,
             color: `rgba(10,10,10,0.4)`,
-            marginBottom: 40,
+            marginBottom: 10,
           }}>
             TRAVALBEE
           </p>
+
+          {/* Clickable site link — visible beneath wordmark */}
+          <a
+            href="https://travalbee.com"
+            style={{
+              fontSize: 13,
+              letterSpacing: "0.08em",
+              color: "#C2410C",
+              textDecoration: "underline",
+              textDecorationColor: "rgba(194,65,12,0.45)",
+              textUnderlineOffset: 3,
+              marginBottom: 40,
+            }}
+          >
+            travalbee.com
+          </a>
 
           {/* Thin rule separating brand from content */}
           <div style={{ width: 36, height: 1, backgroundColor: `rgba(10,10,10,0.18)`, marginBottom: 32 }} />
