@@ -15,7 +15,7 @@ const MAX_REF_LEN = 2000;
 
 export async function GET(req: Request): Promise<Response> {
   // Rate limit by IP — prevents quota exhaustion on MAPS_SERVER_KEY.
-  // 60/hr is generous for real users; blocks automated scrapers.
+  // 120/hr covers power users generating 4+ itineraries in one session; blocks scrapers.
   const ip = new Headers(req.headers).get("x-forwarded-for")?.split(",")[0]?.trim();
   if (ip) {
     const { success } = await photoRatelimit.limit(ip);
