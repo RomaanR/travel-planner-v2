@@ -7,11 +7,23 @@
 //
 // Usage: /api/photo?ref=<photo_reference>
 
+import { photoRatelimit } from "@/lib/ratelimit";
+
 // Tokens are base64url-safe — alphanumeric + _ and -
 const SAFE_REF = /^[A-Za-z0-9_\-]+$/;
 const MAX_REF_LEN = 2000;
 
 export async function GET(req: Request): Promise<Response> {
+  // Rate limit by IP — prevents quota exhaustion on MAPS_SERVER_KEY.
+  // 60/hr is generous for real users; blocks automated scrapers.
+  const ip = new Headers(req.headers).get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (ip) {
+    const { success } = await photoRatelimit.limit(ip);
+    if (!success) {
+      return new Response(null, { status: 429 });
+    }
+  }
+
   const ref = new URL(req.url).searchParams.get("ref");
 
   if (!ref || ref.length > MAX_REF_LEN || !SAFE_REF.test(ref)) {

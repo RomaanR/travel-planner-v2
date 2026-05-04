@@ -15,13 +15,16 @@ model Trip {
   days          Int
   itineraryData Json
   createdAt     DateTime @default(now())
+
+  @@index([userId]) // findMany({ where: { userId } }) on /trips — prevents full table scan at scale
+  @@index([userId, createdAt(sort: Desc)]) // ordered archive fetch — covering index avoids sort step
 }
 
 model PlaceCache {
   id               String   @id @default(uuid())
-  cacheKey         String   @unique  // "{normalized-name}|{normalized-city}"
-  photoUrl         String?           // DEPRECATED — use photoReference; kept for backward compat during natural expiry
-  photoReference   String?           // raw photo_reference from Google Places (key-independent; URL constructed fresh at serve time)
+  cacheKey         String   @unique // "{normalized-name}|{normalized-city}"
+  photoUrl         String? // DEPRECATED — use photoReference; kept for backward compat during natural expiry
+  photoReference   String? // raw photo_reference from Google Places (key-independent; URL constructed fresh at serve time)
   rating           Float?
   userRatingsTotal Int?
   hoursOpen        String?
@@ -33,42 +36,44 @@ model PlaceCache {
 }
 
 model UserProfile {
-  id               String   @id                    // Clerk userId
-  availableCredits Int      @default(1)             // free: mirrors (5 + bonusCredits - used) remaining; premium: 10 per billing cycle
-  bonusCredits     Int      @default(0)             // manually granted extra credits — stacks on top of free quota; set in Supabase directly
-  totalGenerations Int      @default(0)             // incremented on every successful AI generation (saved or not)
-  isPremium        Boolean  @default(false)         // true while an active $10.99/month subscription exists
-  stripeCustomerId String?  @unique                 // kept for refund/audit purposes
+  id               String   @id // Clerk userId
+  availableCredits Int      @default(1) // free: mirrors (5 + bonusCredits - used) remaining; premium: 10 per billing cycle
+  bonusCredits     Int      @default(0) // manually granted extra credits — stacks on top of free quota; set in Supabase directly
+  totalGenerations Int      @default(0) // incremented on every successful AI generation (saved or not)
+  isPremium        Boolean  @default(false) // true while an active $10.99/month subscription exists
+  stripeCustomerId String?  @unique // kept for refund/audit purposes
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
 
 model CostLog {
   id             String   @id @default(uuid())
-  userId         String?                        // Clerk userId — null if unauthenticated
+  userId         String? // Clerk userId — null if unauthenticated
   destination    String
-  inputTokens    Int      @default(0)           // exact Anthropic input token count
-  outputTokens   Int      @default(0)           // exact Anthropic output token count (text only)
-  thinkingTokens Int      @default(0)           // Adaptive Thinking / reasoning tokens (billed at output rate; 0 when off)
+  inputTokens    Int      @default(0) // exact Anthropic input token count
+  outputTokens   Int      @default(0) // exact Anthropic output token count (text only)
+  thinkingTokens Int      @default(0) // Adaptive Thinking / reasoning tokens (billed at output rate; 0 when off)
   aiCost         Decimal  @db.Decimal(10, 6)
   googleCost     Decimal  @db.Decimal(10, 6)
   totalCost      Decimal  @db.Decimal(10, 6)
   cacheHits      Int
-  cacheMisses    Int                            // = googleTextSearchCalls (items not in cache)
+  cacheMisses    Int // = googleTextSearchCalls (items not in cache)
   createdAt      DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)]) // admin dashboard: last 200 rows ordered by createdAt — O(log n) at scale
 }
 
 model SupportTicket {
   id        String   @id @default(uuid())
   email     String
   message   String
-  status    String   @default("open")       // "open" | "resolved" — for future admin triage
+  status    String   @default("open") // "open" | "resolved" — for future admin triage
   createdAt DateTime @default(now())
 }
 
 model StripeEvent {
-  id             String   @id @default(uuid())
-  stripeEventId  String   @unique            // e.g. "evt_1ABC..." — Stripe's own event ID
-  type           String                      // e.g. "checkout.session.completed"
-  processedAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  stripeEventId String   @unique // e.g. "evt_1ABC..." — Stripe's own event ID
+  type          String // e.g. "checkout.session.completed"
+  processedAt   DateTime @default(now())
 }

@@ -26,3 +26,26 @@ export const supportRatelimit = new Ratelimit({
   analytics: true,
   prefix:    "travalbee:support",
 });
+
+// 120 photo proxy requests per IP per sliding 1-hour window.
+// /api/photo proxies Google Places photos using MAPS_SERVER_KEY — unlimited calls
+// would exhaust quota. 120/hr covers power users generating 4+ itineraries in a
+// single session (~25-30 uncached refs each) while blocking automated scrapers.
+// Note: CDN-cached photos (30-day TTL) bypass the function entirely and don't
+// count against this limit — only fresh/uncached refs hit the rate limiter.
+export const photoRatelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(120, "1 h"),
+  analytics: true,
+  prefix:    "travalbee:photo",
+});
+
+// 30 static map requests per IP per sliding 1-hour window.
+// /api/staticmap calls Google Static Maps API (MAPS_SERVER_KEY) — ~$2/1000 requests.
+// A real user generates one map per PDF export, so 30/hr is more than sufficient.
+export const staticmapRatelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(30, "1 h"),
+  analytics: true,
+  prefix:    "travalbee:staticmap",
+});
