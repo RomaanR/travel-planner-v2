@@ -389,6 +389,7 @@ const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
 type PlacesEnrichment = {
   photoUrl?: string;        // legacy — not constructed for new enrichments
   photoReference?: string;  // new — raw token sent to client; URL rebuilt by /api/photo proxy
+  placeId?: string;         // Google Places place_id — enables Maps URLs with correct name + location
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
@@ -437,6 +438,7 @@ async function enrichPlace(
     return {
       photoReference:   cached.photoReference   ?? undefined,
       photoUrl:         undefined,               // never send key to client
+      placeId:          cached.placeId          ?? undefined,
       rating:           cached.rating           ?? undefined,
       userRatingsTotal: cached.userRatingsTotal ?? undefined,
       hoursOpen:        cached.hoursOpen        ?? undefined,
@@ -488,6 +490,7 @@ async function enrichPlace(
     const enrichment: PlacesEnrichment = {
       photoReference:   photoRef ?? undefined,  // raw token only — URL built by /api/photo proxy
       photoUrl:         undefined,              // never send MAPS_SERVER_KEY to the client
+      placeId:          place.place_id ?? undefined,
       rating:           place.rating,
       userRatingsTotal: place.user_ratings_total,
       openNow:          place.opening_hours?.open_now,
@@ -504,6 +507,7 @@ async function enrichPlace(
       update: {
         photoReference:   photoRef                    ?? null,
         photoUrl:         null,   // clear any legacy full-URL value
+        placeId:          enrichment.placeId          ?? null,
         rating:           enrichment.rating           ?? null,
         userRatingsTotal: enrichment.userRatingsTotal ?? null,
         hoursOpen:        enrichment.hoursOpen        ?? null,
@@ -514,6 +518,7 @@ async function enrichPlace(
         cacheKey,
         photoReference:   photoRef                    ?? null,
         photoUrl:         null,
+        placeId:          enrichment.placeId          ?? null,
         rating:           enrichment.rating           ?? null,
         userRatingsTotal: enrichment.userRatingsTotal ?? null,
         hoursOpen:        enrichment.hoursOpen        ?? null,

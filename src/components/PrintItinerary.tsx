@@ -300,7 +300,7 @@ function PrintDayPage({ rawDay, isFirst, destination }: { rawDay: DayPlan; isFir
 
       {/* ── Google Maps directions link ── */}
       {items.filter(item => item.coordinates?.lat && item.coordinates?.lng).length > 0 && (() => {
-        const coordItems = items.filter(item => item.coordinates?.lat && item.coordinates?.lng);
+        const coordItems  = items.filter(item => item.coordinates?.lat && item.coordinates?.lng);
         const origin      = `${coordItems[0].coordinates.lat},${coordItems[0].coordinates.lng}`;
         const dest        = `${coordItems[coordItems.length - 1].coordinates.lat},${coordItems[coordItems.length - 1].coordinates.lng}`;
         const midpoints   = coordItems.slice(1, -1).map(item => `${item.coordinates.lat},${item.coordinates.lng}`);

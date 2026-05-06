@@ -91,6 +91,7 @@ export type TimelineItem = {
   // Google Places enriched fields (same as legacy Activity / DiningRec)
   photoUrl?: string;        // legacy — full URL with embedded key (old saved trips only)
   photoReference?: string;  // new — raw photo_reference token; rendered via /api/photo proxy
+  placeId?: string;         // Google Places place_id — enables accurate Maps URLs (name + location)
   rating?: number;
   userRatingsTotal?: number;
   openNow?: boolean;
