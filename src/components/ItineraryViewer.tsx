@@ -110,7 +110,7 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
         {items.length > 1 && (
           <div
             aria-hidden
-            className="print:hidden absolute left-[13px] top-6 bottom-6 w-px bg-ink/8 z-0"
+            className="print:hidden absolute left-[13px] top-6 bottom-6 w-px bg-burnt-orange/40 z-0"
           />
         )}
 
@@ -129,8 +129,8 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
 
               {/* Step node — square with zero-padded stop number */}
               <div className="print:hidden w-7 shrink-0 flex justify-center mt-4 z-10">
-                <div className="w-[26px] h-[26px] flex items-center justify-center bg-paper border border-ink/15">
-                  <span className="font-mono text-[8px] leading-none text-ink/30">
+                <div className="w-[26px] h-[26px] flex items-center justify-center bg-paper border border-burnt-orange/60">
+                  <span className="font-mono text-[8px] leading-none text-burnt-orange">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                 </div>
