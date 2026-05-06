@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
@@ -189,25 +189,52 @@ export default async function TripViewPage({
 
       {/* ── Screen header strip — hidden in print (replaced by dossier header) ── */}
       <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
-        <Link
-          href="/trips"
-          className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
-        >
-          <ArrowLeft size={13} />
-          Back to Archive
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div className="min-w-0">
-            <p className="micro-copy text-ink-light mb-1">
+
+        {/* ── Mobile layout ── */}
+        <div className="md:hidden">
+          {/* Row 1: chevron back + date label */}
+          <div className="flex items-center justify-between mb-3">
+            <Link
+              href="/trips"
+              className="text-ink-light hover:text-ink transition-colors -ml-0.5"
+              aria-label="Back to archive"
+            >
+              <ChevronLeft size={22} strokeWidth={1.5} />
+            </Link>
+            <p className="micro-copy text-ink-light">
               Saved Journey&ensp;&middot;&ensp;{formatDate(trip.createdAt)}
             </p>
-            <h1 className="font-serif italic text-3xl sm:text-4xl md:text-6xl text-ink leading-none">
-              {trip.destination}
-            </h1>
           </div>
-          {/* Header actions — kebab on mobile, full buttons on desktop */}
+          {/* Row 2: destination title */}
+          <h1 className="font-serif italic text-3xl text-ink leading-none mb-4">
+            {trip.destination}
+          </h1>
+          {/* Row 3: PDF button (left) + trash icon (right) */}
           <TripHeaderActions tripId={trip.id} destination={trip.destination} itinerary={itinerary} />
         </div>
+
+        {/* ── Desktop layout ── */}
+        <div className="hidden md:block">
+          <Link
+            href="/trips"
+            className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
+          >
+            <ArrowLeft size={13} />
+            Back to Archive
+          </Link>
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="micro-copy text-ink-light mb-1">
+                Saved Journey&ensp;&middot;&ensp;{formatDate(trip.createdAt)}
+              </p>
+              <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
+                {trip.destination}
+              </h1>
+            </div>
+            <TripHeaderActions tripId={trip.id} destination={trip.destination} itinerary={itinerary} />
+          </div>
+        </div>
+
       </div>
 
       {/* ── Split-screen ── */}

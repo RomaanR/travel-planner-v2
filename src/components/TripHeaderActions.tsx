@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, FileDown, Trash2 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { Trash2 } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import DeleteTripButton, { DeleteDialog } from "@/components/DeleteTripButton";
 import ExportPdfButton from "@/components/ExportPdfButton";
@@ -21,22 +21,8 @@ interface Props {
 
 export default function TripHeaderActions({ tripId, destination }: Props) {
   const router = useRouter();
-  const [kebabOpen,  setKebabOpen]  = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending,  setIsPending]  = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!kebabOpen) return;
-    function onOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setKebabOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [kebabOpen]);
 
   async function handleDeleteConfirm() {
     setIsPending(true);
@@ -49,7 +35,6 @@ export default function TripHeaderActions({ tripId, destination }: Props) {
         description: `${destination} has been removed from your archive.`,
       });
 
-      // Prune localStorage so /trips page doesn't flash stale data
       try {
         const raw = localStorage.getItem("seek_wander_archive");
         if (raw) {
@@ -75,11 +60,10 @@ export default function TripHeaderActions({ tripId, destination }: Props) {
 
   return (
     <>
-      {/* Delete confirmation dialog — triggered by mobile kebab */}
       <AnimatePresence>
         {dialogOpen && (
           <DeleteDialog
-            key="delete-dialog-kebab"
+            key="delete-dialog"
             destination={destination}
             onCancel={() => { if (!isPending) setDialogOpen(false); }}
             onConfirm={handleDeleteConfirm}
@@ -94,46 +78,16 @@ export default function TripHeaderActions({ tripId, destination }: Props) {
         <ExportPdfButton />
       </div>
 
-      {/* ── Mobile: kebab (3-dot) dropdown ── */}
-      <div ref={menuRef} className="relative md:hidden print:hidden">
+      {/* ── Mobile: PDF button + trash icon ── */}
+      <div className="flex items-center justify-between w-full md:hidden print:hidden">
+        <ExportPdfButton />
         <button
-          onClick={() => setKebabOpen((o) => !o)}
-          className="flex items-center justify-center w-9 h-9 border border-ink/15 text-ink-light hover:border-ink hover:text-ink transition-all duration-200"
-          aria-label="Trip actions"
-          aria-expanded={kebabOpen}
+          onClick={() => setDialogOpen(true)}
+          className="flex items-center justify-center w-9 h-9 border border-ink/15 text-ink-light hover:border-burnt-orange hover:text-burnt-orange transition-all duration-200"
+          aria-label="Remove journey"
         >
-          <MoreVertical size={16} strokeWidth={1.5} />
+          <Trash2 size={15} strokeWidth={1.5} />
         </button>
-
-        <AnimatePresence>
-          {kebabOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute right-0 top-full mt-1 bg-paper border border-ink/10 min-w-[160px] z-30"
-            >
-              <button
-                onClick={() => { setKebabOpen(false); window.print(); }}
-                className="flex items-center gap-2.5 w-full px-4 py-3 micro-copy text-ink hover:bg-paper-dark transition-colors text-left"
-              >
-                <FileDown size={12} strokeWidth={1.5} />
-                Download PDF
-              </button>
-
-              <div className="border-t border-ink/5" />
-
-              <button
-                onClick={() => { setKebabOpen(false); setDialogOpen(true); }}
-                className="flex items-center gap-2.5 w-full px-4 py-3 micro-copy text-burnt-orange hover:bg-paper-dark transition-colors text-left"
-              >
-                <Trash2 size={12} strokeWidth={1.5} />
-                Remove
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </>
   );
