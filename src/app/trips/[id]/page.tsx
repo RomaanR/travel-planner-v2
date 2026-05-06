@@ -205,7 +205,7 @@ export default async function TripViewPage({
             </h1>
           </div>
           {/* Header actions — kebab on mobile, full buttons on desktop */}
-          <TripHeaderActions tripId={trip.id} destination={trip.destination} />
+          <TripHeaderActions tripId={trip.id} destination={trip.destination} itinerary={itinerary} />
         </div>
       </div>
 

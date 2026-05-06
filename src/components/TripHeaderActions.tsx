@@ -2,22 +2,25 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MoreVertical, FileDown, Trash2 } from "lucide-react";
+import { MoreVertical, FileDown, Trash2, Map } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import DeleteTripButton, { DeleteDialog } from "@/components/DeleteTripButton";
 import ExportPdfButton from "@/components/ExportPdfButton";
+import ExportMapButton from "@/components/ExportMapButton";
+import type { ItineraryResponse } from "@/types/itinerary";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
   tripId:      string;
   destination: string;
+  itinerary:   ItineraryResponse;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function TripHeaderActions({ tripId, destination }: Props) {
+export default function TripHeaderActions({ tripId, destination, itinerary }: Props) {
   const router = useRouter();
   const [kebabOpen,  setKebabOpen]  = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -89,6 +92,7 @@ export default function TripHeaderActions({ tripId, destination }: Props) {
       {/* ── Desktop: full labelled buttons ── */}
       <div className="hidden md:flex items-center gap-3">
         <DeleteTripButton tripId={tripId} destination={destination} />
+        <ExportMapButton itinerary={itinerary} />
         <ExportPdfButton />
       </div>
 
@@ -119,6 +123,15 @@ export default function TripHeaderActions({ tripId, destination }: Props) {
                 <FileDown size={12} strokeWidth={1.5} />
                 Download PDF
               </button>
+
+              <div className="border-t border-ink/5" />
+
+              <ExportMapButton
+                itinerary={itinerary}
+                className="flex items-center gap-2.5 w-full px-4 py-3 micro-copy text-ink hover:bg-paper-dark transition-colors text-left"
+                iconSize={12}
+                label="Download Map"
+              />
 
               <div className="border-t border-ink/5" />
 

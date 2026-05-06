@@ -298,6 +298,33 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
         </div>
       )}
 
+      {/* ── Google Maps directions link ── */}
+      {items.filter(item => item.coordinates?.lat && item.coordinates?.lng).length > 0 && (() => {
+        const coordStr = items
+          .filter(item => item.coordinates?.lat && item.coordinates?.lng)
+          .map(item => `${item.coordinates.lat},${item.coordinates.lng}`)
+          .join("/");
+        const mapsUrl = `https://www.google.com/maps/dir/${coordStr}`;
+        return (
+          <div style={{ marginTop: 20, textAlign: "center", breakInside: "avoid" }}>
+            <a
+              href={mapsUrl}
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "#C2410C",
+                textDecoration: "underline",
+                textDecorationColor: "rgba(194,65,12,0.45)",
+                textUnderlineOffset: 3,
+              }}
+            >
+              Open Day {day.day} in Google Maps →
+            </a>
+          </div>
+        );
+      })()}
+
       <PageFooter />
     </div>
   );
