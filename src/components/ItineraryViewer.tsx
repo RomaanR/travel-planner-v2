@@ -104,16 +104,44 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
       </div>
 
       {/* Unified chronological timeline */}
-      <div className="flex flex-col gap-1">
+      <div className="relative flex flex-col gap-1">
+
+        {/* Vertical rail — thin line connecting all nodes; hidden in print */}
+        {items.length > 1 && (
+          <div
+            aria-hidden
+            className="print:hidden absolute left-[13px] top-6 bottom-6 w-px bg-ink/8 z-0"
+          />
+        )}
+
         {items.map((item: TimelineItem, i) => (
           <div key={`item-${i}`} className="print:break-inside-avoid">
+
+            {/* Transit connector — indented to clear the node column */}
             {item?.transitFromPrevious && i > 0 && (
-              <TransitHeader transit={item.transitFromPrevious} transportMode={transportMode} />
+              <div className="pl-10 print:pl-0">
+                <TransitHeader transit={item.transitFromPrevious} transportMode={transportMode} />
+              </div>
             )}
-            <TimelineCard
-              item={item}
-              delay={0.06 * (i + 1)}
-            />
+
+            {/* Node + Card row */}
+            <div className="flex items-start gap-3">
+
+              {/* Step node — square with zero-padded stop number */}
+              <div className="print:hidden w-7 shrink-0 flex justify-center mt-4 z-10">
+                <div className="w-[26px] h-[26px] flex items-center justify-center bg-paper border border-ink/15">
+                  <span className="font-mono text-[8px] leading-none text-ink/30">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Card — flex-1 so it fills remaining width */}
+              <div className="flex-1 min-w-0 print:w-full">
+                <TimelineCard item={item} delay={0.06 * (i + 1)} />
+              </div>
+
+            </div>
           </div>
         ))}
 
