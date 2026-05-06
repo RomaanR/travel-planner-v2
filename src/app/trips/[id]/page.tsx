@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
+import MobileMapBanner from "@/components/MobileMapBanner";
 import ItineraryViewer from "@/components/ItineraryViewer";
 import TripHeaderActions from "@/components/TripHeaderActions";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
@@ -216,9 +217,7 @@ export default async function TripViewPage({
         <div className="w-full md:w-[55%] overflow-y-auto print:w-full print:overflow-visible">
 
           {/* Mobile map banner — hidden in print */}
-          <div className="md:hidden h-52 w-full border-b border-ink/5 print:hidden">
-            <ItineraryMap center={mapCenter} points={mapPoints} />
-          </div>
+          <MobileMapBanner center={mapCenter} points={mapPoints} />
 
           <div className="px-6 md:px-10 py-8 print:px-0 print:py-6">
             <ItineraryViewer itinerary={itinerary} bottomSection={bottomCta} />
