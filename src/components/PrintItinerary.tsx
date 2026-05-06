@@ -126,7 +126,7 @@ interface PrintItineraryProps {
 
 // ─── Day page ─────────────────────────────────────────────────────────────────
 
-function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }) {
+function PrintDayPage({ rawDay, isFirst, destination }: { rawDay: DayPlan; isFirst: boolean; destination: string }) {
   const day   = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
@@ -301,7 +301,7 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
       {/* ── Google Maps directions link ── */}
       {items.length > 0 && (() => {
         const stopsStr = items
-          .map(item => encodeURIComponent(`${item.title}, ${itinerary.destination}`))
+          .map(item => encodeURIComponent(`${item.title}, ${destination}`))
           .join("/");
         const mapsUrl = `https://www.google.com/maps/dir/${stopsStr}`;
         return (
@@ -495,7 +495,7 @@ export default function PrintItinerary({
 
       {/* ── DAY PAGES ── */}
       {itinerary.days.map((day, i) => (
-        <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} />
+        <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} destination={itinerary.destination} />
       ))}
 
     </div>
