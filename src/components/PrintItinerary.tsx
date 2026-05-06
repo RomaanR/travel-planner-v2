@@ -299,12 +299,11 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
       )}
 
       {/* ── Google Maps directions link ── */}
-      {items.filter(item => item.coordinates?.lat && item.coordinates?.lng).length > 0 && (() => {
-        const coordStr = items
-          .filter(item => item.coordinates?.lat && item.coordinates?.lng)
-          .map(item => `${item.coordinates.lat},${item.coordinates.lng}`)
+      {items.length > 0 && (() => {
+        const stopsStr = items
+          .map(item => encodeURIComponent(`${item.title}, ${itinerary.destination}`))
           .join("/");
-        const mapsUrl = `https://www.google.com/maps/dir/${coordStr}`;
+        const mapsUrl = `https://www.google.com/maps/dir/${stopsStr}`;
         return (
           <div style={{ marginTop: 20, textAlign: "center", breakInside: "avoid" }}>
             <a
