@@ -299,11 +299,13 @@ function PrintDayPage({ rawDay, isFirst, destination }: { rawDay: DayPlan; isFir
       )}
 
       {/* ── Google Maps directions link ── */}
-      {items.length > 0 && (() => {
-        const stopsStr = items
-          .map(item => encodeURIComponent(`${item.title}, ${destination}`))
-          .join("/");
-        const mapsUrl = `https://www.google.com/maps/dir/${stopsStr}`;
+      {items.filter(item => item.coordinates?.lat && item.coordinates?.lng).length > 0 && (() => {
+        const coordItems = items.filter(item => item.coordinates?.lat && item.coordinates?.lng);
+        const origin      = `${coordItems[0].coordinates.lat},${coordItems[0].coordinates.lng}`;
+        const dest        = `${coordItems[coordItems.length - 1].coordinates.lat},${coordItems[coordItems.length - 1].coordinates.lng}`;
+        const midpoints   = coordItems.slice(1, -1).map(item => `${item.coordinates.lat},${item.coordinates.lng}`);
+        const waypointStr = midpoints.length > 0 ? `&waypoints=${midpoints.join("|")}` : "";
+        const mapsUrl     = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}${waypointStr}`;
         return (
           <div style={{ marginTop: 20, textAlign: "center", breakInside: "avoid" }}>
             <a
