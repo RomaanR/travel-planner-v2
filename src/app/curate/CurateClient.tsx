@@ -136,7 +136,7 @@ export default function CurateClient({ credits }: { credits: number }) {
         {/* Form — swaps with mode */}
         <AnimatePresence mode="wait">
           {mode === "inspire" ? (
-            <CurationForm key="inspire" onGenerate={handleGenerate} loading={loading} />
+            <CurationForm key="inspire" onGenerate={handleGenerate} loading={loading} credits={credits} />
           ) : (
             <TailorForm key="tailor" onGenerate={handleGenerate} loading={loading} />
           )}

@@ -120,11 +120,12 @@ function PillButton({
 interface CurationFormProps {
   onGenerate: (data: ItineraryRequest) => Promise<void>;
   loading?: boolean;
+  credits?: number;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function CurationForm({ onGenerate, loading }: CurationFormProps) {
+export default function CurationForm({ onGenerate, loading, credits }: CurationFormProps) {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const hotelAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const departureDateRef = useRef<HTMLInputElement>(null);
@@ -171,12 +172,15 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
 
   // ── Credits hint — show once per session, dismiss on search focus ──────────
   useEffect(() => {
+    // Only show the hint when the user actually has credits — suppress it when
+    // the no-credits banner above the form is already handling that case.
+    if (typeof credits === "number" && credits <= 0) return;
     const key = "travalbee_credits_hint_shown";
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
     const t = setTimeout(() => setShowCreditsHint(true), 600);
     return () => clearTimeout(t);
-  }, []);
+  }, [credits]);
 
   // ── Destination ──────────────────────────────────────────────────────────────
   function onPlaceChanged() {
