@@ -598,7 +598,20 @@ export default function CurationForm({ onGenerate, loading }: CurationFormProps)
                       <Autocomplete
                         onLoad={(ref) => (hotelAutocompleteRef.current = ref)}
                         onPlaceChanged={onHotelPlaceChanged}
-                        options={{ types: ["lodging"] }}
+                        options={{
+                          types: ["lodging"],
+                          // Bias results toward the selected destination so "pa" returns
+                          // Paris hotels, not hotels near the user's current location.
+                          ...(form.lat && form.lng ? {
+                            bounds: {
+                              north: form.lat + 0.25,
+                              south: form.lat - 0.25,
+                              east:  form.lng + 0.25,
+                              west:  form.lng - 0.25,
+                            },
+                            strictBounds: false,
+                          } : {}),
+                        }}
                         className="flex-1 min-w-0"
                       >
                         <input
