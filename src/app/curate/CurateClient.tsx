@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CurationForm from "@/components/CurationForm";
@@ -12,7 +12,7 @@ import type { ItineraryRequest } from "@/types/itinerary";
 
 type Mode = "inspire" | "tailor";
 
-export default function CurateClient() {
+export default function CurateClient({ credits }: { credits: number }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("inspire");
   const [loading, setLoading] = useState(false);
@@ -107,6 +107,31 @@ export default function CurateClient() {
             </p>
           </motion.div>
         </AnimatePresence>
+
+        {/* No-credits banner — shown before the form so users aren't surprised */}
+        {credits <= 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex items-start gap-4 border border-burnt-orange/30 bg-burnt-orange/5 px-6 py-5 mb-10"
+          >
+            <Sparkles size={16} strokeWidth={1.5} className="text-burnt-orange shrink-0 mt-0.5" />
+            <div>
+              <p className="micro-copy text-burnt-orange mb-1">No Credits Remaining</p>
+              <p className="font-sans text-sm text-ink-light leading-relaxed">
+                You&apos;ve used your complimentary itinerary.{" "}
+                <Link
+                  href="/pricing"
+                  className="text-ink underline underline-offset-2 hover:text-burnt-orange transition-colors duration-200"
+                >
+                  Purchase a credit
+                </Link>{" "}
+                to curate your next journey.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Form — swaps with mode */}
         <AnimatePresence mode="wait">
