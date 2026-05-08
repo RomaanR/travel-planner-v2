@@ -44,15 +44,69 @@ export default function GenerationLoader({ mode = "inspire" }: GenerationLoaderP
   return (
     <div className="min-h-[50vh] flex flex-col items-center justify-center text-center px-6 gap-8">
 
-      {/* Thin spinning ring */}
-      <div className="relative w-10 h-10">
-        {/* Static track */}
-        <div className="absolute inset-0 rounded-full border border-ink/10" />
-        {/* Rotating arc */}
-        <div
-          className="absolute inset-0 rounded-full border border-transparent border-t-ink/40 animate-spin"
-          style={{ animationDuration: "2.4s", animationTimingFunction: "linear" }}
-        />
+      {/* Globe + orbiting bee */}
+      <div className="relative w-28 h-28">
+        {/* Wireframe globe */}
+        <svg
+          viewBox="0 0 112 112"
+          className="absolute inset-0 w-full h-full"
+          aria-hidden="true"
+        >
+          {/* Outer circle */}
+          <circle
+            cx="56" cy="56" r="34"
+            fill="none"
+            stroke="rgba(10,10,10,0.13)"
+            strokeWidth="1.5"
+          />
+          {/* Equator */}
+          <ellipse
+            cx="56" cy="56" rx="34" ry="11"
+            fill="none"
+            stroke="rgba(10,10,10,0.09)"
+            strokeWidth="1.2"
+          />
+          {/* Prime meridian */}
+          <ellipse
+            cx="56" cy="56" rx="11" ry="34"
+            fill="none"
+            stroke="rgba(10,10,10,0.09)"
+            strokeWidth="1.2"
+          />
+          {/* Northern tropic */}
+          <ellipse
+            cx="56" cy="41" rx="23" ry="7"
+            fill="none"
+            stroke="rgba(10,10,10,0.05)"
+            strokeWidth="1"
+          />
+          {/* Southern tropic */}
+          <ellipse
+            cx="56" cy="71" rx="23" ry="7"
+            fill="none"
+            stroke="rgba(10,10,10,0.05)"
+            strokeWidth="1"
+          />
+        </svg>
+
+        {/* Bee orbit — outer div rotates, inner counter-rotates to keep bee upright */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0"
+          style={{ transformOrigin: "50% 50%" }}
+        >
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
+            className="absolute left-1/2 -translate-x-1/2"
+            style={{ top: "4px" }}
+          >
+            <span style={{ fontSize: "20px", lineHeight: 1 }} role="img" aria-label="bee">
+              🐝
+            </span>
+          </motion.div>
+        </motion.div>
       </div>
 
       {/* Cycling text */}
