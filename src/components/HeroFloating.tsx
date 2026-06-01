@@ -13,7 +13,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import LaunchCountdown from "./LaunchCountdown";
 
 // Load auth-aware CTA client-side only — prevents SSR throws when ClerkProvider is absent
 const BeginJourneyButton = dynamic(() => import("./BeginJourneyButton"), {
@@ -206,14 +205,6 @@ export default function HeroFloating() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut", delay: 1.05 }}
-            className="mt-4 w-full"
-          >
-            <LaunchCountdown variant="compact" />
-          </motion.div>
         </div>
 
         {/* Scroll indicator — bottom-center float animation */}
