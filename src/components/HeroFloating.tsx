@@ -261,7 +261,7 @@ export default function HeroFloating() {
 
               {/* Metadata line */}
               <p className="text-[10px] text-white/50 leading-relaxed">
-                5 days &middot; Ultra-luxury &middot; Couple
+                3 days &middot; Luxury &middot; Solo
               </p>
             </motion.div>
           </div>
