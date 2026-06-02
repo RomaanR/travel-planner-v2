@@ -256,7 +256,7 @@ export default function HeroFloating() {
 
               {/* Serif headline */}
               <p className="font-serif italic text-white text-lg leading-tight mb-2">
-                The New York Journey
+                The Istanbul Journey
               </p>
 
               {/* Metadata line */}
