@@ -102,7 +102,10 @@ export function useItinerary() {
     setLoading(true);
     setError(null);
     pendingRetryRef.current = data;
-    toast.loading("Consulting the concierge\u2026", { id: "curate-task" });
+    // Pass description: undefined explicitly \u2014 Sonner retains the prior toast's
+    // description when reusing the same id, which would otherwise leave the stale
+    // success line ("Your bespoke journey is ready for review.") under the loader.
+    toast.loading("Consulting the concierge\u2026", { id: "curate-task", description: undefined });
     try {
       const res = await fetch("/api/itinerary", {
         method: "POST",
