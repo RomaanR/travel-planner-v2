@@ -21,12 +21,16 @@ const OFFLINE_MODE_ENABLED = false;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CACHE_KEY = "seek_wander_archive";
+const CACHE_KEY_PREFIX = "seek_wander_archive";
 
 // ── Cache helpers (module-level so deleteTrip can access them) ────────────────
 
-function readCache(): CachedTrip[] {
-  const raw = localStorage.getItem(CACHE_KEY);
+function cacheKey(userId: string): string {
+  return `${CACHE_KEY_PREFIX}:${userId}`;
+}
+
+function readCache(userId: string): CachedTrip[] {
+  const raw = localStorage.getItem(cacheKey(userId));
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -34,28 +38,45 @@ function readCache(): CachedTrip[] {
     return parsed as CachedTrip[];
   } catch {
     // Corrupt or tampered cache — purge so it doesn't persist
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(cacheKey(userId));
     return [];
   }
 }
 
-function writeCache(trips: CachedTrip[]): void {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(trips));
+function writeCache(userId: string, trips: CachedTrip[]): void {
+  localStorage.setItem(cacheKey(userId), JSON.stringify(trips));
+}
+
+// ── Standalone helper — call from any page after saving a new trip ────────────
+// Prepends the new trip to the user's cache so /trips shows it immediately
+// without waiting for the next /api/trips fetch.
+export function cacheNewTrip(userId: string, trip: CachedTrip): void {
+  try {
+    const existing = readCache(userId);
+    // Avoid duplicates if called twice (e.g. React Strict Mode double-invoke)
+    if (existing.some((t) => t.id === trip.id)) return;
+    writeCache(userId, [trip, ...existing]);
+  } catch { /* non-fatal */ }
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-export function useOfflineTrips() {
+export function useOfflineTrips(userId: string | null | undefined) {
   const [trips,     setTrips]     = useState<CachedTrip[]>([]);
   const [isOffline, setIsOffline] = useState(false);
   const [loading,   setLoading]   = useState(true);
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     async function load() {
       if (OFFLINE_MODE_ENABLED) {
         // 1. Short-circuit if the browser reports no connectivity
         if (typeof navigator !== "undefined" && !navigator.onLine) {
-          setTrips(readCache());
+          setTrips(readCache(userId!));
           setIsOffline(true);
           setLoading(false);
           return;
@@ -68,13 +89,13 @@ export function useOfflineTrips() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { trips: fresh } = (await res.json()) as { trips: CachedTrip[] };
 
-        // 3. Always persist to cache so fallback works if fetch fails later
-        writeCache(fresh);
+        // 3. Always persist to user-scoped cache so fallback works if fetch fails later
+        writeCache(userId!, fresh);
         setTrips(fresh);
         setIsOffline(false);
       } catch {
-        // 4. Always fall back to cache on fetch failure (banner only shown when OFFLINE_MODE_ENABLED)
-        setTrips(readCache());
+        // 4. Always fall back to user-scoped cache on fetch failure
+        setTrips(readCache(userId!));
         if (OFFLINE_MODE_ENABLED) setIsOffline(true);
       } finally {
         setLoading(false);
@@ -82,24 +103,18 @@ export function useOfflineTrips() {
     }
 
     load();
-  }, []);
+  }, [userId]);
 
   // ── deleteTrip ──────────────────────────────────────────────────────────────
-  // Calls DELETE /api/trips/[id], then removes the trip from local React state
-  // and syncs the localStorage archive. Throws on API failure so callers can
-  // surface an error toast without needing to manage their own fetch state.
   async function deleteTrip(id: string): Promise<void> {
     const res = await fetch(`/api/trips/${id}`, { method: "DELETE" });
     if (!res.ok) {
       throw new Error(`Delete failed: HTTP ${res.status}`);
     }
 
-    // Remove from React state
     setTrips((prev) => {
       const updated = prev.filter((t) => t.id !== id);
-      // Sync localStorage — use the filtered array, not a stale readCache() call,
-      // so there is no race between React state and the localStorage write.
-      writeCache(updated);
+      if (userId) writeCache(userId, updated);
       return updated;
     });
   }

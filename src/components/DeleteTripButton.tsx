@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Trash2, X, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,7 @@ export function DeleteDialog({
 
 export default function DeleteTripButton({ tripId, destination }: Props) {
   const router = useRouter();
+  const { userId } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending,  setIsPending]  = useState(false);
 
@@ -139,14 +141,14 @@ export default function DeleteTripButton({ tripId, destination }: Props) {
       // will self-correct. Proactively pruning it here prevents a stale flash
       // if the user navigates to /trips before the hook re-fetches.
       try {
-        const raw = localStorage.getItem("seek_wander_archive");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            localStorage.setItem(
-              "seek_wander_archive",
-              JSON.stringify(parsed.filter((t: { id: string }) => t.id !== tripId))
-            );
+        if (userId) {
+          const key = `seek_wander_archive:${userId}`;
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              localStorage.setItem(key, JSON.stringify(parsed.filter((t: { id: string }) => t.id !== tripId)));
+            }
           }
         }
       } catch { /* non-fatal — /trips will self-correct on mount */ }

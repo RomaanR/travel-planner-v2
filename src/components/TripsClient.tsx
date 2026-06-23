@@ -7,6 +7,7 @@ import Link from "next/link";
 import { WifiOff, ArrowRight, Loader2, Trash2, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
 import { useOfflineTrips } from "@/hooks/useOfflineTrips";
 import type { CachedTrip } from "@/hooks/useOfflineTrips";
 import ShareButton from "@/components/ShareButton";
@@ -126,7 +127,8 @@ function DeleteDialog({
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function TripsClient() {
-  const { trips, isOffline, loading, deleteTrip } = useOfflineTrips();
+  const { userId } = useAuth();
+  const { trips, isOffline, loading, deleteTrip } = useOfflineTrips(userId);
 
   // Track which trip's dialog is open (by id) and whether a delete is in-flight
   const [confirmId,  setConfirmId]  = useState<string | null>(null);

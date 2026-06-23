@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { SignedIn, useAuth } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
+import { cacheNewTrip } from "@/hooks/useOfflineTrips";
 import { useItinerary } from "@/hooks/useItinerary";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import RefinePanel from "@/components/RefinePanel";
@@ -60,7 +61,7 @@ import GenerationLoader from "@/components/GenerationLoader";
 
 export default function ItineraryPage() {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const { itinerary, loading, error, paywalled, generateItinerary, abort } = useItinerary();
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
@@ -76,8 +77,20 @@ export default function ItineraryPage() {
     if (!itinerary || saveState !== "idle") return;
     setSaveState("saving");
     try {
-      await saveTripToDb(itinerary.destination, itinerary.days.length, itinerary);
+      const saved = await saveTripToDb(itinerary.destination, itinerary.days.length, itinerary);
       setSaveState("saved");
+      // Write to user-scoped cache immediately so /trips shows the trip
+      // without waiting for the next /api/trips fetch (critical on mobile).
+      if (userId) {
+        cacheNewTrip(userId, {
+          id:            saved.id,
+          destination:   saved.destination,
+          days:          saved.days,
+          createdAt:     saved.createdAt.toISOString(),
+          photoUrl:      null,
+          itineraryData: itinerary as { editorial?: string; days?: { theme?: string }[] },
+        });
+      }
       toast.success("Passport Updated", {
         description: "This journey has been saved to your archive.",
       });
