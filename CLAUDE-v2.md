@@ -2839,3 +2839,341 @@ Updated all three date references from **May 6, 2026** to **May 25, 2026**:
 - `LAUNCH_AT` constant: `"2026-05-06T12:00:00-04:00"` → `"2026-05-25T12:00:00-04:00"`
 - Compact variant label: `"May 6, 12 PM EDT"` → `"May 25, 12 PM EDT"`
 - Hero variant label: `"Wednesday, May 6 at 12:00 PM EDT"` → `"Sunday, May 25 at 12:00 PM EDT"`
+
+---
+
+### Sunday, May 4, 2026 — Security Audit, DB Indexes & Proxy Rate Limiting
+
+**Commits:** `b1aa6cc`–`4167796` · **Branch:** `main` · **Pushed:** ✅
+
+---
+
+#### 1. Full Scalability & Security Audit
+
+**Scope:** Comprehensive audit covering API endpoint security, `.env` git exposure, database indexes, rate limiting coverage, secret handling, and Vercel/Supabase scaling characteristics.
+
+**Findings — clean:**
+- `.env.local` / `.env` confirmed never committed (git log clean, `.gitignore` covers both)
+- No hardcoded secrets in any source file
+- All user-facing routes gated by Clerk auth or signed secret (rate limit, cron bearer, Stripe HMAC)
+- IDOR ownership checks in place on `/api/trips/[id]`
+- Stripe webhook has HMAC signature verification + `StripeEvent` idempotency table
+- Security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) applied globally in `next.config.mjs`
+- Sentry error tracking wired in
+
+**Findings — actioned (see entries 2 & 3 below):**
+- `Trip.userId` missing DB index — full table scan on every `/trips` page load
+- `CostLog.createdAt` missing index — admin dashboard query unindexed at scale
+- `/api/photo` and `/api/staticmap` had no rate limiting — open to Google API quota exhaustion
+
+**Scalability verdict:** The stack (Vercel serverless + Upstash Redis + Supabase PgBouncer) scales horizontally to 10,000+ users. The primary bottleneck was the missing `Trip.userId` index — resolved in entry 2.
+
+---
+
+#### 2. Database Indexes — Trip & CostLog
+
+**File changed:** `prisma/schema.prisma`
+**Pushed to Supabase:** ✅ via `npx prisma db push`
+
+**Problem:** `Trip.findMany({ where: { userId } })` — called on every `/trips` archive page load — performed a full sequential table scan. With 10K users × 5 trips = 50K rows this degrades noticeably; at 100K rows it becomes a visible bottleneck. `CostLog` queries in the admin dashboard (`orderBy: { createdAt: "desc" }, take: 200`) were similarly unindexed.
+
+**Fix:** Three indexes added to `prisma/schema.prisma`:
+
+```prisma
+model Trip {
+  // ...existing fields...
+  @@index([userId])                        // findMany({ where: { userId } }) — O(log n)
+  @@index([userId, createdAt(sort: Desc)]) // covering index — avoids sort step on archive fetch
+}
+
+model CostLog {
+  // ...existing fields...
+  @@index([createdAt(sort: Desc)]) // admin dashboard last-200-rows query — O(log n) at scale
+}
+```
+
+`PlaceCache.@@index([updatedAt])` (cron cleanup) and `PlaceCache.cacheKey @unique` (enrichment lookup) were already present and confirmed correct.
+
+---
+
+#### 3. Rate Limiting — `/api/photo` and `/api/staticmap`
+
+**Files changed:** `src/lib/ratelimit.ts`, `src/app/api/photo/route.ts`, `src/app/api/staticmap/route.ts`
+
+**Problem:** Both proxy routes call Google APIs using `MAPS_SERVER_KEY` server-side but had no rate limiting. A bot or curious user discovering either URL could hammer it and exhaust Google Places / Static Maps quota with no cost cap.
+
+- `/api/photo` — proxies Google Places Photos; unlimited calls would exhaust the Places API photo quota
+- `/api/staticmap` — calls Google Static Maps API (~$2/1,000 requests); no guard against automated abuse
+
+**Fix:** Two new Upstash `Ratelimit` instances added to `src/lib/ratelimit.ts`:
+
+```ts
+export const photoRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(120, "1 h"),
+  prefix:  "travalbee:photo",
+});
+
+export const staticmapRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "1 h"),
+  prefix:  "travalbee:staticmap",
+});
+```
+
+**Limit rationale:**
+- `photo` — 120/hr: a power user generating 4+ itineraries in one session fires ~25–30 uncached photo refs each. CDN-cached photos (30-day `Cache-Control: immutable`) bypass the function entirely and don't count against the limit.
+- `staticmap` — 30/hr: one PDF export = up to 5 map requests (one per day page). 30/hr = 6 full PDF exports per hour per IP — more than enough for any real user.
+
+Both routes key by `x-forwarded-for` IP (set by Vercel edge). Missing IP header is silently skipped rather than hard-rejected — these are public proxy routes, not auth-gated endpoints.
+
+---
+
+### Wednesday, May 6, 2026 — KML Map Export, PDF Google Maps Link, Timeline Rail, Credits Banner & Pipeline Hardening
+
+**Branch:** `claude/relaxed-dewdney-4bea72` → merged to `main` · **Pushed:** ✅
+
+---
+
+#### 1. Hotel Autocomplete — Destination Bias Fix
+
+**File changed:** `src/components/CurationForm.tsx`
+
+**Problem:** The hotel name autocomplete (Field 9) was returning results biased toward the user's physical location rather than the selected destination city.
+
+**Fix:** Added a `bounds` option to the lodging `Autocomplete` component, constructed as a `LatLngBoundsLiteral` (plain object — no `google.maps.*` constructor needed) from the stored `form.lat` / `form.lng` values (±0.25 degree box):
+
+```tsx
+bounds: {
+  north: form.lat + 0.25, south: form.lat - 0.25,
+  east:  form.lng + 0.25, west:  form.lng - 0.25,
+},
+strictBounds: false,
+```
+
+`strictBounds: false` keeps results outside the box as lower-ranked fallbacks rather than blocking them entirely.
+
+---
+
+#### 2. Autocomplete Dropdown — Mobile Address Wrapping
+
+**File changed:** `src/app/globals.css`
+
+**Problem:** On mobile, the Google Places `.pac-container` displayed address secondary text on a single truncated line — long hotel addresses were unreadable.
+
+**Fix:** Added CSS overrides after the `* { border-radius: 0 !important; }` block:
+
+```css
+.pac-container { font-family: var(--font-dm-sans)...; border: ...; box-shadow: ...; }
+.pac-item { padding: 8px 12px; white-space: normal; }
+.pac-item-query { font-size: 0.875rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pac-secondary-text { font-size: 0.75rem; display: block; white-space: normal; word-break: break-word; }
+```
+
+Also added `@media print { .pac-container { display: none !important; } }` to prevent the dropdown from bleeding into the print/PDF preview overlay.
+
+---
+
+#### 3. No-Credits Banner on `/curate`
+
+**Files changed:** `src/app/curate/page.tsx`, `src/app/curate/CurateClient.tsx`, `src/components/CurationForm.tsx`
+
+**Feature:** Users with zero credits now see a dismissal-free banner above the form before they begin filling it in, preventing a surprise 402 error mid-flow.
+
+**Implementation:**
+- `curate/page.tsx` fetches `userProfile.availableCredits` server-side and passes `credits` to `CurateClient`
+- `CurateClient` renders a `motion.div` banner (`border-burnt-orange/30 bg-burnt-orange/5`) when `credits <= 0`, containing a `Sparkles` icon, "No Credits Remaining" micro-copy, and a `/pricing` link
+- `CurationForm` receives `credits?: number` prop; the existing sessionStorage credits-hint `useEffect` is gated to skip entirely when `credits <= 0` — prevents the "You have free credits available" hint from appearing simultaneously with the no-credits banner
+
+---
+
+#### 4. Timeline Left-Rail Step Numbers
+
+**File changed:** `src/components/ItineraryViewer.tsx`
+
+**Feature:** Added a visual left rail to the itinerary timeline so users can see stop sequence at a glance.
+
+**Implementation inside `DaySection`:**
+- Absolute vertical line: `absolute left-[13px] top-6 bottom-6 w-px bg-burnt-orange/40 z-0` — hidden in print
+- Each item row wraps in `flex items-start gap-3`; a `w-7 shrink-0` column on the left holds a `26×26px` square node (`border border-burnt-orange/60`, `bg-paper`) containing the zero-padded stop number (`font-mono text-[8px] text-burnt-orange`, e.g. `01`, `02`)
+- Transit connectors indent `pl-10` to clear the node column
+- All node elements carry `print:hidden` — print layout is unaffected
+
+---
+
+#### 5. KML Map Download
+
+**New files:** `src/lib/generateKml.ts`, `src/components/ExportMapButton.tsx`
+**Files changed:** `src/components/TripHeaderActions.tsx`, `src/app/trips/[id]/page.tsx`
+
+**Feature:** Users can download a `.kml` file of their itinerary, importable into Google Maps My Maps or Google Earth, with correct place names and stop order.
+
+**`generateKml(itinerary: ItineraryResponse): string`** — pure function:
+- Outputs `<?xml version="1.0">` KML with one `<Folder>` per day (name: `"Day N: Theme"`)
+- Each `<Placemark>` contains stop number, title, description, startTime, and `<coordinates>lng,lat,0</coordinates>` (KML requires lng-first order — reversed from the `{lat, lng}` objects in the itinerary)
+- Hidden gem appended as a separate starred `<Placemark>` per day with a green star icon (`grn-stars.png`)
+- Two `<Style>` definitions: `#stop` (burnt-orange circle, `color: ff0c41c2` in KML ABGR) and `#gem` (teal star, `color: ff006959`)
+- `esc()` helper encodes all user text through XML entity escaping before injection
+
+**`ExportMapButton`** — `"use client"` button:
+- Calls `generateKml(itinerary)`, creates a `Blob` (`application/vnd.google-earth.kml+xml`), triggers browser download via `URL.createObjectURL` + programmatic `<a>.click()`
+- Filename: `travalbee-[destination-slug].kml`
+- Accepts `className`, `iconSize`, and `label` props — renders identically in the desktop header and mobile kebab menu
+
+**`TripHeaderActions`** updated:
+- New `itinerary: ItineraryResponse` prop threaded from `trips/[id]/page.tsx`
+- Desktop: `<ExportMapButton>` added between `<DeleteTripButton>` and `<ExportPdfButton>`
+- Mobile kebab: new "Download Map" menu item with `Map` icon, positioned between "Download PDF" and "Remove"
+
+---
+
+#### 6. Clickable Google Maps Link in PDF
+
+**File changed:** `src/components/PrintItinerary.tsx`
+
+**Feature:** Each day page in the PDF export now ends with a clickable `"Open Day N in Google Maps →"` link that opens a pre-built directions route in Google Maps.
+
+**Implementation:**
+- `PrintDayPage` receives `destination: string` prop (passed from `PrintItinerary` via `itinerary.destination`) — this fixed a `ReferenceError: itinerary is not defined` crash on `/trips` that occurred in the first revision
+- URL format: `https://www.google.com/maps/dir/?api=1&origin=lat,lng&destination=lat,lng&waypoints=lat,lng|lat,lng` — the `api=1` programmatic format places pins at exact coordinates without name disambiguation
+- Only items with `coordinates?.lat && coordinates?.lng` are included
+- Link styled to match existing `PageFooter` link aesthetic: `10px uppercase`, `letter-spacing 0.2em`, burnt-orange with underline
+
+**Iteration notes:** Three URL formats were tried — coordinates-only (showed wrong city on first attempt), place name search (caused "Did you mean?" disambiguation), `api=1` with coordinates (current — correct locations, coordinates-based labels). `api=1` with place IDs was architecturally planned but deferred (see entry 7).
+
+---
+
+#### 7. `placeId` Pipeline — Future Google Maps Name+Location Fix
+
+**Files changed:** `prisma/schema.prisma`, `src/types/itinerary.ts`, `src/app/api/itinerary/route.ts`
+**DB pushed:** ✅ via `npx dotenv -e D:\travel-plannner-v2\.env.local -- prisma db push`
+
+**Context:** Google Maps `api=1` format supports `origin_place_id` / `destination_place_id` / `waypoint_place_ids` parameters — when provided, Maps shows the correct named place at the exact location with no disambiguation. The Google Places Text Search response already returns `place_id` during enrichment; it was just not being stored.
+
+**Changes:**
+- `PlaceCache` schema: `placeId String?` column added (comment: "Google Places place_id — used to build accurate Maps URLs with correct names + locations")
+- `TimelineItem` type: `placeId?: string` field added
+- `PlacesEnrichment` type in `route.ts`: `placeId?: string` field added
+- `enrichPlace()` cache hit path: returns `cached.placeId ?? undefined`
+- `enrichPlace()` fresh fetch path: `placeId: place.place_id ?? undefined` included in returned enrichment; `placeId` written to both `update` and `create` branches of `placeCache.upsert()`
+- `placeId` flows to `TimelineItem` via the existing `Object.assign(workItems[i].obj, result.value)` call — no additional wiring needed
+
+**Status:** Data pipeline is live (new generations store `placeId`). The Maps URL in `PrintItinerary.tsx` still uses coordinates — the `place_id`-based URL format is ready to enable once enough trips have been generated with real place IDs. Old saved trips fall back to the coordinate URL gracefully.
+
+---
+
+### Tuesday, June 23, 2026 — Open/Closed Hours Fix, iOS Safari Resilience, Trips Multi-Account Isolation, Audit Fixes & Shared Page Redesign
+
+**Branch:** `main` · **Pushed:** ✅ (commits `4ab6fbc`, `4729cc6`, `334a6a9`, `8a21659`, `0b55176`, `60f7db6`)
+
+---
+
+#### 1. Opening Hours — `todayIdx` Used Server UTC Day Instead of Destination Local Day
+
+**File changed:** `src/app/api/itinerary/route.ts`
+
+**Problem:** Timeline cards (restaurants, museums, etc.) almost always displayed `CLOSED`. Two compounding root causes:
+
+1. **Wrong day cached.** In `enrichPlace()`, the `weekday_text` index was computed as `todayIdx = (new Date().getDay() + 6) % 7` — using the *server's* UTC clock. Vercel runs in UTC, so when the server day was (for example) Monday — a common weekly-closure day for venues — Google's `"Closed"` string was selected, stripped, and written to `PlaceCache.hoursOpen`. Every subsequent cache hit then called `parseOpenNow("Closed", lng)` which correctly returns `false` — surfacing `CLOSED` permanently regardless of the destination's actual local day.
+2. **Fresh-miss `openNow` always `undefined`.** On a fresh enrichment the field was set from `place.opening_hours?.open_now`, but `opening_hours` is **not** returned by the Google Places *Text Search* endpoint (it is a Place Details-only field). So `openNow` was `undefined` on every cache miss and nothing rendered.
+
+**Fix:**
+- `todayIdx` now derives from the destination's estimated local day using the same `lng`-based UTC offset approach as `parseOpenNow()`:
+  ```ts
+  const utcOffsetHrs = Math.round(destinationLng / 15);
+  const destNow = new Date(Date.now() + utcOffsetHrs * 3600 * 1000);
+  const todayIdx = (destNow.getUTCDay() + 6) % 7; // Monday=0
+  ```
+- Fresh-miss `openNow` now computes via `parseOpenNow(hoursOpen, destinationLng)` when hours are available, falling back to `place.opening_hours?.open_now` only if no hours string exists — matching the cache-hit code path.
+
+**Migration:** Existing `PlaceCache` rows holding the literal `"Closed"` string self-correct on their next cache miss (14-day TTL) or via manual Supabase row clear.
+
+---
+
+#### 2. Timeline Cards — Show Opening Hours Only, Remove OPEN/CLOSED Badge
+
+**File changed:** `src/components/TimelineCard.tsx`
+
+**Decision:** Rather than rely on the timezone-estimated open/closed computation (±30 min accuracy, and brittle as documented above), the OPEN/CLOSED status badge was removed entirely. Cards now display only the raw hours string (e.g. `9:00 AM – 9:00 PM`).
+
+**Fix:** The conditional block that rendered the `emerald-accent` "OPEN" / `burnt-orange` "CLOSED" span was deleted; the `Clock` icon + `font-mono` hours text remain, gated on `item.hoursOpen` alone (previously `item.hoursOpen || item.openNow !== undefined`). `print:hidden` retained.
+
+---
+
+#### 3. iOS Safari — Background-Kill Fetch Retry in `useItinerary`
+
+**File changed:** `src/hooks/useItinerary.ts`
+
+**Problem:** On iPhone, starting a generation and then backgrounding Safari (leaving the tab open) produced a "Load failed / something went wrong" error. iOS Safari freezes JS execution and kills all in-flight `fetch` requests when a tab is backgrounded, throwing a generic `TypeError: Load failed` that fell into the catch block and surfaced the "Concierge Busy" error toast.
+
+**Fix:** Added an auto-retry mechanism keyed on tab visibility:
+- New `pendingRetryRef` stores the in-flight `ItineraryRequest` before the fetch begins; cleared on success.
+- A `visibilitychange` `useEffect` listener re-invokes `generateItinerary(pendingRetryRef.current)` when the tab returns to `visible`.
+- The catch block detects the iOS background-kill signature — `e instanceof TypeError` with message `"Load failed"` / `"Failed to fetch"` / `"NetworkError when attempting to fetch resource."` **and** `document.visibilityState === "hidden"` — and, instead of showing an error toast, queues the retry and keeps `loading = true` so the loader stays visible.
+- The `finally` block was updated to not clear `loading` when a retry is pending (`if (abortRef.current === controller && !pendingRetryRef.current)`).
+
+**Result:** The user backgrounds the tab, returns to a still-running loader, and the itinerary loads normally — no error surfaced.
+
+---
+
+#### 4. My Trips — Multi-Account Cache Isolation & Mobile Save Visibility
+
+**Files changed:** `src/hooks/useOfflineTrips.ts`, `src/components/TripsClient.tsx`, `src/components/DeleteTripButton.tsx`, `src/app/itinerary/page.tsx`
+
+**Problem A — account mixing:** The offline cache used a single global `localStorage` key `seek_wander_archive` with no user scoping. Logging in as a different Clerk user on the same device/browser could surface the previous user's trips (especially on the fetch-failure fallback path).
+
+**Problem B — mobile save not appearing:** After saving a trip, navigating to `/trips` triggered a fresh `/api/trips` network fetch to see it. On mobile that fetch is slow/raced, so the just-saved trip (written to Supabase, not to localStorage) did not appear.
+
+**Fix:**
+- **User-scoped cache key.** `CACHE_KEY` is now `CACHE_KEY_PREFIX` + a `cacheKey(userId)` helper producing `seek_wander_archive:<userId>`. `readCache(userId)` / `writeCache(userId, trips)` take the userId. `useOfflineTrips(userId)` now accepts a `userId` argument, short-circuits when null, and re-fetches when it changes (`useEffect` dep `[userId]`).
+- **`TripsClient`** now reads `userId` from Clerk `useAuth()` and passes it to `useOfflineTrips(userId)`.
+- **New `cacheNewTrip(userId, trip)` standalone export** — prepends a newly saved trip to the user's cache (with an id-dedup guard for React Strict Mode double-invokes).
+- **`itinerary/page.tsx` `handleSave()`** now captures the returned trip from `saveTripToDb()` (which returns the created `Trip` including `id`/`createdAt`) and calls `cacheNewTrip(userId, …)` immediately on success, so `/trips` shows it without waiting for the next API fetch.
+- **`DeleteTripButton`** updated to read `userId` from `useAuth()` and prune the user-scoped key `seek_wander_archive:<userId>` (previously hardcoded the unscoped key).
+
+---
+
+#### 5. Full Codebase Audit — Six Findings Fixed
+
+**Files changed:** `src/types/itinerary.ts`, `src/lib/itineraryUtils.ts`, `src/components/ItineraryMap.tsx`, `src/components/MobileMenu.tsx`, `src/app/shared/[id]/page.tsx`, `src/hooks/useOfflineTrips.ts`, `src/lib/ratelimit.ts`, `src/app/api/trips/route.ts`
+
+A thorough audit (auth flows, mobile edge cases, API routes, data flow, React state, TypeScript safety) surfaced six actionable issues, all fixed:
+
+1. **Semantic map icons were dead code.** `computeMapPoints()` collapsed every meal type to `MapPoint.type = "meal"`, but `buildSvgMarker()` in `ItineraryMap` keys its breakfast/lunch/dinner/etc. icon set on the original `TimelineItemType`. Result: all meal markers showed the default pin. **Fix:** added an optional `itemType?: TimelineItemType` field to `MapPoint`, populated it in `computeMapPoints()`, and updated `ItineraryMap` to call `buildSvgMarker(point.day, point.itemType ?? point.type, …)`.
+
+2. **Coordinate guard rejected `0`.** `computeMapPoints()` used `if (!item.coordinates?.lat || !item.coordinates?.lng) return;` — falsy `0` excluded valid points on the prime meridian (`lng: 0`, e.g. London/Greenwich) or equator. **Fix:** changed to explicit `== null` checks.
+
+3. **iOS scroll lock not released.** `MobileMenu.tsx` set `document.body.style.overflow = "unset"` on close — the inline string `"unset"` is not reliably honoured on older WebKit. **Fix:** set to `""` (empty string) to remove the inline style cleanly.
+
+4. **`/shared/[id]` sticky CTA obscured by home indicator.** No safe-area handling on iPhone X+. **Fix (later superseded by entry 6):** added `env(safe-area-inset-bottom)` padding + `pb-16` on the scroll container + `print:` reset classes.
+
+5. **My Trips showed empty list on fetch failure.** `useOfflineTrips` only fell back to cache visibly when the disabled `OFFLINE_MODE_ENABLED` flag was true. **Fix:** the catch path now unconditionally loads cached trips and sets `isOffline = true` regardless of the flag.
+
+6. **`/api/trips` GET shared the itinerary-generation rate-limit bucket.** Every `/trips` page load consumed the user's `5/hr` generation quota. **Fix:** added a separate `tripsRatelimit` (`slidingWindow(60, "1 h")`, prefix `travalbee:trips`) in `ratelimit.ts` and switched the GET route to use it.
+
+---
+
+#### 6. Shared Itinerary Page — Redesign to Match `/trips/[id]` UI
+
+**File changed:** `src/app/shared/[id]/page.tsx`
+
+**Problem:** Publicly shared itineraries (`/shared/[id]`) rendered with the old layout — a black "Curated by TravalBee" acquisition ribbon below the navbar, an inline non-banner map block, and a fixed full-width burnt-orange sticky CTA bar pinned to the bottom of the viewport (the "weird orange thing"). This diverged from the polished saved-trip viewer.
+
+**Fix:** Rewrote the page to mirror `trips/[id]/page.tsx`:
+- Same clean header strip (`bg-paper-dark`, `pt-24 md:pt-20`) showing `"Public Itinerary · N Days"` micro-copy + the serif destination title, with a single inline "Create Your Own →" burnt-orange button (mobile + desktop variants).
+- Replaced the inline `<ItineraryMap>` mobile block with the shared `<MobileMapBanner>` component (the "View Map" button experience).
+- Removed the fixed bottom orange sticky CTA bar entirely; the acquisition CTA ("Inspired by this journey? / Create Your Free Itinerary →") now lives in the `ItineraryViewer` `bottomSection` slot at the end of the timeline content.
+- Added `print:h-auto print:overflow-visible print:block` to the outer wrapper.
+- `generateMetadata()` enriched to extract the editorial first sentence as the OG/Twitter description and include the destination hero photo via `getDestinationPhotoUrl()` (mirroring `trips/[id]`).
+
+---
+
+#### 7. Generation Loader — Stale Toast Description
+
+**File changed:** `src/hooks/useItinerary.ts`
+
+**Problem:** While an itinerary was generating, the Sonner toast under the loader sometimes read `"Consulting the concierge…"` (correct loading title) with the description `"Your bespoke journey is ready for review."` (the *success* description from a prior run) — a mismatched/stale message that didn't reflect actual state.
+
+**Root cause:** The loading, success, and error toasts intentionally share `id: "curate-task"` so Sonner mutates one toast in place. When updating an existing toast by id, Sonner spreads new options over the old toast object (`{ ...oldToast, ...newData }`). The `toast.loading()` call set only the title, so a retained `description` from a still-present prior success toast (or the iOS retry path) leaked under the new loader.
+
+**Fix:** `toast.loading("Consulting the concierge…", { id: "curate-task", description: undefined })` — explicitly passing `description: undefined` overwrites the retained value so the loader shows only its own text.
