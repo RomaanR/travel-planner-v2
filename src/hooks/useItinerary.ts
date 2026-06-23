@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import type { ItineraryRequest, ItineraryResponse } from "@/types/itinerary";
 
@@ -53,10 +53,28 @@ export function useItinerary() {
   const [error, setError] = useState<string | null>(null);
   const [paywalled, setPaywalled] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Stores the last request so we can retry when the tab comes back to foreground
+  const pendingRetryRef = useRef<ItineraryRequest | null>(null);
 
   const abort = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    pendingRetryRef.current = null;
+  }, []);
+
+  // iOS Safari kills in-flight fetches when the tab is backgrounded.
+  // When the tab becomes visible again, retry automatically if we have a pending request.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && pendingRetryRef.current) {
+        const retryData = pendingRetryRef.current;
+        pendingRetryRef.current = null;
+        generateItinerary(retryData);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Restore a cached itinerary without any API call (used on back-navigation).
@@ -83,6 +101,7 @@ export function useItinerary() {
 
     setLoading(true);
     setError(null);
+    pendingRetryRef.current = data;
     toast.loading("Consulting the concierge\u2026", { id: "curate-task" });
     try {
       const res = await fetch("/api/itinerary", {
@@ -107,6 +126,7 @@ export function useItinerary() {
 
       // Persist result so back-navigation instantly restores it
       saveCache(fingerprint, result);
+      pendingRetryRef.current = null;
 
       toast.success("Itinerary Prepared", {
         id: "curate-task",
@@ -123,6 +143,17 @@ export function useItinerary() {
         setLoading(false);
         return null;
       }
+      // iOS Safari kills fetch when the tab is backgrounded — "Load failed" TypeError.
+      // Queue the request so the visibilitychange listener retries when the tab returns.
+      const isIosBackgroundKill =
+        e instanceof TypeError &&
+        (e.message === "Load failed" || e.message === "Failed to fetch" || e.message === "NetworkError when attempting to fetch resource.");
+      if (isIosBackgroundKill && document.visibilityState === "hidden") {
+        pendingRetryRef.current = data;
+        // Keep loading=true so the loader stays visible when the tab comes back
+        return null;
+      }
+      pendingRetryRef.current = null;
       setError(e instanceof Error ? e.message : "Unknown error");
       toast.error("Concierge Busy", {
         id: "curate-task",
@@ -132,7 +163,9 @@ export function useItinerary() {
     } finally {
       // Only reset loading if we are still the active request — a superseding
       // request (React 18 Strict Mode double-mount) has its own loading=true.
-      if (abortRef.current === controller) setLoading(false);
+      // Also keep loading=true when an iOS background-kill queued a retry — the
+      // loader should stay visible so the user sees progress when they return.
+      if (abortRef.current === controller && !pendingRetryRef.current) setLoading(false);
     }
   }
 

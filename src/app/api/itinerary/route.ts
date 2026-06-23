@@ -478,7 +478,12 @@ async function enrichPlace(
           const dj = await det.json();
           const wt: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
           if (wt?.length) {
-            const todayIdx = (new Date().getDay() + 6) % 7;
+            // Use destination local day (lng-based UTC offset) so the correct
+            // day's hours are cached — server UTC day would cache "Closed" for
+            // places with a weekly closure that falls on today in UTC.
+            const utcOffsetHrs = Math.round(destinationLng / 15);
+            const destNow = new Date(Date.now() + utcOffsetHrs * 3600 * 1000);
+            const todayIdx = (destNow.getUTCDay() + 6) % 7; // Monday=0
             const stripped = (wt[todayIdx] ?? "").replace(/^[^:]+:\s*/, "").trim();
             if (stripped) hoursOpen = stripped;
           }
@@ -493,7 +498,7 @@ async function enrichPlace(
       placeId:          place.place_id ?? undefined,
       rating:           place.rating,
       userRatingsTotal: place.user_ratings_total,
-      openNow:          place.opening_hours?.open_now,
+      openNow:          hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : place.opening_hours?.open_now,
       hoursOpen,
       priceLevel:       place.price_level,
     };
