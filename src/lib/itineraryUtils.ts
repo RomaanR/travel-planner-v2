@@ -123,13 +123,14 @@ export function computeMapPoints(days: DayPlan[]): MapPoint[] {
     const pts: MapPoint[] = [];
 
     (day.timeline ?? []).forEach((item) => {
-      if (!item.coordinates?.lat || !item.coordinates?.lng) return;
+      if (item.coordinates?.lat == null || item.coordinates?.lng == null) return;
       pts.push({
-        type: isMealType(item.type) ? "meal" : "activity",
-        label: item.title ?? "",
-        day: day.day,
-        lat: item.coordinates.lat,
-        lng: item.coordinates.lng,
+        type:     isMealType(item.type) ? "meal" : "activity",
+        itemType: item.type,
+        label:    item.title ?? "",
+        day:      day.day,
+        lat:      item.coordinates.lat,
+        lng:      item.coordinates.lng,
       });
     });
 

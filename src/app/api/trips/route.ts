@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
-import { ratelimit } from "@/lib/ratelimit";
+import { tripsRatelimit } from "@/lib/ratelimit";
 
 export async function GET() {
   const { userId } = await auth();
@@ -12,7 +12,7 @@ export async function GET() {
 
   // Rate limit per userId — prevents a leaked Clerk token being used to hammer
   // this endpoint and exhaust Google Places API quota (one call per saved trip).
-  const { success } = await ratelimit.limit(userId);
+  const { success } = await tripsRatelimit.limit(userId);
   if (!success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

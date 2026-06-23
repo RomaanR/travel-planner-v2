@@ -78,7 +78,7 @@ export default async function SharedTripPage({
   );
 
   return (
-    <div className="h-screen flex flex-col bg-paper overflow-hidden">
+    <div className="h-screen flex flex-col bg-paper overflow-hidden print:h-auto print:overflow-visible print:block">
       <Navbar />
 
       {/* ── Header: acquisition banner + destination info ── */}
@@ -113,7 +113,7 @@ export default async function SharedTripPage({
       <div className="flex flex-1 min-h-0">
 
         {/* LEFT: Scrollable timeline */}
-        <div className="w-full md:w-[55%] overflow-y-auto">
+        <div className="w-full md:w-[55%] overflow-y-auto pb-16 md:pb-0">
 
           {/* Mobile map banner */}
           <div className="md:hidden h-52 w-full border-b border-ink/5">
@@ -132,7 +132,7 @@ export default async function SharedTripPage({
       </div>
 
       {/* ── Mobile sticky bottom CTA ── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <Link
           href="/"
           className="flex items-center justify-center gap-2 bg-burnt-orange text-paper py-4 micro-copy hover:bg-ink transition-colors duration-300"

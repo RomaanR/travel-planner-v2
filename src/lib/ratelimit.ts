@@ -17,6 +17,16 @@ export const ratelimit = new Ratelimit({
   prefix:    "travalbee:itinerary",       // namespaced — clean Redis keyspace
 });
 
+// 60 trips-list fetches per user per sliding 1-hour window.
+// Separate from itinerary generation — /api/trips GET is called on every /trips
+// page load and must not burn into the user's 5/hr generation quota.
+export const tripsRatelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(60, "1 h"),
+  analytics: true,
+  prefix:    "travalbee:trips",
+});
+
 // 3 support tickets per IP per sliding 1-hour window.
 // Public unauthenticated endpoint — IP-keyed to prevent spam bot submissions.
 // No shared "anonymous" bucket — missing x-forwarded-for is rejected at the route level.

@@ -188,5 +188,6 @@ export type MapPoint = {
   lng: number;
   label: string;
   type: MapPointType;
+  itemType?: TimelineItemType; // original type for semantic icon selection in ItineraryMap
   day: number;
 };

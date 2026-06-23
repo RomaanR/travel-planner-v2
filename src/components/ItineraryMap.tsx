@@ -267,7 +267,7 @@ export default function ItineraryMap({ center, points }: ItineraryMapProps) {
             key={`day${point.day}-${point.type}-${i}`}
             position={{ lat: point.lat, lng: point.lng }}
             icon={{
-              url: buildSvgMarker(point.day, point.type, i + 1),
+              url: buildSvgMarker(point.day, point.itemType ?? point.type, i + 1),
               scaledSize: new window.google.maps.Size(32, 32),
               anchor: new window.google.maps.Point(16, 16),
             }}

@@ -95,8 +95,9 @@ export function useOfflineTrips(userId: string | null | undefined) {
         setIsOffline(false);
       } catch {
         // 4. Always fall back to user-scoped cache on fetch failure
-        setTrips(readCache(userId!));
-        if (OFFLINE_MODE_ENABLED) setIsOffline(true);
+        const cached = readCache(userId!);
+        setTrips(cached);
+        setIsOffline(true);
       } finally {
         setLoading(false);
       }

@@ -29,8 +29,8 @@ export default function MobileMenu() {
 
   // Prevent body scroll while overlay is open
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "unset";
-    return () => { document.body.style.overflow = "unset"; };
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   function close() { setOpen(false); }
