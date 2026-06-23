@@ -160,20 +160,11 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
           {displayName}
         </h4>
 
-        {/* Hours + Open/Closed — hidden in print */}
-        {(item.hoursOpen || item.openNow !== undefined) && (
+        {/* Hours — hidden in print */}
+        {item.hoursOpen && (
           <div className="flex items-center gap-2 mb-2 print:hidden">
             <Clock size={10} strokeWidth={1.5} className="text-ink-light shrink-0" />
-            {item.hoursOpen ? (
-              <span className="font-mono text-xs text-ink-light flex-1">{item.hoursOpen}</span>
-            ) : (
-              <span className="flex-1" />
-            )}
-            {item.openNow !== undefined && (
-              <span className={`micro-copy shrink-0 ${item.openNow ? "text-emerald-accent" : "text-burnt-orange"}`}>
-                {item.openNow ? "OPEN" : "CLOSED"}
-              </span>
-            )}
+            <span className="font-mono text-xs text-ink-light">{item.hoursOpen}</span>
           </div>
         )}
 
