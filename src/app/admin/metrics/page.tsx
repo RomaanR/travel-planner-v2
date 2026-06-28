@@ -366,7 +366,7 @@ export default async function AdminMetricsPage() {
                 {/* Head */}
                 <thead>
                   <tr className="bg-paper-dark border-b border-ink/10">
-                    {["Date", "Destination", "User", "Tokens (in/out/think)", "AI Cost", "Google Cost", "Total", "Cache"].map((h) => (
+                    {["Date", "Destination", "User", "Tokens (in/out/think)", "AI Cost", "Google Cost", "Total", "Cache", "Status"].map((h) => (
                       <th
                         key={h}
                         className="micro-copy text-left px-4 py-3 font-normal text-ink-light whitespace-nowrap"
@@ -444,6 +444,22 @@ export default async function AdminMetricsPage() {
                             {log.cacheHits}
                           </span>
                           <span className="text-ink-light/40">/{total_ops}</span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {log.success !== false ? (
+                            <span className="micro-copy text-emerald-accent border border-emerald-accent/30 px-2 py-0.5">
+                              DONE
+                            </span>
+                          ) : (
+                            <span
+                              className="micro-copy text-burnt-orange border border-burnt-orange/30 px-2 py-0.5"
+                              title={log.errorType ?? "unknown"}
+                            >
+                              {log.errorType === "max_tokens" ? "TRUNCATED" : "FAILED"}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );

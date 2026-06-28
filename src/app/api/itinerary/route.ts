@@ -643,8 +643,42 @@ function sanitizeJson(raw: string): string {
   return text.trim();
 }
 
+async function logFailedGeneration(
+  destination: string | undefined,
+  userId: string | null | undefined,
+  errorType: string,
+  inputTokens = 0,
+  outputTokens = 0,
+) {
+  if (!destination) return;
+  const CLAUDE_INPUT_COST  = 3  / 1_000_000;
+  const CLAUDE_OUTPUT_COST = 15 / 1_000_000;
+  const aiCost = inputTokens * CLAUDE_INPUT_COST + outputTokens * CLAUDE_OUTPUT_COST;
+  try {
+    await prisma.costLog.create({
+      data: {
+        userId:      userId ?? null,
+        destination,
+        inputTokens,
+        outputTokens,
+        thinkingTokens: 0,
+        aiCost,
+        googleCost:  0,
+        totalCost:   aiCost,
+        cacheHits:   0,
+        cacheMisses: 0,
+        success:     false,
+        errorType,
+      },
+    });
+  } catch {
+    console.error("[itinerary] Failed to write failure CostLog");
+  }
+}
+
 export async function POST(req: Request) {
   let capturedDestination: string | undefined;
+  let capturedUserId: string | null | undefined;
   try {
     // ── Auth + Rate limit ─────────────────────────────────────────────────────
     // Must run before any expensive I/O (AI generation, Google Places, DB writes).
@@ -654,6 +688,7 @@ export async function POST(req: Request) {
     // sharing a single "anonymous" Redis bucket (which would allow one caller to
     // exhaust the quota for everyone, or lock out all anonymous users globally).
     const { userId } = await auth();
+    capturedUserId = userId;
     const rateLimitKey = userId ?? req.headers.get("x-forwarded-for");
     if (!rateLimitKey) {
       return Response.json(
@@ -809,6 +844,7 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
     // Surface an actionable error immediately rather than wasting another AI call.
     if (message.stop_reason === "max_tokens") {
       console.warn("[itinerary] Response truncated at max_tokens — returning actionable error.");
+      await logFailedGeneration(capturedDestination, capturedUserId, "max_tokens", message.usage.input_tokens, message.usage.output_tokens);
       return NextResponse.json(
         { error: "Our concierge ran out of space generating your itinerary. Please try again — reducing the trip length or choosing Relaxed pace will help." },
         { status: 500 }
@@ -854,6 +890,7 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
       } catch (secondError) {
         // Both attempts failed — return a user-friendly error, do not expose internals
         console.error("[itinerary] Self-heal also failed:", (secondError as Error).message);
+        await logFailedGeneration(capturedDestination, capturedUserId, "json_parse", message.usage.input_tokens, message.usage.output_tokens);
         return NextResponse.json(
           { error: "Our concierge experienced a formatting issue. Please try generating your itinerary again." },
           { status: 500 }
@@ -1050,6 +1087,8 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
           totalCost:      meta.totalCostUsd,
           cacheHits:      apiCounters.cacheHits,
           cacheMisses:    apiCounters.textSearch,
+          success:        true,
+          errorType:      null,
         },
       });
     } catch {
@@ -1101,12 +1140,14 @@ Each entry MUST contain: name (real verified property — NO fictional hotels), 
         scope.setExtra("destination", capturedDestination ?? "unknown");
         Sentry.captureException(e);
       });
+      await logFailedGeneration(capturedDestination, capturedUserId, "json_parse");
     } else {
       console.error("[itinerary] Outer catch: unexpected error —", e);
       Sentry.withScope((scope) => {
         scope.setExtra("destination", capturedDestination ?? "unknown");
         Sentry.captureException(e);
       });
+      await logFailedGeneration(capturedDestination, capturedUserId, "unexpected");
     }
     return Response.json(
       { error: "Unable to generate itinerary. Please try again or refine your request." },

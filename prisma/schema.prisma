@@ -59,6 +59,8 @@ model CostLog {
   totalCost      Decimal  @db.Decimal(10, 6)
   cacheHits      Int
   cacheMisses    Int // = googleTextSearchCalls (items not in cache)
+  success        Boolean  @default(true) // false when generation failed before completion
+  errorType      String? // "max_tokens" | "json_parse" | "unexpected" — null on success
   createdAt      DateTime @default(now())
 
   @@index([createdAt(sort: Desc)]) // admin dashboard: last 200 rows ordered by createdAt — O(log n) at scale
