@@ -19,7 +19,7 @@ import {
 import { SignedIn, useAuth } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { cacheNewTrip } from "@/hooks/useOfflineTrips";
-import { useItinerary } from "@/hooks/useItinerary";
+import { useStreamingItinerary } from "@/hooks/useStreamingItinerary";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import RefinePanel from "@/components/RefinePanel";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
@@ -62,7 +62,17 @@ import GenerationLoader from "@/components/GenerationLoader";
 export default function ItineraryPage() {
   const router = useRouter();
   const { isSignedIn, userId } = useAuth();
-  const { itinerary, loading, error, paywalled, generateItinerary, abort } = useItinerary();
+  const {
+    itinerary,
+    loading,
+    streamComplete,
+    progress,
+    error,
+    paywalled,
+    generateItinerary,
+    abort,
+  } = useStreamingItinerary();
+
   const [destination, setDestination] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 35.6762, lng: 139.6503 });
   const [transportMode, setTransportMode] = useState<"walking-transit" | "car-driver">("walking-transit");
@@ -74,7 +84,7 @@ export default function ItineraryPage() {
   const [storedRequest, setStoredRequest] = useState<ItineraryRequest | null>(null);
 
   async function handleSave() {
-    if (!itinerary || saveState !== "idle") return;
+    if (!itinerary || !streamComplete || saveState !== "idle") return;
     setSaveState("saving");
     try {
       const saved = await saveTripToDb(itinerary.destination, itinerary.days.length, itinerary);
@@ -152,10 +162,19 @@ export default function ItineraryPage() {
     }
     if (data.planningMode === "tailor") setPlanningMode("tailor");
     setStoredRequest(data);
-    generateItinerary(data);
+
+    // React Strict Mode mounts, cleans up, and mounts effects again in
+    // development. Deferring the request lets the test mount cancel before it
+    // reaches the API, preventing duplicate Claude generations and quota use.
+    const generationTimer = window.setTimeout(() => {
+      void generateItinerary(data);
+    }, 0);
 
     // Abort in-flight generation if user navigates away
-    return () => abort();
+    return () => {
+      window.clearTimeout(generationTimer);
+      abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -192,7 +211,7 @@ export default function ItineraryPage() {
               {destination || "Loading\u2026"}
             </h1>
           </div>
-          {itinerary && (
+          {itinerary && streamComplete && (
             <div className="hidden md:flex items-center gap-2">
               <button
                 onClick={() => setRefineOpen(true)}
@@ -229,7 +248,7 @@ export default function ItineraryPage() {
           <div className="px-6 md:px-10 py-8 w-full min-w-0 print:px-0 print:py-6">
 
             {/* Loading */}
-            {loading && (
+            {loading && !itinerary && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -265,7 +284,7 @@ export default function ItineraryPage() {
             )}
 
             {/* Paywall — free tier exhausted */}
-            {paywalled && !loading && (
+            {paywalled && !loading && !itinerary && (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -297,14 +316,36 @@ export default function ItineraryPage() {
               </motion.div>
             )}
 
+            {itinerary && loading && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 border border-ink/10 bg-paper-dark px-5 py-4 flex items-center justify-between gap-4 print:hidden"
+              >
+                <div>
+                  <p className="micro-copy text-burnt-orange mb-1">
+                    Journey Arriving
+                  </p>
+                  <p className="font-sans text-xs text-ink-light">
+                    Day {progress.completedDays} of {progress.totalDays} is ready.
+                    {progress.enrichingDay
+                      ? ` Curating Day ${progress.enrichingDay}…`
+                      : " Curating the next chapter…"}
+                  </p>
+                </div>
+                <Loader2 size={16} className="animate-spin text-burnt-orange shrink-0" />
+              </motion.div>
+            )}
+
             {/* Itinerary — delegates all display to ItineraryViewer */}
-            {itinerary && !loading && (
+            {itinerary && (
               <ItineraryViewer
                 itinerary={itinerary}
                 transportMode={transportMode}
                 departureDate={departureDate}
                 returnDate={returnDate}
-                bottomSection={
+                totalDays={streamComplete ? undefined : progress.totalDays}
+                bottomSection={streamComplete ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -367,7 +408,7 @@ export default function ItineraryPage() {
                       Curate a New Journey
                     </button>
                   </motion.div>
-                }
+                ) : undefined}
               />
             )}
 

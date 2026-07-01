@@ -7,6 +7,7 @@ import {
   Gem,
   Car,
   PersonStanding,
+  Loader2,
 } from "lucide-react";
 import type {
   ItineraryResponse,
@@ -184,9 +185,11 @@ interface ItineraryViewerProps {
   /** Travel dates — passed from sessionStorage on the live itinerary page; shown on the print cover */
   departureDate?: string;
   returnDate?: string;
+  /** Total trip length while streaming — renders pending tabs for days not yet arrived. Omit on saved/shared trips (already complete). */
+  totalDays?: number;
 }
 
-export default function ItineraryViewer({ itinerary, bottomSection, transportMode, departureDate, returnDate }: ItineraryViewerProps) {
+export default function ItineraryViewer({ itinerary, bottomSection, transportMode, departureDate, returnDate, totalDays }: ItineraryViewerProps) {
   // null = All Days view; number = single day index
   const [activeDay, setActiveDay] = useState<number | null>(0);
   const currentDay = activeDay !== null ? itinerary.days?.[activeDay] : null;
@@ -286,6 +289,25 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
                 Day {day.day}
               </button>
             ))}
+
+            {/* Pending day tabs — trip is still streaming in. Disabled, muted, spinner
+                icon. Lets the traveller see the full trip length upfront instead of
+                the tab bar looking like a shorter trip until every day has arrived. */}
+            {typeof totalDays === "number" &&
+              itinerary.days.length < totalDays &&
+              Array.from({ length: totalDays - itinerary.days.length }, (_, i) => {
+                const dayNum = itinerary.days.length + i + 1;
+                return (
+                  <div
+                    key={`pending-day-${dayNum}`}
+                    aria-hidden="true"
+                    className="flex-none shrink-0 px-6 py-3 flex items-center gap-2 text-xs tracking-widest uppercase font-bold border-r border-white/10 text-white/25 cursor-not-allowed whitespace-nowrap"
+                  >
+                    Day {dayNum}
+                    <Loader2 size={11} strokeWidth={2} className="animate-spin" />
+                  </div>
+                );
+              })}
 
           </div>
         </div>
