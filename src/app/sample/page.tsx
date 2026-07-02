@@ -14,7 +14,10 @@ import ExportPdfButton from "@/components/ExportPdfButton";
 export const dynamic = "force-dynamic";
 
 // ── Swap this UUID for the "golden" trip ID from your database ─────────────
-const SAMPLE_TRIP_ID = "37b8beda-4cae-4fdd-8252-edb60e025f10";
+// Photos for this trip are self-hosted under public/sample/ (see scripts/clone-sample-trip.mjs)
+// rather than Google photoReference tokens, which expire after roughly a month —
+// this page is a permanent marketing fixture and must never depend on a live API call.
+const SAMPLE_TRIP_ID = "2bc902f5-6db2-47ea-97d4-f5431a445a9a";
 
 export const metadata: Metadata = {
   title: "Sample Itinerary | TravalBee",
