@@ -41,7 +41,9 @@ function loadCache(fingerprint: string): ItineraryResponse | null {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { fingerprint: cachedFp, result } = JSON.parse(raw);
-    return cachedFp === fingerprint ? (result as ItineraryResponse) : null;
+    if (cachedFp !== fingerprint) return null;
+    if (!result?.days?.length) return null; // reject empty/broken cache
+    return result as ItineraryResponse;
   } catch { return null; }
 }
 
@@ -101,7 +103,6 @@ export function useItinerary() {
 
     setLoading(true);
     setError(null);
-    pendingRetryRef.current = data;
     // Pass description: undefined explicitly \u2014 Sonner retains the prior toast's
     // description when reusing the same id, which would otherwise leave the stale
     // success line ("Your bespoke journey is ready for review.") under the loader.
