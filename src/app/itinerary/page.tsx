@@ -15,8 +15,9 @@ import {
   Check,
   Sparkles,
   SlidersHorizontal,
+  LogIn,
 } from "lucide-react";
-import { SignedIn, useAuth } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, useAuth } from "@clerk/nextjs";
 import { saveTripToDb } from "@/app/actions/saveTrip";
 import { cacheNewTrip } from "@/hooks/useOfflineTrips";
 import { useStreamingItinerary } from "@/hooks/useStreamingItinerary";
@@ -69,6 +70,7 @@ export default function ItineraryPage() {
     progress,
     error,
     paywalled,
+    signInRequired,
     generateItinerary,
     abort,
   } = useStreamingItinerary();
@@ -220,8 +222,8 @@ export default function ItineraryPage() {
                 <SlidersHorizontal size={13} />
                 Refine
               </button>
-              <ExportPdfButton />
               <SignedIn>
+                <ExportPdfButton />
                 <button
                   onClick={handleSave}
                   disabled={saveState === "saving" || saveState === "saved"}
@@ -231,6 +233,14 @@ export default function ItineraryPage() {
                   {saveState === "saving" ? "Saving..." : saveState === "saved" ? "Saved" : "Save"}
                 </button>
               </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="flex items-center gap-2 micro-copy border border-ink/20 px-4 py-2.5 hover:bg-ink hover:text-paper transition-all">
+                    <LogIn size={13} />
+                    Sign In to Save or Download
+                  </button>
+                </SignInButton>
+              </SignedOut>
             </div>
           )}
         </motion.div>
@@ -316,6 +326,38 @@ export default function ItineraryPage() {
               </motion.div>
             )}
 
+            {/* Sign-in required — anonymous daily generation already used */}
+            {signInRequired && !loading && !itinerary && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="border border-ink/15 bg-paper-dark px-8 py-10 text-center"
+              >
+                <Sparkles size={28} className="text-ink mx-auto mb-5" strokeWidth={1.5} />
+                <p className="micro-copy text-ink-light mb-3">Free Itinerary Used</p>
+                <h2 className="font-serif italic text-3xl md:text-4xl text-ink leading-tight mb-4">
+                  Sign in to keep creating.
+                </h2>
+                <p className="font-sans text-sm text-ink-light leading-relaxed max-w-sm mx-auto mb-8">
+                  You&apos;ve used your free itinerary for today. Sign in — it&apos;s free — to curate again right away.
+                </p>
+                <SignInButton mode="modal">
+                  <button className="inline-block micro-copy bg-burnt-orange text-white px-10 py-4 hover:bg-ink transition-colors mb-4">
+                    Sign In to Continue Creating
+                  </button>
+                </SignInButton>
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push("/")}
+                    className="micro-copy text-ink-light hover:text-ink transition-colors"
+                  >
+                    Back to Home
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {itinerary && loading && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
@@ -385,6 +427,20 @@ export default function ItineraryPage() {
                       <div className="w-8 h-px bg-ink/10 mx-auto mb-10" />
                     </SignedIn>
 
+                    {/* Sign in to save/export — signed-out users only */}
+                    <SignedOut>
+                      <div className="mb-10">
+                        <p className="micro-copy text-ink-light mb-4">Curated for you</p>
+                        <SignInButton mode="modal">
+                          <button className="micro-copy inline-flex items-center gap-2 px-8 py-4 border border-ink/20 text-ink hover:bg-ink hover:text-paper transition-all">
+                            <LogIn size={13} />
+                            SIGN IN TO SAVE OR DOWNLOAD
+                          </button>
+                        </SignInButton>
+                      </div>
+                      <div className="w-8 h-px bg-ink/10 mx-auto mb-10" />
+                    </SignedOut>
+
                     {/* Refine + PDF — always visible on mobile (desktop has header buttons) */}
                     <div className="md:hidden flex flex-col items-center gap-3 mb-8">
                       <button
@@ -394,7 +450,9 @@ export default function ItineraryPage() {
                         <SlidersHorizontal size={13} />
                         Refine Journey
                       </button>
-                      <ExportPdfButton />
+                      <SignedIn>
+                        <ExportPdfButton />
+                      </SignedIn>
                     </div>
 
                     {/* New destination CTA — always visible */}

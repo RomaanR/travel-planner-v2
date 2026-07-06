@@ -94,6 +94,7 @@ export function useStreamingItinerary() {
   const [streamComplete, setStreamComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paywalled, setPaywalled] = useState(false);
+  const [signInRequired, setSignInRequired] = useState(false);
   const [destination, setDestination] = useState("");
   const [progress, setProgress] = useState<StreamProgress>({
     totalDays: 0,
@@ -151,7 +152,7 @@ export function useStreamingItinerary() {
     setLoading(true);
     setError(null);
     setPaywalled(false);
-    pendingRetryRef.current = data;
+    setSignInRequired(false);
 
     toast.loading("Consulting the concierge…", {
       id: "curate-task",
@@ -174,6 +175,14 @@ export function useStreamingItinerary() {
         if (response.status === 402 || response.status === 403) {
           pendingRetryRef.current = null;
           setPaywalled(true);
+          setLoading(false);
+          toast.dismiss("curate-task");
+          return null;
+        }
+
+        if (response.status === 401) {
+          pendingRetryRef.current = null;
+          setSignInRequired(true);
           setLoading(false);
           toast.dismiss("curate-task");
           return null;
@@ -372,6 +381,7 @@ export function useStreamingItinerary() {
     streamComplete,
     error,
     paywalled,
+    signInRequired,
     generateItinerary,
     abort,
     restoreItinerary,

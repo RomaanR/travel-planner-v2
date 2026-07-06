@@ -66,8 +66,16 @@ function getShuffled<T>(arr: T[]): T[] {
 
 export default function HeroFloating() {
   // ── Background slideshow (random order, reshuffled each mount) ───
-  const [shuffled] = useState(() => getShuffled(BG_IMAGES));
+  // Starts with the deterministic, unshuffled order so server and client render
+  // identically on first paint — shuffling with Math.random() before hydration
+  // completes causes a server/client mismatch (each environment picks a different
+  // order). The shuffle itself only runs client-side, after mount.
+  const [shuffled, setShuffled] = useState(BG_IMAGES);
   const [bgIndex, setBgIndex] = useState(0);
+
+  useEffect(() => {
+    setShuffled(getShuffled(BG_IMAGES));
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -197,10 +205,10 @@ export default function HeroFloating() {
             <div ref={refs.setReference} {...getReferenceProps()}>
               <Link
                 href="/sample"
-                className="micro-copy inline-flex w-full items-center justify-center gap-2 whitespace-nowrap bg-white/15 border border-white/60 text-white hover:bg-white/25 px-6 py-3 backdrop-blur-sm transition-all duration-300"
+                className="micro-copy inline-flex w-full items-center justify-center gap-2 whitespace-nowrap bg-[#DED4BC] text-ink hover:bg-paper-dark px-6 py-3 transition-all duration-300"
               >
                 <span>View Sample Itinerary</span>
-                <span className="text-white/60">&rarr;</span>
+                <span className="text-ink/60">&rarr;</span>
               </Link>
             </div>
           </motion.div>

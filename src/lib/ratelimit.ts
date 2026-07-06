@@ -6,15 +6,34 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-// 5 generations per user per sliding 1-hour window.
+const ITINERARY_LIMIT = process.env.NODE_ENV === "development" ? 10 : 5;
+const ITINERARY_PREFIX =
+  process.env.NODE_ENV === "development"
+    ? "travalbee:itinerary:development"
+    : "travalbee:itinerary";
+
+// 10 generations per user locally, 5 in production, per sliding 1-hour window.
 // Keyed by Clerk userId (authenticated) or IP address (unauthenticated).
 // Unauthenticated requests with no x-forwarded-for header are rejected at the
 // route level before reaching this limiter — no shared "anonymous" bucket.
 export const ratelimit = new Ratelimit({
   redis,
-  limiter:   Ratelimit.slidingWindow(5, "1 h"),
+  limiter:   Ratelimit.slidingWindow(ITINERARY_LIMIT, "1 h"),
   analytics: true,                       // surfaces usage in Upstash dashboard
-  prefix:    "travalbee:itinerary",       // namespaced — clean Redis keyspace
+  prefix:    ITINERARY_PREFIX,            // isolated local and production buckets
+});
+
+// 1 generation per 24-hour sliding window per IP — anonymous (signed-out) requests only.
+// Signed-in requests (free or premium) keep using `ratelimit` above plus their
+// account-level CostLog/credits checks. Anonymous requests have no account to tie a
+// quota to, so without this they could otherwise generate indefinitely by simply
+// waiting out the hourly `ratelimit` window forever — this caps that exposure while
+// still letting a first-time visitor try the product with zero signup friction.
+export const anonymousItineraryRatelimit = new Ratelimit({
+  redis,
+  limiter:   Ratelimit.slidingWindow(1, "24 h"),
+  analytics: true,
+  prefix:    "travalbee:itinerary:anon",
 });
 
 // 60 trips-list fetches per user per sliding 1-hour window.

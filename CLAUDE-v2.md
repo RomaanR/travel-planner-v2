@@ -3177,3 +3177,164 @@ A thorough audit (auth flows, mobile edge cases, API routes, data flow, React st
 **Root cause:** The loading, success, and error toasts intentionally share `id: "curate-task"` so Sonner mutates one toast in place. When updating an existing toast by id, Sonner spreads new options over the old toast object (`{ ...oldToast, ...newData }`). The `toast.loading()` call set only the title, so a retained `description` from a still-present prior success toast (or the iOS retry path) leaked under the new loader.
 
 **Fix:** `toast.loading("Consulting the concierge…", { id: "curate-task", description: undefined })` — explicitly passing `description: undefined` overwrites the retained value so the loader shows only its own text.
+
+---
+
+### Sunday, June 28, 2026 — Progressive Itinerary Streaming
+
+**Local worktree — not yet committed**
+
+#### Streaming Activated on `/itinerary`
+
+The live itinerary page now uses `useStreamingItinerary()` and
+`POST /api/itinerary-stream` instead of the blocking `useItinerary()` flow.
+The route still makes one upfront Anthropic request, preserving the
+Zero-Latency Principle and cost model, but consumes the response as NDJSON:
+
+- `start` — stream opened and total day count known
+- `enriching` — a complete day is being enriched with Google Places
+- `day` — one enriched day is ready and immediately appended to the UI
+- `done` — editorial, recommended stays, and the complete enriched fallback
+  day set are available
+
+The full `GenerationLoader` remains visible until the first day arrives.
+Afterward, `ItineraryViewer` renders available days while a compact
+`Journey Arriving` progress banner reports completed and currently enriching
+days. Save, refine, and export actions remain hidden until `streamComplete`
+is true, preventing partial itineraries from being persisted.
+
+#### Stream Resilience
+
+- Stream days are deduplicated by day number and sorted before rendering.
+- Day boundaries are detected with a string-aware, brace-balanced JSON scanner.
+  The parser does not depend on `hiddenGemCoordinates` being last, coordinate
+  key order, or `day` being the first object property.
+- AI schema prompts use JSON-safe `null` for absent `dietaryNote` values.
+  `sanitizeJson()` also converts legacy bare `undefined` values to `null` before
+  incremental or full-response parsing.
+- The server keeps enriched emitted days and only enriches parser-missed days
+  at completion; raw fallback data can no longer overwrite Google enrichment.
+- A response is rejected unless the completed day count matches the requested
+  duration.
+- `max_tokens` responses emit an actionable error and are never cached.
+- Internal `spatialReasoning` scratch-pad fields are stripped before streaming.
+- NDJSON responses use `application/x-ndjson`, `no-transform`, and
+  `X-Accel-Buffering: no` to discourage intermediary buffering.
+- Broken or empty `seek_wander_itinerary_cache` entries now self-delete during
+  cache loading. Users no longer need to clear `sessionStorage` manually.
+- The cache fingerprint now includes `exactHotelAddress` and `isRegion`, avoiding
+  false cache hits between geographically different requests.
+- Initial generation is deferred to the next event-loop turn and cancelled by
+  the React Strict Mode test-mount cleanup. This prevents two Claude requests
+  from being sent for one development navigation.
+
+#### Local Failure Root Cause
+
+The earlier loss of React state was not caused by Turbopack hot reload. Dev
+logs showed repeated Node.js heap-out-of-memory crashes, which reloaded the
+entire page and destroyed in-memory state. The development script now gives
+Node a 4 GB heap through `cross-env` while retaining the standard Next.js 14
+webpack dev server:
+
+```json
+"dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev"
+```
+
+`--turbo` is intentionally not used because the installed Sentry SDK reports
+Turbopack support only for Next.js 15.4.1+, while this project remains locked
+to Next.js 14.2.35.
+
+---
+
+### Sunday, June 28, 2026 — Streaming Paused & Git Workflow Decision
+
+#### Streaming Feature Status
+
+The progressive itinerary streaming feature is paused for the day and remains
+local-only. It must not be pushed to production in its current state.
+Development will resume in the next session.
+
+Current local streaming work includes:
+
+- `POST /api/itinerary-stream`
+- `useStreamingItinerary()`
+- Progressive day rendering on `/itinerary`
+- Brace-balanced incremental JSON parsing
+- JSON-safe handling of absent `dietaryNote` values
+- React Strict Mode duplicate-request prevention
+- A development-only 10-request/hour rate-limit bucket
+
+Before production release, the streaming route still needs parity with the
+main itinerary route’s spatial validation/repair, accommodation safeguards,
+Sentry reporting, and failed-generation logging. The local `/stream-test`
+page must also be removed or securely gated before deployment.
+
+#### Git and Production Workflow — Canonical Going Forward
+
+`main` should remain a clean copy of `origin/main`, which represents the
+production code baseline. New features must use this workflow:
+
+1. Create a dedicated feature branch from clean `main`.
+2. Commit only the files intentionally required by that feature.
+3. Never use `git add .` in a dirty worktree.
+4. Push the feature branch to GitHub and test its Vercel Preview deployment.
+5. Merge the tested feature branch into `main` only when production-ready.
+6. The merge to `main` triggers the live production deployment.
+
+Local logs, screenshots, temporary assets, `.claude` worktrees, test harnesses,
+and unrelated changes must not be included in feature commits. Matching GitHub
+ensures code parity; environment variables, database state, and deployment
+configuration must still be verified separately when diagnosing production.
+
+---
+
+### Sunday, July 5, 2026 — Sign-In Gate Removal & Streaming Fixes
+
+**Status:** Implemented and manually verified end-to-end in local development, then pushed directly to `main` the same day after the owner reviewed the sign-in gate removal with a colleague.
+
+#### 1. Removal of the Forced Sign-In Before Generation
+
+**Problem:** Analytics showed visitors reaching `/curate` and abandoning there, because the app forced account creation before showing any itinerary. The wall appeared before the visitor had seen any value.
+
+**Change:** Sign-in is no longer required to generate an itinerary. It is now only required to (a) save the trip to "My Trips," (b) download the PDF, or (c) generate a second itinerary the same day. This reverses the auth gate documented above under "Auth Gate — 'Begin Your Journey' & `/curate` Route" (2026-04-08 entry).
+
+**Files changed:**
+- **`src/components/BeginJourneyButton.tsx`** — removed the `<SignedIn>`/`<SignedOut>` split and the `<SignInButton mode="modal" forceRedirectUrl="/curate">` branch. Now a single unconditional `<Link href="/curate">` for all visitors.
+- **`src/app/curate/page.tsx`** — removed the server-side `if (!userId) redirect("/")` guard. `prisma.userProfile` is now only queried when `userId` exists; anonymous visitors are passed `credits={undefined}` (both `CurateClient` and `CurationForm` already treat `credits` as optional).
+- **`src/app/curate/CurateClient.tsx`** — `credits` prop type widened to `number | undefined`; the existing no-credits banner already stays hidden when `credits` is `undefined`, no logic change needed there.
+- **`src/components/CurationForm.tsx`** — the credits-hint effect now also bails out when `credits === undefined`, so anonymous visitors don't see a "you have free credits" hint that doesn't apply to them.
+
+#### 2. Anonymous Quota Enforcement — Server-Side
+
+**Problem:** Once anonymous generation is allowed, the only existing safeguard was a shared 5-per-hour-per-IP rate limit that resets forever — effectively unlimited free generation over time from one IP. Separately, the existing 3-day free-tier duration cap only ran `if (userId)`, so an anonymous request could already ask for up to a 14-day itinerary directly via the API.
+
+**Change:**
+- **`src/lib/ratelimit.ts`** — added `anonymousItineraryRatelimit`, a `Ratelimit.slidingWindow(1, "24 h")` keyed by IP, same pattern as the existing `photoRatelimit`/`staticmapRatelimit`.
+- **`src/app/api/itinerary-stream/route.ts`** — signed-in requests still use the original `ratelimit` (5/hour); anonymous requests (`!userId`) now use `anonymousItineraryRatelimit` instead. When an anonymous request is rejected by that limiter, the route returns `401` with `{ error: "sign_in_required", message: "..." }` instead of a generic rate-limit error, so the client can render a sign-in prompt rather than an error state. The `duration > 3` check was moved out of the `if (userId)` block so it now runs whenever the requester is not premium — anonymous included — closing the 14-day gap.
+- **`src/hooks/useStreamingItinerary.ts`** — added a `signInRequired` state, set when the stream endpoint responds `401`, returned alongside the existing `paywalled` state.
+- **`src/app/itinerary/page.tsx`** — added a dedicated "Sign in to keep creating" card (styled like the existing paywall card) shown when `signInRequired` is true, with a `<SignInButton mode="modal">` CTA. The Save button and `<ExportPdfButton>` (both the desktop header strip and mobile mounts) are now wrapped in `<SignedIn>`/`<SignedOut>`, with signed-out visitors seeing a "Sign In to Save or Download" trigger instead of the buttons disappearing outright.
+
+**Accepted trade-off:** the 1-per-24h cap is IP-based, so it can be bypassed by VPN or IP rotation. This is a deliberate choice — no anonymous-only signal (IP, cookie, or browser fingerprint) can be made unspoofable against someone actively trying to evade it. The sign-in requirement remains the actual backstop against sustained abuse; the IP cap only controls casual reuse before that point.
+
+**Unaffected:** all existing input validation (Zod schema, blocklist regexes on `hotelName`/`exactHotelAddress`/`anchorPoints`) and the locked `SYSTEM_PROMPT` injection defence apply identically regardless of auth state. Signed-in free tier (5/30 days, 3-day cap) and premium tier (10/month, 14-day cap) behavior is unchanged. `saveTripToDb`, trip deletion, and admin routes still independently enforce their own auth/ownership checks server-side — the `<SignedIn>` UI wrapper is a convenience layer on top of those, not a replacement for them.
+
+#### 3. Streaming Bug Fix — Tab-Switch Restarted Generation Mid-Stream
+
+**Problem:** Switching browser tabs after Day 1 (or any day) had already streamed in would silently restart the entire generation from scratch, discarding the days already rendered.
+
+**Root cause:** `useStreamingItinerary.ts` set `pendingRetryRef.current = data` unconditionally at the start of every generation call, intended only to support one narrow case — recovering from iOS silently killing a backgrounded fetch mid-stream. Because it was never cleared until the stream finished or errored, it stayed truthy for the entire healthy streaming duration. A separate `visibilitychange` listener checked that ref on every tab-focus event and, finding it truthy, triggered a duplicate `generateItinerary()` call — aborting the perfectly healthy in-flight stream and starting over.
+
+**Fix:** removed the unconditional assignment. `pendingRetryRef.current` now only becomes truthy inside the specific `catch` branch that detects an iOS background-kill (`isIosBackgroundKill && document.visibilityState === "hidden"`), which is the only scenario the retry mechanism was ever meant to cover.
+
+#### 4. Failed Generations Now Logged for the Admin Dashboard
+
+**Problem:** `/admin/metrics` already had full UI support for showing failed generations (a masked-`userId`/"anon" column and a FAILED/TRUNCATED status badge), but `src/app/api/itinerary-stream/route.ts` never wrote a `CostLog` row on failure — only successful generations were ever recorded, so the dashboard had nothing to display.
+
+**Fix:** the stream's `catch` block now writes a `CostLog` row with `success: false`, `userId: userId ?? null`, best-effort token/cost figures (partial usage is hoisted out of the `try` block via `finalUsage` so it survives into `catch`), and an `errorType` of `max_tokens`, `json_parse`, `incomplete_days`, or a generic `generation_error` fallback. Client aborts (visitor navigating away) are deliberately excluded from logging — not a real failure to attribute to anyone.
+
+#### 5. Hero Section — Button Styling & Hydration Fix
+
+**Files:** `src/components/HeroFloating.tsx`, `src/components/BeginJourneyButton.tsx`
+
+- "Begin Your Journey" and "View Sample Itinerary" restyled: solid fills (burnt-orange and a custom darker beige `#DED4BC` respectively) with 2px cross-colored borders (`border-paper` on the burnt-orange button, `border-burnt-orange` on the beige one), replacing the previous transparent/white-overlay look on the sample button.
+- Unrelated bug fixed in the same file: the hero background photo was chosen via `Math.random()` inside a `useState` initializer, which runs once during server render and again during client hydration — producing a different random order in each environment and a React hydration-mismatch warning on the image `alt`/`src`. Fixed by rendering the deterministic, unshuffled image order on first paint (identical on server and client) and moving the actual shuffle into a `useEffect` that only runs after mount, client-side only.

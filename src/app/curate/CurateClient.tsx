@@ -12,7 +12,7 @@ import type { ItineraryRequest } from "@/types/itinerary";
 
 type Mode = "inspire" | "tailor";
 
-export default function CurateClient({ credits }: { credits: number }) {
+export default function CurateClient({ credits }: { credits?: number }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("inspire");
   const [loading, setLoading] = useState(false);
@@ -108,8 +108,10 @@ export default function CurateClient({ credits }: { credits: number }) {
           </motion.div>
         </AnimatePresence>
 
-        {/* No-credits banner — shown before the form so users aren't surprised */}
-        {credits <= 0 && (
+        {/* No-credits banner — shown before the form so users aren't surprised.
+            Anonymous visitors (credits === undefined) never see this — their
+            quota is enforced by IP in /api/itinerary-stream instead. */}
+        {typeof credits === "number" && credits <= 0 && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}

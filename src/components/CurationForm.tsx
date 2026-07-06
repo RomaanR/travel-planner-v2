@@ -173,8 +173,9 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
   // ── Credits hint — show once per session, dismiss on search focus ──────────
   useEffect(() => {
     // Only show the hint when the user actually has credits — suppress it when
-    // the no-credits banner above the form is already handling that case.
-    if (typeof credits === "number" && credits <= 0) return;
+    // the no-credits banner above the form is already handling that case, and
+    // when credits is undefined entirely (anonymous visitor — no credits system).
+    if (typeof credits !== "number" || credits <= 0) return;
     const key = "travalbee_credits_hint_shown";
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");

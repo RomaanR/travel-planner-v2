@@ -10,7 +10,7 @@ export const maxDuration = 290;
 
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
-import { ratelimit } from "@/lib/ratelimit";
+import { ratelimit, anonymousItineraryRatelimit } from "@/lib/ratelimit";
 import type { PlaceCache } from "@prisma/client";
 import type { DayPlan, Coordinate, TransitInfo, ItineraryResponse } from "@/types/itinerary";
 
@@ -498,8 +498,21 @@ export async function POST(req: Request) {
   if (!rateLimitKey) {
     return Response.json({ error: "Unable to process request" }, { status: 400 });
   }
-  const { success: rateLimitOk } = await ratelimit.limit(rateLimitKey);
+  // Signed-in requests use the general 5/hour abuse guard; anonymous requests
+  // (no account to tie a quota to) get a much tighter 1/24h limiter instead —
+  // see anonymousItineraryRatelimit in ratelimit.ts for why.
+  const limiter = userId ? ratelimit : anonymousItineraryRatelimit;
+  const { success: rateLimitOk } = await limiter.limit(rateLimitKey);
   if (!rateLimitOk) {
+    if (!userId) {
+      return Response.json(
+        {
+          error:   "sign_in_required",
+          message: "You've used your free itinerary for today. Sign in — it's free — to keep creating.",
+        },
+        { status: 401 }
+      );
+    }
     return Response.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
   }
 
@@ -515,10 +528,13 @@ export async function POST(req: Request) {
   const safeBody = parsed.data;
 
   // ── Credit check ─────────────────────────────────────────────────────────────
+  // isPremium stays false for anonymous requests (no account) — used below to
+  // apply the same 3-day duration cap to both anonymous and free signed-in users.
+  let isPremium = false;
   if (userId) {
     const profile = await prisma.userProfile.findUnique({ where: { id: userId } }).catch(() => null);
     const credits  = profile?.availableCredits ?? 1;
-    const isPremium = profile?.isPremium ?? false;
+    isPremium = profile?.isPremium ?? false;
 
     if (isPremium && credits <= 0) {
       return Response.json({ error: "You have used all 10 of your premium itineraries this month.", upgradeUrl: "/pricing" }, { status: 403 });
@@ -533,17 +549,21 @@ export async function POST(req: Request) {
       if (credits <= 0) {
         return Response.json({ error: "no_credits", message: "You have no credits remaining.", upgradeUrl: "/pricing" }, { status: 402 });
       }
-      if (safeBody.duration > 3) {
-        return Response.json(
-          {
-            error: "upgrade_required",
-            message: "Trips longer than 3 days require a Premium subscription.",
-            upgradeUrl: "/pricing",
-          },
-          { status: 403 }
-        );
-      }
     }
+  }
+
+  // Duration cap applies to anonymous AND free signed-in users alike — previously
+  // this only ran inside `if (userId)`, letting anonymous requests ask for up to
+  // the full 14-day max directly via the API.
+  if (!isPremium && safeBody.duration > 3) {
+    return Response.json(
+      {
+        error: "upgrade_required",
+        message: "Trips longer than 3 days require a Premium subscription.",
+        upgradeUrl: "/pricing",
+      },
+      { status: 403 }
+    );
   }
 
   const apiKey    = process.env.MAPS_SERVER_KEY ?? "";
@@ -555,6 +575,11 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       const encode = (obj: unknown) => new TextEncoder().encode(JSON.stringify(obj) + "\n");
+
+      // Hoisted above the try block so the catch handler below can still report
+      // partial token usage and a specific error type when generation fails.
+      let finalUsage: { input_tokens: number; output_tokens: number } | undefined;
+      let errorTypeOverride: string | null = null;
 
       try {
         controller.enqueue(encode({ type: "start", destination: safeBody.destination, totalDays: safeBody.duration }));
@@ -602,7 +627,9 @@ export async function POST(req: Request) {
         }
 
         const finalMsg = await anthropicStream.finalMessage();
+        finalUsage = finalMsg.usage;
         if (finalMsg.stop_reason === "max_tokens") {
+          errorTypeOverride = "max_tokens";
           throw new Error(
             "Our concierge ran out of space generating your itinerary. Please try a shorter trip or a more relaxed pace."
           );
@@ -697,6 +724,42 @@ export async function POST(req: Request) {
 
       } catch (e) {
         controller.enqueue(encode({ type: "error", message: (e as Error).message }));
+
+        // Client navigating away / aborting isn't a generation failure worth
+        // attributing to a user on the dashboard — skip logging those.
+        const isAbort = e instanceof DOMException && e.name === "AbortError";
+        if (!isAbort) {
+          const inputTokens  = finalUsage?.input_tokens  ?? 0;
+          const outputTokens = finalUsage?.output_tokens ?? 0;
+          const aiCost     = inputTokens * (3 / 1_000_000) + outputTokens * (15 / 1_000_000);
+          const googleCost = counters.textSearch * 0.032 + counters.details * 0.017;
+          const errorType =
+            errorTypeOverride ??
+            (e instanceof SyntaxError
+              ? "json_parse"
+              : e instanceof Error && /of \d+ days/.test(e.message)
+                ? "incomplete_days"
+                : "generation_error");
+
+          prisma.costLog.create({
+            data: {
+              userId:        userId ?? null,
+              destination:   safeBody.destination,
+              inputTokens,
+              outputTokens,
+              thinkingTokens: 0,
+              aiCost,
+              googleCost,
+              totalCost:     aiCost + googleCost,
+              cacheHits:     counters.cacheHits,
+              cacheMisses:   counters.textSearch,
+              success:       false,
+              errorType,
+            },
+          }).catch(() => {
+            console.error("[itinerary-stream] Failed to write failure CostLog");
+          });
+        }
       } finally {
         controller.close();
       }
