@@ -237,6 +237,8 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         <InteractiveStays
           stays={itinerary.recommendedStays!}
           destination={itinerary.destination}
+          checkIn={departureDate}
+          checkOut={returnDate}
         />
       )}
 

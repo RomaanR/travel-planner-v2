@@ -10,9 +10,11 @@ interface StayCardProps {
   description:  string;
   neighborhood: string;
   destination:  string;
+  checkIn?:     string;
+  checkOut?:    string;
 }
 
-export default function StayCard({ name, description, neighborhood, destination }: StayCardProps) {
+export default function StayCard({ name, description, neighborhood, destination, checkIn, checkOut }: StayCardProps) {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   async function handleReserve() {
@@ -23,7 +25,7 @@ export default function StayCard({ name, description, neighborhood, destination 
 
     setIsRedirecting(true);
     try {
-      const url = await generateBookingLink(name, destination);
+      const url = await generateBookingLink(name, destination, checkIn, checkOut);
       if (bookingTab) {
         bookingTab.location.href = url;
       } else {

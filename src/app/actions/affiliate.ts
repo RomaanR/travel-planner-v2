@@ -36,15 +36,23 @@ async function resolveHotelQuery(hotelName: string, city: string): Promise<strin
 
 export async function generateBookingLink(
   hotelName: string,
-  city: string
+  city: string,
+  checkIn?: string,
+  checkOut?: string
 ): Promise<string> {
   const marker = process.env.TRAVELPAYOUTS_MARKER?.trim();
   const query = await resolveHotelQuery(hotelName.trim(), city.trim());
-  const encodedQuery = encodeURIComponent(query);
 
-  if (!marker) {
-    return `${HOTELLOOK_BASE_URL}?destination=${encodedQuery}`;
+  const params = new URLSearchParams({ destination: query });
+  // The Travelpayouts redirect only forwards checkIn/checkOut to Booking.com
+  // when `adults` is also present — without it, dates are silently dropped
+  // partway through the redirect chain (verified by tracing the live redirects).
+  if (checkIn && checkOut) {
+    params.set("checkIn", checkIn);
+    params.set("checkOut", checkOut);
+    params.set("adults", "2");
   }
+  if (marker) params.set("marker", marker);
 
-  return `${HOTELLOOK_BASE_URL}?destination=${encodedQuery}&marker=${encodeURIComponent(marker)}`;
+  return `${HOTELLOOK_BASE_URL}?${params.toString()}`;
 }

@@ -10,6 +10,8 @@ import type { RecommendedStay } from "@/types/itinerary";
 interface InteractiveStaysProps {
   stays:       RecommendedStay[];
   destination: string;
+  checkIn?:    string;
+  checkOut?:   string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -22,7 +24,7 @@ const TIER_LABELS: Record<number, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function InteractiveStays({ stays, destination }: InteractiveStaysProps) {
+export default function InteractiveStays({ stays, destination, checkIn, checkOut }: InteractiveStaysProps) {
   const [minRating, setMinRating] = useState(4);
 
   // Backward-compat guard: old saved trips have no `rating` field.
@@ -91,6 +93,8 @@ export default function InteractiveStays({ stays, destination }: InteractiveStay
                 description={stay.description}
                 neighborhood={stay.neighborhood}
                 destination={destination}
+                checkIn={checkIn}
+                checkOut={checkOut}
               />
             ))}
           </motion.div>
