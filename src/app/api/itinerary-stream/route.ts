@@ -10,7 +10,25 @@ export const maxDuration = 290;
 
 import { prisma } from "@/lib/db";
 import { parseOpenNow } from "@/lib/itineraryUtils";
-import { ratelimit, anonymousItineraryRatelimit } from "@/lib/ratelimit";
+import {
+  ratelimit,
+  anonymousItineraryRatelimit,
+  acquireGenerationLock,
+  releaseGenerationLock,
+  getClientIp,
+} from "@/lib/ratelimit";
+import {
+  CLIENT_ABORT,
+  FREE_MAX_DAYS,
+  FREE_MONTHLY_GENERATIONS,
+  PREMIUM_MONTHLY_CREDITS,
+  getCreditStatus,
+  recordFreeGeneration,
+  recordPremiumGeneration,
+  refundPremiumCredit,
+  reservePremiumCredit,
+} from "@/lib/credits";
+import { createSaveToken } from "@/lib/saveToken";
 import type { PlaceCache } from "@prisma/client";
 import type { DayPlan, Coordinate, TransitInfo, ItineraryResponse } from "@/types/itinerary";
 
@@ -274,6 +292,12 @@ function extractEditorial(raw: string): string {
 // ─── Enrichment (mirrors main route) ─────────────────────────────────────────
 
 const client     = new Anthropic();
+const MODEL      = "claude-sonnet-4-6";
+// USD per token for MODEL, and per Google Places call — update together with MODEL.
+const CLAUDE_INPUT_COST  = 3  / 1_000_000;
+const CLAUDE_OUTPUT_COST = 15 / 1_000_000;
+const GOOGLE_TEXT_SEARCH_COST = 0.032;
+const GOOGLE_DETAILS_COST     = 0.017;
 const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
@@ -284,9 +308,40 @@ type PlacesEnrichment = {
 };
 type ApiCounters = { textSearch: number; details: number; cacheHits: number };
 
+// Unicode-aware: keeps letters and digits in every script, so non-Latin names
+// ("鮨 さいとう", "مطعم") get distinct keys instead of collapsing to an empty string.
+const NON_KEY_CHARS = new RegExp("[^\\p{L}\\p{N}-]", "gu"); // constructor form: tsconfig targets ES5
 function buildCacheKey(name: string, city: string): string {
-  const norm = (s: string) => s.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const norm = (s: string) =>
+    s.normalize("NFKC").toLocaleLowerCase().trim().replace(/\s+/g, "-").replace(NON_KEY_CHARS, "");
   return `${norm(name)}|${norm(city)}`;
+}
+
+/** Monday = 0 … Sunday = 6 for itinerary day N, counted from the departure date (YYYY-MM-DD). */
+function weekdayIndexFor(departureDate: string, dayNumber: number): number {
+  const date = new Date(`${departureDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + Math.max(0, dayNumber - 1));
+  return (date.getUTCDay() + 6) % 7;
+}
+
+/** "Monday: 9:00 AM – 5:00 PM" → "9:00 AM – 5:00 PM" for the given weekday. */
+function hoursForWeekday(weeklyHours: string[], weekdayIdx: number): string | undefined {
+  const line = weeklyHours[weekdayIdx];
+  const stripped = line?.replace(/^[^:]+:\s*/, "").trim();
+  return stripped || undefined;
+}
+
+async function fetchWeeklyHours(placeId: string, apiKey: string, counters: ApiCounters): Promise<string[] | null> {
+  try {
+    counters.details++; // billed whether or not hours come back
+    const det = await fetch(`${PLACES_BASE}/details/json?place_id=${placeId}&fields=opening_hours&key=${apiKey}`, { signal: AbortSignal.timeout(1500) });
+    if (!det.ok) return null;
+    const dj = await det.json();
+    const weekdayText: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
+    return weekdayText?.length ? weekdayText : null;
+  } catch {
+    return null;
+  }
 }
 
 function haversineKm(a: Coordinate, b: Coordinate): number {
@@ -307,7 +362,7 @@ function getDayTransits(stops: Coordinate[]): TransitInfo[] {
 
 async function enrichPlace(
   name: string, city: string, apiKey: string, skipDetails: boolean,
-  counters: ApiCounters, destinationLng: number,
+  counters: ApiCounters, destinationLng: number, weekdayIdx: number,
   preloaded: PlaceCache | null | undefined = undefined
 ): Promise<PlacesEnrichment | null> {
   const cacheKey = buildCacheKey(name, city);
@@ -321,62 +376,72 @@ async function enrichPlace(
   const isOldFormat = !cached?.photoReference && !!cached?.photoUrl;
   if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
     counters.cacheHits++;
+    let weeklyHours = cached.weeklyHours;
+    // Rows cached before weekly hours were stored: refresh the hours only
+    // (one Details call by place ID — no new Text Search).
+    if (weeklyHours.length === 0 && cached.hoursOpen && !skipDetails && cached.placeId) {
+      const fetched = await fetchWeeklyHours(cached.placeId, apiKey, counters);
+      if (fetched) {
+        weeklyHours = fetched;
+        await prisma.placeCache.update({ where: { cacheKey }, data: { weeklyHours: fetched } }).catch(() => {});
+      }
+    }
+    // Hours for the weekday of THIS itinerary day, not the day the place was cached.
+    const hoursOpen = weeklyHours.length > 0
+      ? hoursForWeekday(weeklyHours, weekdayIdx)
+      : cached.hoursOpen ?? undefined;
     return {
       photoReference: cached.photoReference ?? undefined, placeId: cached.placeId ?? undefined,
       rating: cached.rating ?? undefined, userRatingsTotal: cached.userRatingsTotal ?? undefined,
-      hoursOpen: cached.hoursOpen ?? undefined, priceLevel: cached.priceLevel ?? undefined,
-      openNow: cached.hoursOpen ? parseOpenNow(cached.hoursOpen, destinationLng) : undefined,
+      hoursOpen, priceLevel: cached.priceLevel ?? undefined,
+      openNow: hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : undefined,
     };
   }
   try {
+    counters.textSearch++; // billed whether or not a result comes back
     const res = await fetch(`${PLACES_BASE}/textsearch/json?query=${encodeURIComponent(`${name} ${city}`)}&key=${apiKey}`, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return null;
     const data = await res.json();
     const place = data.results?.[0];
     if (!place) return null;
-    counters.textSearch++;
     const photoRef = place.photos?.[0]?.photo_reference;
-    let hoursOpen: string | undefined;
-    if (!skipDetails && place.place_id) {
-      try {
-        const det = await fetch(`${PLACES_BASE}/details/json?place_id=${place.place_id}&fields=opening_hours&key=${apiKey}`, { signal: AbortSignal.timeout(1500) });
-        if (det.ok) {
-          const dj = await det.json();
-          const wt: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
-          if (wt?.length) {
-            const utcOffsetHrs = Math.round(destinationLng / 15);
-            const todayIdx = (new Date(Date.now() + utcOffsetHrs * 3600 * 1000).getUTCDay() + 6) % 7;
-            const stripped = (wt[todayIdx] ?? "").replace(/^[^:]+:\s*/, "").trim();
-            if (stripped) hoursOpen = stripped;
-          }
-          counters.details++;
-        }
-      } catch { /* optional */ }
-    }
+    const weeklyHours = !skipDetails && place.place_id
+      ? (await fetchWeeklyHours(place.place_id, apiKey, counters)) ?? []
+      : [];
+    const hoursOpen = hoursForWeekday(weeklyHours, weekdayIdx);
     const enrichment: PlacesEnrichment = {
       photoReference: photoRef ?? undefined, placeId: place.place_id ?? undefined,
       rating: place.rating, userRatingsTotal: place.user_ratings_total,
       openNow: hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : place.opening_hours?.open_now,
       hoursOpen, priceLevel: place.price_level,
     };
-    prisma.placeCache.upsert({
-      where: { cacheKey },
-      update: { photoReference: photoRef ?? null, photoUrl: null, placeId: enrichment.placeId ?? null, rating: enrichment.rating ?? null, userRatingsTotal: enrichment.userRatingsTotal ?? null, hoursOpen: enrichment.hoursOpen ?? null, priceLevel: enrichment.priceLevel ?? null, fetchedAt: new Date() },
-      create: { cacheKey, photoReference: photoRef ?? null, photoUrl: null, placeId: enrichment.placeId ?? null, rating: enrichment.rating ?? null, userRatingsTotal: enrichment.userRatingsTotal ?? null, hoursOpen: enrichment.hoursOpen ?? null, priceLevel: enrichment.priceLevel ?? null },
+    const row = {
+      photoReference: photoRef ?? null, photoUrl: null, placeId: enrichment.placeId ?? null,
+      rating: enrichment.rating ?? null, userRatingsTotal: enrichment.userRatingsTotal ?? null,
+      hoursOpen: enrichment.hoursOpen ?? null, weeklyHours, priceLevel: enrichment.priceLevel ?? null,
+    };
+    // Awaited: on serverless, a fire-and-forget write can be cut off when the response ends.
+    await prisma.placeCache.upsert({
+      where:  { cacheKey },
+      update: { ...row, fetchedAt: new Date() },
+      create: { cacheKey, ...row },
     }).catch(() => {});
     return enrichment;
   } catch { return null; }
 }
 
-async function enrichDay(day: DayPlan, destination: string, apiKey: string, counters: ApiCounters, lng: number): Promise<DayPlan> {
+async function enrichDay(
+  day: DayPlan, destination: string, apiKey: string, counters: ApiCounters, lng: number, departureDate: string,
+): Promise<DayPlan> {
   const items = day.timeline ?? [];
+  const weekdayIdx = weekdayIndexFor(departureDate, day.day);
   const cacheKeys = items.map((item) => buildCacheKey(item.title, destination));
   const cachedRows = await prisma.placeCache.findMany({ where: { cacheKey: { in: cacheKeys } } }).catch(() => [] as PlaceCache[]);
   const cacheMap = new Map(cachedRows.map((r) => [r.cacheKey, r]));
 
   const results = await Promise.allSettled(
     items.map((item) => enrichPlace(item.title, destination, apiKey,
-      SKIP_DETAILS_CATEGORIES.has(item.category ?? ""), counters, lng,
+      SKIP_DETAILS_CATEGORIES.has(item.category ?? ""), counters, lng, weekdayIdx,
       cacheMap.get(buildCacheKey(item.title, destination)) ?? null))
   );
 
@@ -492,17 +557,61 @@ function extractCompleteDays(buffer: string): { days: string[]; remaining: strin
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
-  // ── Auth + rate limit ────────────────────────────────────────────────────────
+  // Order matters: everything that can reject a request for free (validation,
+  // entitlement) runs BEFORE anything that spends quota (rate limit, credit
+  // reservation), so a bad request never costs a visitor their daily trip.
+
+  // ── Identity ─────────────────────────────────────────────────────────────────
   const { userId } = await auth();
-  const rateLimitKey = userId ?? req.headers.get("x-forwarded-for");
-  if (!rateLimitKey) {
+  const ip = getClientIp(req.headers);
+  if (!userId && !ip) {
     return Response.json({ error: "Unable to process request" }, { status: 400 });
   }
-  // Signed-in requests use the general 5/hour abuse guard; anonymous requests
-  // (no account to tie a quota to) get a much tighter 1/24h limiter instead —
-  // see anonymousItineraryRatelimit in ratelimit.ts for why.
+  const identity = userId ?? `ip:${ip}`;
+
+  // ── Validate body ────────────────────────────────────────────────────────────
+  let raw: unknown;
+  try { raw = await req.json(); }
+  catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
+
+  const parsed = ItinerarySchema.safeParse(raw);
+  if (!parsed.success) {
+    return Response.json({ error: "Invalid request", details: parsed.error.flatten().fieldErrors }, { status: 400 });
+  }
+  const safeBody = parsed.data;
+
+  // ── Entitlement (read-only) ──────────────────────────────────────────────────
+  const credit = userId ? await getCreditStatus(userId) : null;
+  const isPremium = credit?.isPremium ?? false;
+
+  // Guests and free users share the free-tier trip length.
+  if (!isPremium && safeBody.duration > FREE_MAX_DAYS) {
+    return Response.json(
+      {
+        error:      "upgrade_required",
+        message:    `Trips longer than ${FREE_MAX_DAYS} days require a Premium subscription.`,
+        upgradeUrl: "/pricing",
+      },
+      { status: 403 }
+    );
+  }
+  if (credit && credit.remaining <= 0) {
+    return Response.json(
+      {
+        error:      "no_credits",
+        message:    isPremium
+          ? `You have used all ${PREMIUM_MONTHLY_CREDITS} of your premium itineraries this billing period.`
+          : `You have reached your limit of ${FREE_MONTHLY_GENERATIONS} free itineraries in the last 30 days.`,
+        upgradeUrl: "/pricing",
+      },
+      { status: 403 }
+    );
+  }
+
+  // ── Rate limit (spends quota) ────────────────────────────────────────────────
+  // Signed-in: 5/hour abuse guard. Guests: 1 trip per 24 h per IP.
   const limiter = userId ? ratelimit : anonymousItineraryRatelimit;
-  const { success: rateLimitOk } = await limiter.limit(rateLimitKey);
+  const { success: rateLimitOk } = await limiter.limit(identity);
   if (!rateLimitOk) {
     if (!userId) {
       return Response.json(
@@ -516,50 +625,21 @@ export async function POST(req: Request) {
     return Response.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
   }
 
-  // ── Validate body ────────────────────────────────────────────────────────────
-  let raw: unknown;
-  try { raw = await req.json(); }
-  catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
-
-  const parsed = ItinerarySchema.safeParse(raw);
-  if (!parsed.success) {
-    return Response.json({ error: "Invalid request", details: parsed.error.flatten().fieldErrors }, { status: 400 });
-  }
-  const safeBody = parsed.data;
-
-  // ── Credit check ─────────────────────────────────────────────────────────────
-  // isPremium stays false for anonymous requests (no account) — used below to
-  // apply the same 3-day duration cap to both anonymous and free signed-in users.
-  let isPremium = false;
-  if (userId) {
-    const profile = await prisma.userProfile.findUnique({ where: { id: userId } }).catch(() => null);
-    const credits  = profile?.availableCredits ?? 1;
-    isPremium = profile?.isPremium ?? false;
-
-    if (isPremium && credits <= 0) {
-      return Response.json({ error: "You have used all 10 of your premium itineraries this month.", upgradeUrl: "/pricing" }, { status: 403 });
-    }
-    if (!isPremium) {
-      const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const bonusCredits = profile?.bonusCredits ?? 0;
-      const quotaCount = await prisma.costLog.count({ where: { userId, createdAt: { gte: windowStart } } });
-      if (quotaCount >= 5 + bonusCredits) {
-        return Response.json({ error: "You have reached your limit of 5 free itineraries in the last 30 days.", upgradeUrl: "/pricing" }, { status: 403 });
-      }
-      if (credits <= 0) {
-        return Response.json({ error: "no_credits", message: "You have no credits remaining.", upgradeUrl: "/pricing" }, { status: 402 });
-      }
-    }
+  // ── One generation at a time per user / guest ────────────────────────────────
+  if (!(await acquireGenerationLock(identity))) {
+    return Response.json(
+      { error: "An itinerary is already being prepared. Please wait for it to finish." },
+      { status: 409 }
+    );
   }
 
-  // Duration cap applies to anonymous AND free signed-in users alike — previously
-  // this only ran inside `if (userId)`, letting anonymous requests ask for up to
-  // the full 14-day max directly via the API.
-  if (!isPremium && safeBody.duration > 3) {
+  // ── Reserve a premium credit before spending money on generation ─────────────
+  if (isPremium && userId && !(await reservePremiumCredit(userId))) {
+    await releaseGenerationLock(identity);
     return Response.json(
       {
-        error: "upgrade_required",
-        message: "Trips longer than 3 days require a Premium subscription.",
+        error:      "no_credits",
+        message:    `You have used all ${PREMIUM_MONTHLY_CREDITS} of your premium itineraries this billing period.`,
         upgradeUrl: "/pricing",
       },
       { status: 403 }
@@ -590,7 +670,7 @@ export async function POST(req: Request) {
         const t0         = Date.now();
 
         const anthropicStream = await client.messages.stream({
-          model:      "claude-sonnet-4-6",
+          model:      MODEL,
           max_tokens: 16000,
           system:     SYSTEM_PROMPT,
           messages:   [{ role: "user", content: userPrompt }],
@@ -612,7 +692,7 @@ export async function POST(req: Request) {
 
               controller.enqueue(encode({ type: "enriching", day: rawDay.day, totalDays: safeBody.duration }));
 
-              const enrichedDay = await enrichDay(rawDay, safeBody.destination, apiKey, counters, safeBody.lng);
+              const enrichedDay = await enrichDay(rawDay, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate);
               enrichedDays.push(enrichedDay);
 
               controller.enqueue(encode({
@@ -655,7 +735,7 @@ export async function POST(req: Request) {
               );
               const enrichedMissingDays = await Promise.all(
                 missingDays.map((day) =>
-                  enrichDay(day, safeBody.destination, apiKey, counters, safeBody.lng)
+                  enrichDay(day, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate)
                 )
               );
               fallbackDays = [...enrichedDays, ...enrichedMissingDays];
@@ -677,11 +757,18 @@ export async function POST(req: Request) {
           );
         }
 
+        // Signed snapshot of exactly what we generated — the only thing saveTripToDb accepts.
+        const saveToken = createSaveToken(
+          { destination: safeBody.destination, editorial, days: fallbackDays, recommendedStays },
+          safeBody,
+        );
+
         controller.enqueue(encode({
           type:            "done",
           editorial,
           recommendedStays,
           fallbackDays,
+          saveToken,
           totalDays:       safeBody.duration,
           inputTokens:     finalMsg.usage.input_tokens,
           outputTokens:    finalMsg.usage.output_tokens,
@@ -691,80 +778,84 @@ export async function POST(req: Request) {
           googleCalls:     counters.textSearch,
         }));
 
-        // ── Write CostLog ──────────────────────────────────────────────────────
-        const CLAUDE_INPUT_COST  = 3  / 1_000_000;
-        const CLAUDE_OUTPUT_COST = 15 / 1_000_000;
-        const aiCost     = finalMsg.usage.input_tokens * CLAUDE_INPUT_COST + finalMsg.usage.output_tokens * CLAUDE_OUTPUT_COST;
-        const googleCost = counters.textSearch * 0.032 + counters.details * 0.017;
-        await prisma.costLog.create({
-          data: {
-            userId:        userId ?? null,
-            destination:   safeBody.destination,
-            inputTokens:   finalMsg.usage.input_tokens,
-            outputTokens:  finalMsg.usage.output_tokens,
-            thinkingTokens: 0,
-            aiCost,
-            googleCost,
-            totalCost:     aiCost + googleCost,
-            cacheHits:     counters.cacheHits,
-            cacheMisses:   counters.textSearch,
-            success:       true,
-            errorType:     null,
-          },
-        }).catch(() => {});
-
-        // ── Decrement credits ──────────────────────────────────────────────────
+        // ── Record the charged generation (awaited — serverless may freeze after close) ──
+        await writeCostLog({ usage: finalMsg.usage, success: true, errorType: null });
         if (userId) {
-          prisma.userProfile.upsert({
-            where:  { id: userId },
-            create: { id: userId, availableCredits: 0, totalGenerations: 1 },
-            update: { availableCredits: { decrement: 1 }, totalGenerations: { increment: 1 } },
-          }).catch(() => {});
+          try {
+            // Premium: the credit was reserved up front. Free: the CostLog row above is the charge.
+            if (isPremium) await recordPremiumGeneration(userId);
+            else           await recordFreeGeneration(userId);
+          } catch (err) {
+            console.error("[itinerary-stream] Failed to update generation counters:", err);
+          }
         }
 
       } catch (e) {
-        controller.enqueue(encode({ type: "error", message: (e as Error).message }));
+        // The visitor closed the tab, navigated away, or iOS killed the backgrounded
+        // fetch (the client then retries). Logged for cost analytics, not charged.
+        const isAbort = req.signal.aborted;
 
-        // Client navigating away / aborting isn't a generation failure worth
-        // attributing to a user on the dashboard — skip logging those.
-        const isAbort = e instanceof DOMException && e.name === "AbortError";
         if (!isAbort) {
-          const inputTokens  = finalUsage?.input_tokens  ?? 0;
-          const outputTokens = finalUsage?.output_tokens ?? 0;
-          const aiCost     = inputTokens * (3 / 1_000_000) + outputTokens * (15 / 1_000_000);
-          const googleCost = counters.textSearch * 0.032 + counters.details * 0.017;
-          const errorType =
-            errorTypeOverride ??
+          try { controller.enqueue(encode({ type: "error", message: (e as Error).message })); }
+          catch { /* stream already closed */ }
+        }
+
+        const errorType = isAbort
+          ? CLIENT_ABORT
+          : errorTypeOverride ??
             (e instanceof SyntaxError
               ? "json_parse"
               : e instanceof Error && /of \d+ days/.test(e.message)
                 ? "incomplete_days"
                 : "generation_error");
 
-          prisma.costLog.create({
-            data: {
-              userId:        userId ?? null,
-              destination:   safeBody.destination,
-              inputTokens,
-              outputTokens,
-              thinkingTokens: 0,
-              aiCost,
-              googleCost,
-              totalCost:     aiCost + googleCost,
-              cacheHits:     counters.cacheHits,
-              cacheMisses:   counters.textSearch,
-              success:       false,
-              errorType,
-            },
-          }).catch(() => {
-            console.error("[itinerary-stream] Failed to write failure CostLog");
-          });
+        await writeCostLog({ usage: finalUsage, success: false, errorType });
+
+        // Never charge a premium user for an incomplete generation.
+        if (isPremium && userId) {
+          await refundPremiumCredit(userId).catch((err) =>
+            console.error("[itinerary-stream] Failed to refund premium credit:", err));
+        }
+        // Guests get their daily trip back when WE failed. Not on abort — that
+        // would allow unlimited guest generations by aborting and retrying.
+        if (!userId && !isAbort) {
+          await anonymousItineraryRatelimit.resetUsedTokens(identity).catch(() => {});
         }
       } finally {
-        controller.close();
+        await releaseGenerationLock(identity).catch(() => {});
+        try { controller.close(); } catch { /* already closed by the client */ }
       }
     },
   });
+
+  async function writeCostLog({ usage, success, errorType }: {
+    usage:     { input_tokens: number; output_tokens: number } | undefined;
+    success:   boolean;
+    errorType: string | null;
+  }): Promise<void> {
+    const inputTokens  = usage?.input_tokens  ?? 0;
+    const outputTokens = usage?.output_tokens ?? 0;
+    const aiCost     = inputTokens * CLAUDE_INPUT_COST + outputTokens * CLAUDE_OUTPUT_COST;
+    const googleCost = counters.textSearch * GOOGLE_TEXT_SEARCH_COST + counters.details * GOOGLE_DETAILS_COST;
+    await prisma.costLog.create({
+      data: {
+        userId:             userId ?? null,
+        destination:        safeBody.destination,
+        model:              MODEL,
+        inputTokens,
+        outputTokens,
+        thinkingTokens:     0,
+        aiCost,
+        googleCost,
+        totalCost:          aiCost + googleCost,
+        cacheHits:          counters.cacheHits,
+        cacheMisses:        counters.textSearch,
+        googleDetailsCalls: counters.details,
+        success,
+        errorType,
+      },
+    }).catch((err) => console.error("[itinerary-stream] Failed to write CostLog:", err));
+  }
 
   return new Response(stream, {
     headers: {

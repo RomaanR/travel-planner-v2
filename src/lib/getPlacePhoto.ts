@@ -1,12 +1,15 @@
 const API_KEY = process.env.MAPS_SERVER_KEY ?? "";
 
 /**
- * Fetches a representative destination photo URL from the Google Places API.
- * Uses findplacefromtext → photos[0].photo_reference → Places Photo URL.
- * Returns null on any error or if no photos are available.
+ * Representative destination photo, served through our /api/photo proxy.
+ *
+ * Returns a same-origin path ("/api/photo?ref=…") — never a Google URL — so
+ * MAPS_SERVER_KEY stays on the server. Pass `absolute: true` for Open Graph
+ * tags, which need a full URL. Returns null on any error or when no photo exists.
  */
 export async function getDestinationPhotoUrl(
-  destination: string
+  destination: string,
+  { absolute = false }: { absolute?: boolean } = {},
 ): Promise<string | null> {
   if (!API_KEY) return null;
 
@@ -31,12 +34,11 @@ export async function getDestinationPhotoUrl(
 
     if (!ref) return null;
 
-    return (
-      `https://maps.googleapis.com/maps/api/place/photo` +
-      `?maxwidth=800` +
-      `&photoreference=${ref}` +
-      `&key=${API_KEY}`
-    );
+    const path = `/api/photo?ref=${encodeURIComponent(ref)}`;
+    if (!absolute) return path;
+
+    const base = process.env.NEXT_PUBLIC_APP_URL;
+    return base ? `${base.replace(/\/$/, "")}${path}` : null;
   } catch {
     return null;
   }

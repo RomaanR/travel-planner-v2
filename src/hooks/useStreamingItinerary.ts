@@ -33,20 +33,22 @@ function buildFingerprint(data: ItineraryRequest): string {
   });
 }
 
-function saveCache(fingerprint: string, result: ItineraryResponse): void {
+type CacheEntry = { result: ItineraryResponse; saveToken: string | null };
+
+function saveCache(fingerprint: string, result: ItineraryResponse, saveToken: string | null): void {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ fingerprint, result }));
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ fingerprint, result, saveToken }));
   } catch {
     // Cache failure must never block itinerary generation.
   }
 }
 
-function loadCache(fingerprint: string): ItineraryResponse | null {
+function loadCache(fingerprint: string): CacheEntry | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
 
-    const { fingerprint: cachedFingerprint, result } = JSON.parse(raw);
+    const { fingerprint: cachedFingerprint, result, saveToken } = JSON.parse(raw);
     if (cachedFingerprint !== fingerprint) return null;
 
     if (!result?.destination || !Array.isArray(result?.days) || result.days.length === 0) {
@@ -54,7 +56,10 @@ function loadCache(fingerprint: string): ItineraryResponse | null {
       return null;
     }
 
-    return result as ItineraryResponse;
+    return {
+      result:    result as ItineraryResponse,
+      saveToken: typeof saveToken === "string" ? saveToken : null,
+    };
   } catch {
     sessionStorage.removeItem(CACHE_KEY);
     return null;
@@ -96,6 +101,8 @@ export function useStreamingItinerary() {
   const [paywalled, setPaywalled] = useState(false);
   const [signInRequired, setSignInRequired] = useState(false);
   const [destination, setDestination] = useState("");
+  // Signed by the server on completion — the only input saveTripToDb accepts.
+  const [saveToken, setSaveToken] = useState<string | null>(null);
   const [progress, setProgress] = useState<StreamProgress>({
     totalDays: 0,
     completedDays: 0,
@@ -111,7 +118,8 @@ export function useStreamingItinerary() {
     pendingRetryRef.current = null;
   }, []);
 
-  const restoreItinerary = useCallback((cached: ItineraryResponse): void => {
+  const restoreItinerary = useCallback((cached: ItineraryResponse, cachedToken: string | null = null): void => {
+    setSaveToken(cachedToken);
     const cachedDays = cached.days ?? [];
     daysRef.current = cachedDays;
     setDays(cachedDays);
@@ -135,8 +143,8 @@ export function useStreamingItinerary() {
     const fingerprint = buildFingerprint(data);
     const cached = loadCache(fingerprint);
     if (cached) {
-      restoreItinerary(cached);
-      return cached;
+      restoreItinerary(cached.result, cached.saveToken);
+      return cached.result;
     }
 
     abort();
@@ -145,6 +153,7 @@ export function useStreamingItinerary() {
 
     daysRef.current = [];
     setDays([]);
+    setSaveToken(null);
     setMeta(null);
     setDestination(data.destination);
     setProgress({ totalDays: data.duration, completedDays: 0 });
@@ -269,6 +278,8 @@ export function useStreamingItinerary() {
                 recommendedStays: event.recommendedStays as RecommendedStay[] | undefined,
               };
 
+              const token = typeof event.saveToken === "string" ? event.saveToken : null;
+              setSaveToken(token);
               setMeta(streamMeta);
               setProgress({
                 totalDays: Number(event.totalDays) || data.duration,
@@ -285,7 +296,7 @@ export function useStreamingItinerary() {
                   days: daysRef.current,
                   recommendedStays: streamMeta.recommendedStays,
                 };
-                saveCache(fingerprint, completedResult);
+                saveCache(fingerprint, completedResult, token);
               }
 
               toast.success("Itinerary Prepared", {
@@ -382,6 +393,7 @@ export function useStreamingItinerary() {
     error,
     paywalled,
     signInRequired,
+    saveToken,
     generateItinerary,
     abort,
     restoreItinerary,

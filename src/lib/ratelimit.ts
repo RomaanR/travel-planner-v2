@@ -69,6 +69,34 @@ export const photoRatelimit = new Ratelimit({
   prefix:    "travalbee:photo",
 });
 
+// ─── Client IP ────────────────────────────────────────────────────────────────
+// Vercel sets x-real-ip and x-forwarded-for from the connecting client and
+// overwrites client-supplied values. x-forwarded-for can be a list
+// ("client, proxy1, …"); the first entry is the client.
+export function getClientIp(headers: Headers): string | null {
+  const real = headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const first = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return first || null;
+}
+
+// ─── One generation at a time ─────────────────────────────────────────────────
+// Prevents parallel generations from the same user or guest racing past the
+// quota check. Expires on its own if the function is killed before releasing.
+const GENERATION_LOCK_TTL_S = 300; // > route maxDuration (290 s)
+
+export async function acquireGenerationLock(identity: string): Promise<boolean> {
+  const result = await redis.set(`travalbee:generation-lock:${identity}`, "1", {
+    nx: true,
+    ex: GENERATION_LOCK_TTL_S,
+  });
+  return result === "OK";
+}
+
+export async function releaseGenerationLock(identity: string): Promise<void> {
+  await redis.del(`travalbee:generation-lock:${identity}`);
+}
+
 // 30 static map requests per IP per sliding 1-hour window.
 // /api/staticmap calls Google Static Maps API (MAPS_SERVER_KEY) — ~$2/1000 requests.
 // A real user generates one map per PDF export, so 30/hr is more than sufficient.

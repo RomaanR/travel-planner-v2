@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { staticmapRatelimit } from "@/lib/ratelimit";
+import { getClientIp, staticmapRatelimit } from "@/lib/ratelimit";
 
 // Proxy for Google Static Maps API using the server-side key.
 // Accepts repeated `m=lat,lng` params — one per timeline stop.
@@ -15,12 +15,11 @@ const STYLES = [
 export async function GET(req: NextRequest) {
   // Rate limit by IP — prevents quota exhaustion on MAPS_SERVER_KEY.
   // 30/hr is generous for real users (one map per PDF export); blocks bots.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (ip) {
-    const { success } = await staticmapRatelimit.limit(ip);
-    if (!success) {
-      return new NextResponse("Too many requests", { status: 429 });
-    }
+  // Requests without a client IP share one bucket instead of bypassing the limit.
+  const ip = getClientIp(req.headers) ?? "unknown";
+  const { success } = await staticmapRatelimit.limit(ip);
+  if (!success) {
+    return new NextResponse("Too many requests", { status: 429 });
   }
 
   const markers = req.nextUrl.searchParams.getAll("m");

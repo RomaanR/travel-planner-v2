@@ -27,7 +27,7 @@ import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
 
 // ─── sessionStorage re-validation schema ──────────────────────────────────────
 // Guards against tampered or malformed data injected by browser extensions.
-// Mirrors the server-side ItinerarySchema in api/itinerary/route.ts.
+// Mirrors the server-side ItinerarySchema in api/itinerary-stream/route.ts.
 
 const StoredRequestSchema = z.object({
   destination:         z.string().min(1).max(100),
@@ -71,6 +71,7 @@ export default function ItineraryPage() {
     error,
     paywalled,
     signInRequired,
+    saveToken,
     generateItinerary,
     abort,
   } = useStreamingItinerary();
@@ -87,9 +88,14 @@ export default function ItineraryPage() {
 
   async function handleSave() {
     if (!itinerary || !streamComplete || saveState !== "idle") return;
+    if (!saveToken) {
+      // Itineraries restored from a session cache created before save tokens existed.
+      toast.error("Save Failed", { description: "Please generate this journey again to save it." });
+      return;
+    }
     setSaveState("saving");
     try {
-      const saved = await saveTripToDb(itinerary.destination, itinerary.days.length, itinerary);
+      const saved = await saveTripToDb(saveToken);
       setSaveState("saved");
       // Write to user-scoped cache immediately so /trips shows the trip
       // without waiting for the next /api/trips fetch (critical on mobile).
@@ -119,8 +125,8 @@ export default function ItineraryPage() {
     setRefineOpen(false);
 
     // Auto-save the current itinerary before regenerating (fire-and-forget — don't block generation)
-    if (isSignedIn && itinerary && saveState === "idle") {
-      saveTripToDb(itinerary.destination, itinerary.days.length, itinerary)
+    if (isSignedIn && saveToken && saveState === "idle") {
+      saveTripToDb(saveToken)
         .then(() => toast.success("Previous journey archived", {
           description: "Your original itinerary is safe in My Trips.",
         }))
@@ -136,7 +142,7 @@ export default function ItineraryPage() {
 
     // Kick off the new generation
     generateItinerary(updated);
-  }, [isSignedIn, itinerary, saveState, generateItinerary]);
+  }, [isSignedIn, saveToken, saveState, generateItinerary]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("itineraryRequest");

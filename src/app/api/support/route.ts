@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db";
-import { supportRatelimit } from "@/lib/ratelimit";
+import { getClientIp, supportRatelimit } from "@/lib/ratelimit";
 
 const SupportSchema = z.object({
   email:   z.string().email("Please enter a valid email address.").max(254),
@@ -15,8 +15,7 @@ export async function POST(req: NextRequest) {
   // dev so the form is testable without a tunnel. In production, a missing
   // header is rejected (no shared anonymous bucket).
   const isDev = process.env.NODE_ENV === "development";
-  const ip    = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-             ?? (isDev ? "127.0.0.1" : null);
+  const ip    = getClientIp(req.headers) ?? (isDev ? "127.0.0.1" : null);
 
   if (!ip) {
     return Response.json(

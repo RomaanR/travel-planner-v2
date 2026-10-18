@@ -1,10 +1,11 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
+import { deleteUserData } from "@/lib/accountDeletion";
 
 // Clerk sends webhook events signed with a secret via Svix.
-// This route handles user.created to instantly create a UserProfile row
-// so new users see "5 remaining" before they ever visit the dashboard.
+// user.created → create the UserProfile row.
+// user.deleted → remove the user's personal data (see src/lib/accountDeletion.ts).
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
@@ -43,13 +44,25 @@ export async function POST(req: Request) {
     try {
       await prisma.userProfile.upsert({
         where:  { id: clerkUserId },
-        create: { id: clerkUserId, availableCredits: 5 },
+        create: { id: clerkUserId }, // free-tier defaults from the schema
         update: {}, // no-op if somehow already exists
       });
       console.log(`[clerk-webhook] UserProfile created for ${clerkUserId}`);
     } catch (err) {
       console.error("[clerk-webhook] Failed to create UserProfile:", err);
       return new Response("DB error", { status: 500 });
+    }
+  }
+
+  // Requires "user.deleted" to be enabled on the Clerk webhook endpoint.
+  if (evt.type === "user.deleted" && evt.data.id) {
+    try {
+      await deleteUserData(evt.data.id);
+      console.log(`[clerk-webhook] Personal data removed for deleted user ${evt.data.id}`);
+    } catch (err) {
+      // 500 → Svix retries; deleteUserData is idempotent.
+      console.error("[clerk-webhook] Failed to remove data for deleted user:", err);
+      return new Response("Deletion failed", { status: 500 });
     }
   }
 

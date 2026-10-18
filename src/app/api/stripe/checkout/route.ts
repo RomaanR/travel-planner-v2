@@ -2,7 +2,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
-import { BLOCKING_SUBSCRIPTION_STATUSES, freeCreditsRemaining } from "@/lib/billing";
+import { BLOCKING_SUBSCRIPTION_STATUSES } from "@/lib/billing";
+import { freeCreditsRemaining } from "@/lib/credits";
 
 const PORTAL_URL = "/api/stripe/portal";
 

@@ -29,7 +29,18 @@ Work on feature branches from clean `main`; never `git add .` in this worktree.
 - [ ] Credits: reserve before generating, finalise on success, release on failure (no double-spend from parallel requests); stop relying on a dashboard visit to reset balances
 - [ ] Pricing page: remove "Pay once. Travel forever." and the disabled "Coming Soon" checkout; every limit hit must lead to an action that actually works
 - [x] Fix Stripe billing P1–P7 (renewals, payment records, ordering, missing events, `invoice.paid`, duplicate subscriptions, atomic idempotency) — branch `fix/stripe-billing`, see [`docs/stripe-setup.md`](docs/stripe-setup.md)
-- [ ] Apply new billing tables (`npx prisma db push`) before deploying that branch, then run the Stripe test plan
+- [x] Apply new billing tables (done 2026-10-18)
+- [ ] Run the Stripe test plan in `docs/stripe-setup.md` before enabling the Premium button
+- [x] Credits & quotas: one rule set (`src/lib/credits.ts`), only successful generations charged, premium credit reserved up front and refunded on failure, one generation at a time per user/guest, checks before quota is spent, read-only dashboard
+- [x] Retire legacy `/api/itinerary` route
+- [x] Saving: signed save tokens (no client JSON), idempotent saves, original request stored with the trip
+- [x] Privacy: `user.deleted` removes trips/profile and cancels subscriptions; server Maps key no longer in photo URLs; `/api/trips` returns summaries only
+- [x] Schema: Unicode cache keys, weekly opening hours (shown for the actual trip weekday), CostLog model/details calls, Trip `request`/`generationId`/`updatedAt`, StripeEvent retention
+- [ ] Enable `user.deleted` on the Clerk webhook endpoint
+- [ ] Rotate `MAPS_SERVER_KEY` (it appeared in photo URLs before this fix)
+- [ ] Optional: set a dedicated `ITINERARY_SIGNING_SECRET` (falls back to a key derived from `CLERK_SECRET_KEY`)
+- [ ] Contract step after deploy: delete old-format `PlaceCache` rows, remove `isOldFormat`, drop `PlaceCache.photoUrl` and `hoursOpen`
+- [ ] Guests on iOS: a backgrounded generation is aborted and the auto-retry hits the 1/day limit
 - [ ] Turn type/lint checks back on in `next.config.mjs` and fix the 5 TypeScript errors
 
 ## 2. Cut Claude cost

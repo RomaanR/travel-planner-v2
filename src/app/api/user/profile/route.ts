@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/db";
+import { getCreditStatus } from "@/lib/credits";
 
 export async function GET() {
   const { userId } = await auth();
@@ -7,10 +7,6 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const profile = await prisma.userProfile.findUnique({ where: { id: userId } });
-
-  return Response.json({
-    isPremium:        profile?.isPremium        ?? false,
-    availableCredits: profile?.availableCredits ?? 1,
-  });
+  const { isPremium, remaining } = await getCreditStatus(userId);
+  return Response.json({ isPremium, availableCredits: remaining });
 }

@@ -29,7 +29,7 @@ export async function generateMetadata({
     ? `${firstSentence}.`
     : `A curated luxury journey to ${trip.destination}, crafted by TravalBee.`;
 
-  const photoUrl = await getDestinationPhotoUrl(trip.destination);
+  const photoUrl = await getDestinationPhotoUrl(trip.destination, { absolute: true });
   const title = `${trip.destination} Itinerary | TravalBee`;
 
   return {

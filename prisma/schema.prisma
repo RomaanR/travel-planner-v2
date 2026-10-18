@@ -14,8 +14,12 @@ model Trip {
   destination   String
   days          Int
   itineraryData Json
+  request       Json? // validated generation request (dates, party, pace, hotel, transport…); null on trips saved before 2026-10
+  generationId  String? // from the signed save token — makes saving the same generation idempotent
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
+  @@unique([userId, generationId]) // one trip per generation per user; NULLs (legacy rows) don't collide
   @@index([userId]) // findMany({ where: { userId } }) on /trips — prevents full table scan at scale
   @@index([userId, createdAt(sort: Desc)]) // ordered archive fetch — covering index avoids sort step
 }
@@ -28,7 +32,8 @@ model PlaceCache {
   placeId          String? // Google Places place_id — used to build accurate Maps URLs with correct names + locations
   rating           Float?
   userRatingsTotal Int?
-  hoursOpen        String?
+  hoursOpen        String? // DEPRECATED — single weekday captured at fetch time; use weeklyHours
+  weeklyHours      String[] @default([]) // Google weekday_text, Monday first: ["Monday: 9:00 AM – 5:00 PM", …]
   priceLevel       Int?
   fetchedAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
@@ -38,8 +43,8 @@ model PlaceCache {
 
 model UserProfile {
   id               String   @id // Clerk userId
-  availableCredits Int      @default(1) // free: mirrors (5 + bonusCredits - used) remaining; premium: 10 per billing cycle
-  bonusCredits     Int      @default(0) // manually granted extra credits — stacks on top of free quota; set in Supabase directly
+  availableCredits Int      @default(5) // premium: the balance (10 + bonus per paid period, reserved per generation). free: a reporting snapshot only — see src/lib/credits.ts
+  bonusCredits     Int      @default(0) // manually granted extra credits — stacks on the free and premium allowance; set in Supabase directly
   totalGenerations Int      @default(0) // incremented on every successful AI generation (saved or not)
   isPremium        Boolean  @default(false) // true while an active $10.99/month subscription exists
   stripeCustomerId String?  @unique // kept for refund/audit purposes
@@ -58,9 +63,11 @@ model CostLog {
   googleCost     Decimal  @db.Decimal(10, 6)
   totalCost      Decimal  @db.Decimal(10, 6)
   cacheHits      Int
-  cacheMisses    Int // = googleTextSearchCalls (items not in cache)
+  cacheMisses    Int // = Google Text Search calls (items not in cache)
+  googleDetailsCalls Int  @default(0) // Google Place Details calls (opening hours)
+  model          String? // model that produced this generation, e.g. "claude-sonnet-4-6"
   success        Boolean  @default(true) // false when generation failed before completion
-  errorType      String? // "max_tokens" | "json_parse" | "unexpected" — null on success
+  errorType      String? // "max_tokens" | "json_parse" | "incomplete_days" | "generation_error" | "client_abort" — null on success
   createdAt      DateTime @default(now())
 
   @@index([createdAt(sort: Desc)]) // admin dashboard: last 200 rows ordered by createdAt — O(log n) at scale

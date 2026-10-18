@@ -1,8 +1,9 @@
 import type Stripe from "stripe";
-import type { Prisma, PrismaClient } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
+import { PREMIUM_MONTHLY_CREDITS, freeCreditsRemaining } from "@/lib/credits";
 
 // ─── Billing service ──────────────────────────────────────────────────────────
 // Stripe is the source of truth. Each handler below runs in two phases:
@@ -11,9 +12,6 @@ import { prisma } from "@/lib/db";
 //   2. write   — a function applied inside the webhook's DB transaction, together
 //      with the StripeEvent idempotency row. Either everything commits or nothing.
 // This makes delivery order irrelevant and retries safe.
-
-export const PREMIUM_MONTHLY_CREDITS  = 10;
-export const FREE_MONTHLY_GENERATIONS = 5;
 
 // past_due keeps access while Stripe retries the card; Stripe moves the
 // subscription to unpaid/canceled once retries are exhausted.
@@ -36,17 +34,6 @@ const toDate = (seconds: number | null | undefined) => (seconds ? new Date(secon
 
 export function hasPremiumStatus(status: string): boolean {
   return PREMIUM_STATUSES.has(status);
-}
-
-/** Free-tier credits left: rolling 30-day allowance plus manually granted bonus credits. */
-export async function freeCreditsRemaining(
-  db: Tx | PrismaClient,
-  userId: string,
-  bonusCredits: number,
-): Promise<number> {
-  const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const used = await db.costLog.count({ where: { userId, createdAt: { gte: windowStart } } });
-  return Math.max(0, FREE_MONTHLY_GENERATIONS - used) + bonusCredits;
 }
 
 function reportUnlinked(kind: string, stripeId: string) {
@@ -81,13 +68,16 @@ async function applyPremiumState(tx: Tx, userId: string, customerId: string): Pr
   const profile   = await tx.userProfile.findUnique({ where: { id: userId } });
 
   if (!profile) {
+    // No profile and nothing active (e.g. the account was deleted and its
+    // subscription cancelled) — don't recreate a profile for that user.
+    if (!isPremium) return;
     await tx.userProfile.create({
       data: {
         id:               userId,
         isPremium,
         stripeCustomerId: customerId,
         // Premium credits arrive with the paid invoice (same transaction, applied after this).
-        availableCredits: isPremium ? 0 : await freeCreditsRemaining(tx, userId, 0),
+        availableCredits: 0,
       },
     });
     return;
@@ -194,12 +184,16 @@ export async function prepareInvoiceSync(invoiceId: string): Promise<BillingWrit
 
     // A late-delivered old invoice must not reset credits in a newer period.
     const stale   = await newerGrantExists(tx, subscriptionId, invoice.id, paidAt);
-    const profile = await tx.userProfile.findUnique({ where: { id: userId }, select: { isPremium: true } });
+    const profile = await tx.userProfile.findUnique({
+      where:  { id: userId },
+      select: { isPremium: true, bonusCredits: true },
+    });
     if (!stale && profile?.isPremium) {
-      // Premium is a per-period allowance: reset to the plan amount, don't accumulate.
+      // Premium is a per-period allowance: reset to the plan amount (plus any
+      // manually granted bonus, which also stacks on the free tier), don't accumulate.
       await tx.userProfile.update({
         where: { id: userId },
-        data:  { availableCredits: PREMIUM_MONTHLY_CREDITS },
+        data:  { availableCredits: PREMIUM_MONTHLY_CREDITS + profile.bonusCredits },
       });
     }
     await tx.invoice.update({ where: { id: invoice.id }, data: { creditsGrantedAt: new Date() } });

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
 import { tripsRatelimit } from "@/lib/ratelimit";
 
+const MAX_TRIPS = 100;
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) {
@@ -18,8 +20,10 @@ export async function GET() {
   }
 
   const trips = await prisma.trip.findMany({
-    where: { userId },
+    where:   { userId },
     orderBy: { createdAt: "desc" },
+    take:    MAX_TRIPS,
+    select:  { id: true, destination: true, days: true, createdAt: true, itineraryData: true },
   });
 
   // Fetch destination photos in parallel — same pattern as the server page
@@ -27,14 +31,22 @@ export async function GET() {
     trips.map((t) => getDestinationPhotoUrl(t.destination))
   );
 
-  const payload = trips.map((t, i) => ({
-    id:            t.id,
-    destination:   t.destination,
-    days:          t.days,
-    createdAt:     t.createdAt.toISOString(),  // serialise Date for JSON
-    photoUrl:      photos[i] ?? null,
-    itineraryData: t.itineraryData,            // needed for editorial/theme preview
-  }));
+  // The archive card only needs the editorial line and the first day themes —
+  // not the full itinerary (often 20–80 KB per trip).
+  const payload = trips.map((t, i) => {
+    const data = t.itineraryData as { editorial?: string; days?: { theme?: string }[] } | null;
+    return {
+      id:          t.id,
+      destination: t.destination,
+      days:        t.days,
+      createdAt:   t.createdAt.toISOString(),  // serialise Date for JSON
+      photoUrl:    photos[i] ?? null,          // same-origin /api/photo path
+      itineraryData: {
+        editorial: data?.editorial,
+        days:      data?.days?.slice(0, 3).map((d) => ({ theme: d?.theme })),
+      },
+    };
+  });
 
   return NextResponse.json({ trips: payload });
 }

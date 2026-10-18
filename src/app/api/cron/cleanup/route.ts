@@ -20,10 +20,18 @@ export async function GET(req: NextRequest) {
     where: { updatedAt: { lt: ninetyDaysAgo } },
   });
 
-  console.log(`[cron/cleanup] deleted ${result.count} stale PlaceCache records`);
+  // Stripe retries a webhook for at most 3 days, so idempotency rows older than
+  // 30 days can never match a redelivery.
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const events = await prisma.stripeEvent.deleteMany({
+    where: { processedAt: { lt: thirtyDaysAgo } },
+  });
+
+  console.log(`[cron/cleanup] deleted ${result.count} stale PlaceCache records, ${events.count} old StripeEvent rows`);
 
   return Response.json({
-    deleted: result.count,
-    cutoff: ninetyDaysAgo.toISOString(),
+    deleted:            result.count,
+    cutoff:             ninetyDaysAgo.toISOString(),
+    stripeEventsPruned: events.count,
   });
 }

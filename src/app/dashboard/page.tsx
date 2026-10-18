@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { getCreditStatus } from "@/lib/credits";
 import Navbar from "@/components/Navbar";
 import UnauthenticatedState from "@/components/UnauthenticatedState";
 import Link from "next/link";
@@ -59,15 +60,11 @@ export default async function DashboardPage() {
   }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
-  // Rolling 30-day window — matches the quota check in /api/itinerary
-  const windowStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-  // Step 1: get rolling count + trip data in parallel (no upsert yet — we need
-  // remainingGenerations before we can write it back to UserProfile).
-  const [monthlyCount, recentTrips, allTrips] = await Promise.all([
-    prisma.costLog.count({
-      where: { userId, createdAt: { gte: windowStart } },
-    }),
+  // Read-only: the balance comes from the same rules the generation route
+  // enforces (src/lib/credits.ts). Viewing this page never changes credits.
+  const [credit, profile, recentTrips, allTrips] = await Promise.all([
+    getCreditStatus(userId),
+    prisma.userProfile.findUnique({ where: { id: userId }, select: { totalGenerations: true } }),
     prisma.trip.findMany({
       where:     { userId },
       orderBy:   { createdAt: "desc" },
@@ -79,36 +76,10 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Step 2: fetch (or create) the UserProfile — do NOT overwrite credits for
-  // premium users. The webhook owns their credit balance. For free users only,
-  // sync credits from the rolling quota so the dashboard stays accurate.
-  const existingProfile = await prisma.userProfile.findUnique({ where: { id: userId } });
+  const remainingGenerations = credit.remaining;
+  const isPremium           = credit.isPremium;
 
-  let profile;
-  if (!existingProfile) {
-    // Brand-new user — create row with free-tier remaining credits
-    const remainingGenerations = Math.max(0, 5 - monthlyCount);
-    profile = await prisma.userProfile.create({
-      data: { id: userId, availableCredits: remainingGenerations },
-    });
-  } else if (!existingProfile.isPremium) {
-    // Free user — keep credits in sync with rolling quota + any manually granted bonus credits.
-    // bonusCredits is set directly in Supabase and never overwritten here — only availableCredits is synced.
-    const bonus = existingProfile.bonusCredits ?? 0;
-    const remainingGenerations = Math.max(0, 5 - monthlyCount) + bonus;
-    profile = await prisma.userProfile.update({
-      where: { id: userId },
-      data:  { availableCredits: remainingGenerations },
-    });
-  } else {
-    // Premium user — never overwrite credits; webhook manages their balance
-    profile = existingProfile;
-  }
-
-  const remainingGenerations = profile.availableCredits;
-  const isPremium           = profile.isPremium ?? false;
-
-  const generatedCount = profile.totalGenerations ?? 0;
+  const generatedCount = profile?.totalGenerations ?? 0;
   const savedCount         = allTrips.length;
   const uniqueDestinations = new Set(allTrips.map((t) => t.destination)).size;
   const totalDays          = allTrips.reduce((sum, t) => sum + t.days, 0);

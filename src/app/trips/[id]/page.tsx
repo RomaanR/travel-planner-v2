@@ -40,7 +40,7 @@ export async function generateMetadata({
 
   // Destination hero photo for og:image / twitter:image.
   // Returns null if MAPS_SERVER_KEY is absent or the Places call fails.
-  const photoUrl = await getDestinationPhotoUrl(trip.destination);
+  const photoUrl = await getDestinationPhotoUrl(trip.destination, { absolute: true });
 
   const title = `${trip.destination} | Curated by TravalBee`;
 
