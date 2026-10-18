@@ -1,140 +1,121 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import * as Sentry from "@sentry/nextjs";
+import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
-import type Stripe from "stripe";
+import {
+  type BillingWrite,
+  prepareChargeRefunded,
+  prepareCheckoutCompleted,
+  prepareDispute,
+  prepareInvoiceSync,
+  prepareSubscriptionSync,
+} from "@/lib/billing";
 
 // Stripe requires the raw body for signature verification — Next.js would
 // parse it as JSON by default, breaking the HMAC check.
 export const runtime = "nodejs";
 
+// Events to enable on the Stripe webhook endpoint (Dashboard → Developers → Webhooks):
+//   checkout.session.completed
+//   customer.subscription.created | customer.subscription.updated | customer.subscription.deleted
+//   invoice.paid | invoice.payment_failed
+//   charge.refunded
+//   charge.dispute.created | charge.dispute.updated | charge.dispute.closed
+//
+// invoice.paid (not invoice.payment_succeeded) also fires for $0 invoices,
+// e.g. 100%-off promotion codes.
+async function prepare(event: Stripe.Event): Promise<BillingWrite | null> {
+  switch (event.type) {
+    case "checkout.session.completed":
+      return prepareCheckoutCompleted(event.data.object);
+
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted":
+      return prepareSubscriptionSync(event.data.object.id);
+
+    case "invoice.paid":
+    case "invoice.payment_failed":
+      return prepareInvoiceSync(event.data.object.id);
+
+    case "charge.refunded":
+      return prepareChargeRefunded(event.data.object);
+
+    case "charge.dispute.created":
+    case "charge.dispute.updated":
+    case "charge.dispute.closed":
+      return prepareDispute(event.data.object);
+
+    default:
+      return null; // not an event we act on
+  }
+}
+
+// Only a unique violation on the StripeEvent row means "already processed".
+// Any other unique violation (e.g. a UserProfile created concurrently by the
+// Clerk webhook) must return 500 so Stripe retries the event.
+function isDuplicateEvent(err: unknown): boolean {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== "P2002") return false;
+  const target = err.meta?.target;
+  const fields = Array.isArray(target) ? target : typeof target === "string" ? [target] : [];
+  return fields.some((f) => String(f).includes("stripeEventId"));
+}
+
 export async function POST(req: Request) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("[stripe/webhook] STRIPE_WEBHOOK_SECRET is not set");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  }
+
   const body      = await req.text();
   const signature = req.headers.get("stripe-signature");
-
   if (!signature) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, signature, secret);
   } catch (err) {
     console.error("[stripe/webhook] Signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // ── Idempotency check ────────────────────────────────────────────────────────
-  // Store the Stripe event ID before processing. If this event ID already exists
-  // (replay attack or Stripe retry after a transient error), return 200 immediately
-  // without crediting the user again.
-  try {
-    await prisma.stripeEvent.create({
-      data: { stripeEventId: event.id, type: event.type },
-    });
-  } catch {
-    // Unique constraint violation — this event was already processed.
-    console.log(`[stripe/webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
-    return NextResponse.json({ received: true });
+  // ── Idempotency ──────────────────────────────────────────────────────────────
+  // The StripeEvent row is written in the SAME transaction as the event's effects,
+  // so it exists only if they committed. A crash or timeout mid-processing leaves
+  // no row, and Stripe's retry processes the event again.
+  const alreadyProcessed = await prisma.stripeEvent.findUnique({
+    where:  { stripeEventId: event.id },
+    select: { id: true },
+  });
+  if (alreadyProcessed) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
-  // ── Handle events ────────────────────────────────────────────────────────────
-  // Two event types cover the full subscription lifecycle:
-  //
-  // 1. checkout.session.completed — fires when user completes checkout form.
-  //    Grants the initial credit immediately so the user can start using the
-  //    product without waiting for the first invoice to settle.
-  //
-  // 2. invoice.payment_succeeded — fires on every successful charge, including
-  //    the initial charge AND all monthly renewals. We skip billing_reason
-  //    "manual" (one-off invoices) and only credit on subscription cycles.
-  //    This is the authoritative event for ongoing subscription access.
-
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session     = event.data.object as Stripe.Checkout.Session;
-        const clerkUserId = session.metadata?.clerkUserId;
+    const write = await prepare(event);
+    if (!write) return NextResponse.json({ received: true });
 
-        if (!clerkUserId) {
-          console.error("[stripe/webhook] No clerkUserId in session metadata — cannot credit user");
-          break;
-        }
-
-        // Grant 10 credits on subscription start, mark premium, and save Stripe customer ID.
-        const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-        await prisma.userProfile.upsert({
-          where:  { id: clerkUserId },
-          create: { id: clerkUserId, availableCredits: 10, isPremium: true, stripeCustomerId: customerId ?? null },
-          update: { availableCredits: 10, isPremium: true, ...(customerId ? { stripeCustomerId: customerId } : {}) },
-        });
-
-        console.log(`[stripe/webhook] checkout.session.completed → premium=true, credits=10 → ${clerkUserId}`);
-        break;
-      }
-
-      case "invoice.payment_succeeded": {
-        const invoice       = event.data.object as Stripe.Invoice;
-        const billingReason = invoice.billing_reason;
-
-        // Only credit on recurring subscription renewals, not the initial charge
-        // (which is already handled by checkout.session.completed above).
-        if (billingReason !== "subscription_cycle") break;
-
-        // clerkUserId flows from checkout → subscription_data.metadata → invoice.subscription_details.metadata
-        const sub         = invoice.subscription_details;
-        const clerkUserId = sub?.metadata?.clerkUserId;
-
-        if (!clerkUserId) {
-          console.error("[stripe/webhook] No clerkUserId in invoice subscription metadata — cannot credit renewal");
-          break;
-        }
-
-        // Renew 10 credits for the new billing cycle and ensure premium flag is set.
-        await prisma.userProfile.upsert({
-          where:  { id: clerkUserId },
-          create: { id: clerkUserId, availableCredits: 10, isPremium: true },
-          update: { availableCredits: 10, isPremium: true },
-        });
-
-        console.log(`[stripe/webhook] invoice.payment_succeeded (renewal) → credits reset to 10 → ${clerkUserId}`);
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        // Subscription cancelled or payment failed — revoke premium access immediately.
-        const subscription = event.data.object as Stripe.Subscription;
-        const clerkUserId  = subscription.metadata?.clerkUserId;
-
-        if (!clerkUserId) {
-          console.error("[stripe/webhook] No clerkUserId in subscription metadata — cannot revoke premium");
-          break;
-        }
-
-        await prisma.userProfile.updateMany({
-          where: { id: clerkUserId },
-          data:  { isPremium: false, availableCredits: 0 },
-        });
-
-        console.log(`[stripe/webhook] customer.subscription.deleted → premium=false, credits=0 → ${clerkUserId}`);
-        break;
-      }
-
-      default:
-        // Return 200 for all unhandled events so Stripe does not retry them.
-        break;
-    }
+    await prisma.$transaction(async (tx) => {
+      await tx.stripeEvent.create({ data: { stripeEventId: event.id, type: event.type } });
+      await write(tx);
+    });
   } catch (err) {
-    // A DB error (e.g. Supabase timeout) during event processing must:
-    // 1. Delete the idempotency record — without this, Stripe's retry would hit
-    //    the duplicate-check above and return 200 immediately, silently skipping
-    //    the event and leaving the user without their credits/premium status.
-    // 2. Return 500 — signals Stripe to retry the webhook after a backoff delay.
-    console.error("[stripe/webhook] Event processing failed — removing idempotency record for retry:", event.id, err);
-    await prisma.stripeEvent.delete({ where: { stripeEventId: event.id } }).catch(() => {});
+    // A concurrent delivery of the same event committed first — nothing left to do.
+    if (isDuplicateEvent(err)) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    console.error(`[stripe/webhook] Processing failed for ${event.id} (${event.type}):`, err);
+    Sentry.withScope((scope) => {
+      scope.setTag("stripe_event_type", event.type);
+      scope.setExtra("stripe_event_id", event.id);
+      Sentry.captureException(err);
+    });
+    // 500 → Stripe retries with backoff for up to 3 days.
     return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }
 

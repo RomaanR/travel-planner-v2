@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic"; // admin route
 import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,16 +58,23 @@ export default async function AdminMetricsPage() {
   if (!adminId || userId !== adminId) notFound();
 
   // ── Data ────────────────────────────────────────────────────────────────────
-  const [agg, logs, stripePayments, userAgg, zeroCredits, totalUsers] = await Promise.all([
+  const [agg, logs, revenueAgg, recentPayments, userAgg, zeroCredits, totalUsers] = await Promise.all([
     prisma.costLog.aggregate({
       _sum:   { totalCost: true, aiCost: true, googleCost: true, cacheHits: true, cacheMisses: true, inputTokens: true, outputTokens: true, thinkingTokens: true },
       _avg:   { totalCost: true },
       _count: { _all: true },
     }),
     prisma.costLog.findMany({ orderBy: { createdAt: "desc" }, take: 200 }),
-    stripe.checkout.sessions.list({
-      limit: 100,
-      expand: ["data.payment_intent"],
+    // Paid subscription invoices recorded by the Stripe webhook (initial + renewals).
+    prisma.invoice.aggregate({
+      where:  { status: "paid" },
+      _sum:   { amountPaid: true, amountRefunded: true },
+      _count: { _all: true },
+    }),
+    prisma.invoice.findMany({
+      where:   { status: "paid" },
+      orderBy: { paidAt: "desc" },
+      take:    20,
     }),
     prisma.userProfile.aggregate({
       _sum:   { availableCredits: true },
@@ -96,18 +102,13 @@ export default async function AdminMetricsPage() {
     : 0;
 
   // ── Revenue KPIs ─────────────────────────────────────────────────────────────
-  const paidSessions = stripePayments.data.filter(
-    (s) => s.payment_status === "paid" && s.mode === "payment"
-  );
-  const totalRevenue = paidSessions.reduce((sum, s) => sum + (s.amount_total ?? 0), 0) / 100;
-  const creditsSold  = paidSessions.length;
+  // Net of refunds, in the account currency (single-currency assumption: USD).
+  const totalRevenue = ((revenueAgg._sum.amountPaid ?? 0) - (revenueAgg._sum.amountRefunded ?? 0)) / 100;
+  const paidInvoices = revenueAgg._count._all;
   const grossProfit  = totalRevenue - totalSpent;
   const profitMargin = totalRevenue > 0
     ? ((grossProfit / totalRevenue) * 100).toFixed(1)
     : "—";
-
-  // Recent 20 payments for table
-  const recentPayments = paidSessions.slice(0, 20);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -142,9 +143,9 @@ export default async function AdminMetricsPage() {
 
             {/* Credits Sold */}
             <div className="bg-paper p-6 md:p-8">
-              <p className="micro-copy text-ink-light mb-3">Credits Sold</p>
+              <p className="micro-copy text-ink-light mb-3">Paid Invoices</p>
               <p className="font-serif italic text-4xl md:text-5xl text-ink leading-none">
-                {creditsSold.toLocaleString()}
+                {paidInvoices.toLocaleString()}
               </p>
             </div>
 
@@ -210,7 +211,7 @@ export default async function AdminMetricsPage() {
           <div className="flex items-center justify-between mb-4">
             <p className="micro-copy text-ink">Recent Purchases</p>
             <p className="micro-copy text-ink-light">
-              Last {recentPayments.length} of {creditsSold.toLocaleString()}
+              Last {recentPayments.length} of {paidInvoices.toLocaleString()}
             </p>
           </div>
 
@@ -220,7 +221,7 @@ export default async function AdminMetricsPage() {
                 No purchases recorded yet
               </p>
               <p className="micro-copy text-ink-light mt-2">
-                Completed Stripe checkout sessions will appear here
+                Paid subscription invoices will appear here
               </p>
             </div>
           ) : (
@@ -228,7 +229,7 @@ export default async function AdminMetricsPage() {
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-paper-dark border-b border-ink/10">
-                    {["Date", "Amount", "Session ID", "Status"].map((h) => (
+                    {["Date", "Amount", "Invoice ID", "Status"].map((h) => (
                       <th
                         key={h}
                         className="micro-copy text-left px-4 py-3 font-normal text-ink-light whitespace-nowrap"
@@ -239,18 +240,15 @@ export default async function AdminMetricsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentPayments.map((session, i) => {
-                    const sessionDate = session.created
-                      ? new Date(session.created * 1000)
-                      : null;
-                    const amount = session.amount_total != null
-                      ? `$${(session.amount_total / 100).toFixed(2)}`
-                      : "—";
-                    const shortId = session.id.slice(-12);
+                  {recentPayments.map((invoice, i) => {
+                    const sessionDate = invoice.paidAt ?? invoice.createdAt;
+                    const amount  = `$${(invoice.amountPaid / 100).toFixed(2)}`;
+                    const shortId = invoice.id.slice(-12);
+                    const refunded = invoice.amountRefunded > 0;
 
                     return (
                       <tr
-                        key={session.id}
+                        key={invoice.id}
                         className={`border-b border-ink/5 ${i % 2 === 0 ? "bg-paper" : "bg-paper-dark/40"}`}
                       >
                         {/* Date */}
@@ -276,9 +274,15 @@ export default async function AdminMetricsPage() {
 
                         {/* Status */}
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="micro-copy text-emerald-accent border border-emerald-accent/30 px-2 py-0.5">
-                            PAID
-                          </span>
+                          {refunded ? (
+                            <span className="micro-copy text-burnt-orange border border-burnt-orange/30 px-2 py-0.5">
+                              REFUNDED ${(invoice.amountRefunded / 100).toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="micro-copy text-emerald-accent border border-emerald-accent/30 px-2 py-0.5">
+                              PAID
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );

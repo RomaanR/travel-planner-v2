@@ -57,6 +57,9 @@ export default function PricingPage() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.portalUrl) {
+        // Already subscribed — manage the existing subscription instead of starting a second one.
+        window.location.href = data.portalUrl;
       } else {
         toast.error("Checkout failed", { description: data.error ?? "Please try again." });
         setLoading(false);
