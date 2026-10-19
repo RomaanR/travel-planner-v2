@@ -11,14 +11,15 @@ import Navbar from "@/components/Navbar";
 import BentoGrid from "@/components/BentoGrid";
 import HeroClassic from "@/components/HeroClassic";
 import HeroFloating from "@/components/HeroFloating";
+import type { SampleSummary } from "@/lib/sampleTrip";
 
-export default function HomePage() {
+export default function HomePage({ sample }: { sample: SampleSummary }) {
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      {USE_FLOATING_UI ? <HeroFloating /> : <HeroClassic />}
+      {USE_FLOATING_UI ? <HeroFloating sample={sample} /> : <HeroClassic />}
 
       {/* ── Everything below the hero — opaque wrapper to cover the fixed background ── */}
       <div className="relative z-10 bg-paper">

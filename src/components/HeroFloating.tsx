@@ -1,49 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  useFloating,
-  useHover,
-  useInteractions,
-  offset,
-  flip,
-  shift,
-} from "@floating-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { track } from "@vercel/analytics";
+import { ArrowRight } from "lucide-react";
 import HeroPlanner from "./HeroPlanner";
-
-const BG_IMAGES = [
-  {
-    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90",
-    alt: "Dramatic alpine peaks at sunrise",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&q=90",
-    alt: "Aerial view of turquoise coastline",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=90",
-    alt: "Golden light through ancient forest",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=90",
-    alt: "Waterfall cascading through lush jungle",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=90",
-    alt: "Vast desert dunes at golden hour",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1439405326854-014607f694d7?w=1920&q=90",
-    alt: "Misty fjord reflecting still waters",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=90",
-    alt: "Pristine white sand beach with crystal waters",
-  },
-];
+import { HERO_MOODS, HERO_PHOTOS } from "@/content/heroDestinations";
+import type { SampleSummary } from "@/lib/sampleTrip";
 
 function getShuffled<T>(arr: T[]): T[] {
   const copy = [...arr];
@@ -54,39 +19,26 @@ function getShuffled<T>(arr: T[]): T[] {
   return copy;
 }
 
-export default function HeroFloating() {
+export default function HeroFloating({ sample }: { sample: SampleSummary }) {
   // ── Background slideshow (random order, reshuffled each mount) ───
   // Starts with the deterministic, unshuffled order so server and client render
   // identically on first paint — shuffling with Math.random() before hydration
   // completes causes a server/client mismatch (each environment picks a different
   // order). The shuffle itself only runs client-side, after mount.
-  const [shuffled, setShuffled] = useState(BG_IMAGES);
+  const [shuffled, setShuffled] = useState(HERO_PHOTOS);
   const [bgIndex, setBgIndex] = useState(0);
+  const photo = shuffled[bgIndex];
 
   useEffect(() => {
-    setShuffled(getShuffled(BG_IMAGES));
+    setShuffled(getShuffled(HERO_PHOTOS));
   }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setBgIndex((i) => (i + 1) % shuffled.length);
-    }, 6000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [shuffled.length]);
-
-  // ── Floating UI state ────────────────────────────────────────────
-  const [isOpen, setIsOpen] = useState(false);
-
-  const { refs, floatingStyles, context } = useFloating({
-    open: isOpen,
-    onOpenChange: setIsOpen,
-    // Opens to the right of the link and downward, away from the planner above it.
-    placement: "right-start",
-    middleware: [offset(16), flip({ fallbackPlacements: ["bottom-start"] }), shift({ padding: 8 })],
-  });
-
-  const hover = useHover(context, { delay: { open: 300, close: 100 } });
-  const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
   return (
     <>
@@ -94,7 +46,7 @@ export default function HeroFloating() {
       <div className="fixed inset-0 z-0">
         <AnimatePresence mode="sync">
           <motion.div
-            key={bgIndex}
+            key={photo.src}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -102,8 +54,8 @@ export default function HeroFloating() {
             className="absolute inset-0"
           >
             <Image
-              src={shuffled[bgIndex].src}
-              alt={shuffled[bgIndex].alt}
+              src={photo.src}
+              alt={photo.alt}
               fill
               priority={bgIndex === 0}
               className="object-cover"
@@ -166,89 +118,107 @@ export default function HeroFloating() {
             <HeroPlanner />
           </motion.div>
 
-          {/* Secondary CTA — sample itinerary (floating preview on hover) */}
+          {/* Below the planner: a starting point for the undecided, and the sample */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.95 }}
-            className="mt-4 md:mt-5"
+            className="mt-5 max-w-4xl flex flex-col lg:flex-row lg:items-start gap-5"
           >
-            <div ref={refs.setReference} {...getReferenceProps()} className="inline-block">
-              <Link
-                href="/sample"
-                className="micro-copy inline-flex items-center gap-2 text-white/85 hover:text-white border-b border-white/30 hover:border-white pb-1 transition-colors duration-300"
-              >
-                <span>or view a sample itinerary</span>
-                <span>&rarr;</span>
-              </Link>
+            {/* Mood chips — one tap fills destination + pace + interests */}
+            <div className="flex-1 min-w-0">
+              <p className="micro-copy text-[10px] text-white/70 mb-2.5">Not sure yet? Start with a mood</p>
+              <div className="flex flex-wrap gap-2">
+                {HERO_MOODS.map((mood) => (
+                  <Link
+                    key={mood.label}
+                    href={mood.href}
+                    onClick={() => track("hero_mood_clicked", { mood: mood.label })}
+                    className="bg-paper/95 hover:bg-paper border border-ink/10 hover:border-burnt-orange px-3.5 py-2
+                               font-serif italic text-[15px] leading-none text-ink transition-colors duration-300"
+                  >
+                    {mood.label}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </motion.div>
 
+            {/* Sample itinerary — its own card, in the planner's style */}
+            <Link
+              href="/sample"
+              onClick={() => track("hero_sample_clicked")}
+              className="group lg:w-[380px] lg:mt-6 shrink-0 flex items-center gap-4 bg-paper border border-ink/10
+                         shadow-[0_18px_40px_rgba(0,0,0,0.22)] p-2.5 pr-5 hover:border-burnt-orange transition-colors duration-300"
+            >
+              {sample.photo && (
+                <span className="relative w-14 h-14 shrink-0 overflow-hidden bg-paper-dark">
+                  <Image
+                    src={sample.photo}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                  />
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block micro-copy text-[9px] text-ink-light mb-1 whitespace-nowrap">
+                  Sample &middot; {sample.destination} &middot; {sample.days} {sample.days === 1 ? "day" : "days"}
+                </span>
+                <span className="block font-serif italic text-[17px] leading-tight text-ink line-clamp-2">
+                  {sample.dayTitle}
+                </span>
+              </span>
+              <span className="micro-copy text-[10px] text-burnt-orange inline-flex items-center gap-1.5 shrink-0">
+                <span className="hidden sm:inline">View</span>
+                <ArrowRight size={12} strokeWidth={1.5} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </Link>
+          </motion.div>
         </div>
 
         {/* Bottom spacer — keeps content clear of the cookie notice on small screens */}
-        <div className="h-24 md:h-0" aria-hidden />
+        <div className="h-24 md:h-28" aria-hidden />
+
+        {/* "On the cover" — where this photo was taken, and a one-tap plan for it */}
+        <div className="hidden md:block absolute bottom-8 left-16 z-10">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={photo.src}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="flex items-stretch bg-paper/95 border border-ink/10 shadow-[0_18px_40px_rgba(0,0,0,0.22)]"
+            >
+              <div className="px-4 py-2.5">
+                <p className="micro-copy text-[9px] text-ink-light mb-0.5">On the cover</p>
+                <p className="font-serif italic text-[17px] leading-tight text-ink">{photo.place}</p>
+                <p className="font-sans text-[10px] text-ink-light/80 mt-0.5">
+                  Photo: {photo.photographer} &middot; Unsplash
+                </p>
+              </div>
+              <Link
+                href={photo.planHref}
+                onClick={() => track("hero_cover_clicked", { place: photo.place })}
+                className="micro-copy text-[10px] text-white bg-burnt-orange hover:bg-ink px-4 flex items-center gap-2 transition-colors duration-300"
+              >
+                Plan this journey <ArrowRight size={12} strokeWidth={1.5} />
+              </Link>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
         {/* Scroll indicator — bottom-center float animation */}
         <motion.p
           initial={{ y: 0, opacity: 0.4 }}
           animate={{ y: 10, opacity: 1 }}
           transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="hidden md:block absolute bottom-10 left-1/2 -translate-x-1/2 uppercase tracking-[0.2em] text-[10px] text-white/60"
+          className="hidden lg:block absolute bottom-10 left-1/2 -translate-x-1/2 uppercase tracking-[0.2em] text-[10px] text-white/60"
         >
           Scroll to Explore
         </motion.p>
       </section>
-
-      {/* ── Floating dossier preview card ─────────────────────────── */}
-      <AnimatePresence>
-        {isOpen && (
-          <div
-            ref={refs.setFloating}
-            style={{ ...floatingStyles, zIndex: 50 }}
-            {...getFloatingProps()}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl rounded-xl p-4 w-64"
-            >
-              {/* Compass icon */}
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.5)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mb-3"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-              </svg>
-
-              {/* Micro kicker */}
-              <p className="text-[9px] tracking-[0.2em] uppercase text-white/60 mb-1">
-                Preview Dossier
-              </p>
-
-              {/* Serif headline */}
-              <p className="font-serif italic text-white text-lg leading-tight mb-2">
-                The Paris Journey
-              </p>
-
-              {/* Metadata line */}
-              <p className="text-[10px] text-white/50 leading-relaxed">
-                3 days &middot; Luxury &middot; Solo &middot; Explorer Pace
-              </p>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </>
   );
 }

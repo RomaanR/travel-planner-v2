@@ -1,0 +1,676 @@
+[
+  {
+    "route": "/",
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "status": 200,
+    "url": "https://travalbee.com/",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 3148,
+    "text": "TravalBee\nMY TRIPS\nDASHBOARD\nPRICING\n\nCURATED LUXURY JOURNEYS\n\nTraval\nBee\n\nUltra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.\n\nBEGIN YOUR JOURNEY\n→\nVIEW SAMPLE ITINERARY\n→\n\nSCROLL TO EXPLORE\n\n2 mins\n\nAVERAGE CURATION TIME\n\n120+\n\nDESTINATIONS WORLDWIDE\n\n100%\n\nHIDDEN GEMS INCLUDED\n\nZero\n\nTOURIST TRAPS\n\nHOW IT WORKS\n\nThree Steps.\nOne Perfect Trip.\n01\nTell Us Your Dream\n\nPick a destination, set your dates, and share your pace, budget, and dietary needs.\n\n02\nWe Curate Every Detail\n\nHidden gems, Michelin-worthy restaurants, and geographically coherent routes, crafted in seconds.\n\n03\nYour Dossier Is Ready\n\nA day-by-day itinerary with maps, transit times, and hotel recommendations. Save, share, or export as PDF.\n\nSEE IT IN ACTION\n\nTravalBee\n\nWatch the concierge craft a complete luxury itinerary — hidden gems, live maps, and curated restaurant picks — in under two minutes.\n\nTHE PHILOSOPHY\n\nThe Soul\nof a Journey\n01\n\nHIDDEN GEMS\n\nPlaces 95% of\nTravelers Never Find\n02\n\nPACE CONTROL\n\nSlow Mornings\nvs. High Octane\n\nEvery itinerary is calibrated to your rhythm: restorative silence or culturally immersive density.\n\n03\n\nPALATE FIRST\n\nReservations\nHand-Picked for You\n\nNo Yelp. No TripAdvisor. Only chef-driven tables, hidden izakayas, and legendary tasting menus sourced from local intelligence.\n\n04\n\"Travel is not about destinations.It is about becoming.\"\n\nTRAVALBEE · EST. 2026\n\nTravalBee\n\nCURATED LUXURY JOURNEYS\n\nPRICING\nFAQ\nPRIVACY\nTERMS\nCOOKIES\nREFUNDS\nSUPPORT\n\n© 2026 TRAVALBEE. ALL RIGHTS RESERVED.\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 1440,
+      "document": 1440,
+      "height": 3473
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "VIEW SAMPLE ITINERARY\n→",
+        "href": "/sample"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "FAQ",
+        "href": "/faq"
+      },
+      {
+        "text": "PRIVACY",
+        "href": "/privacy"
+      },
+      {
+        "text": "TERMS",
+        "href": "/terms"
+      },
+      {
+        "text": "COOKIES",
+        "href": "/cookies"
+      },
+      {
+        "text": "REFUNDS",
+        "href": "/refunds"
+      },
+      {
+        "text": "SUPPORT",
+        "href": "/support"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "home-1440.png"
+  },
+  {
+    "route": "/curate",
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "status": 200,
+    "url": "https://travalbee.com/curate",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 4678,
+    "text": "TravalBee\nMY TRIPS\nDASHBOARD\nPRICING\nBACK TO HOME\nINSPIRE ME\nTAILOR MY TRIP\n\nTELL US YOUR DREAM\n\nCraft Your Journey.\n\nShare your destination, dates, and tastes. The rest is ours.",
+    "layout": {
+      "viewport": 1440,
+      "document": 1440,
+      "height": 960
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "BACK TO HOME",
+        "href": "/"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "INPUT",
+        "type": "text",
+        "placeholder": "Loading…",
+        "required": false,
+        "label": null,
+        "id": ""
+      }
+    ],
+    "errors": [],
+    "screenshot": "curate-1440.png"
+  },
+  {
+    "route": "/sample",
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "status": 200,
+    "url": "https://travalbee.com/sample",
+    "title": "Sample Itinerary | TravalBee | TravalBee",
+    "elapsedMs": 3945,
+    "text": "TravalBee\nMY TRIPS\nDASHBOARD\nPRICING\nSIGN IN\nBACK TO HOME\n\nSAMPLE ITINERARY\n\nParis\nDOWNLOAD PDF\n\"Paris in July distills centuries of beauty into golden light, impeccable tables, and streets that reward every wandering hour.\"\n\nTHE CURATION\n\nECONOMIC\nPREMIUM\nLUXURY\n\nSHOWING: PREMIUM\n\n6TH ARRONDISSEMENT\n\nHôtel Lutetia\n\nSaint-Germain's Art Deco icon, beloved by writers and artists for a century of refined hospitality.\n\nRESERVE\n\n8TH ARRONDISSEMENT\n\nHôtel Plaza Athénée\n\nThe crimson-awning landmark on Avenue Montaigne synonymous with Dior couture and Alain Ducasse dining.\n\nRESERVE\n\nAffiliate disclosure: TravalBee earns a commission if you book through these links at no extra cost to you.\n\nALL DAYS\nDAY 1\nDAY 2\nDAY 3\n\nDAY 1\n\nLeft Bank Icons & Culinary Grandeur\nPACKED\n01\n08:30 — 09:15\nBREAKFAST\nCafé de Flore\n7:30 AM – 2:00 AM\n\nParis's most storied literary café opens its rattan chairs to morning boulevardiers. Order the café crème and a buttery croissant without hesitation.\n\n45 MIN\n3.9\n(14K)\n$$\n9 MIN WALK\n·\n2 MIN DRIVE\n02\n09:30 — 12:00\nMUSEUM\nMusée d'Orsay\n9:30 AM – 6:00 PM\n\nThe world's supreme Impressionist collection inhabits a soaring Beaux-Arts railway station. Van Gogh, Monet, and Renoir demand unhurried contemplation here.\n\n2 HRS 30 MIN\n4.8\n(115K)\n16 MIN WALK\n·\n3 MIN DRIVE\n03\n12:30 — 14:00\nLUNCH\nLapérouse\n7:00 PM – 2:00 AM\n\nA clandestine 17th-century riverside institution where private dining rooms whisper of Napoleon-era intrigue. The langoustine and black truffle menu is exceptional.\n\n1 HR 30 MIN\n4.4\n(2K)\nRES. REQUIRED\n10 MIN WALK\n·\n2 MIN DRIVE\n04\n14:30 — 15:30\nCULTURE\nPanthéon\n10:00 AM – 6:30 PM\n\nFoucault's pendulum swings beneath a dome that crowns the Left Bank skyline majestically. Voltaire, Rousseau, and Curie rest in the crypt below.\n\n1 HR\n4.6\n(68K)\n12 MIN WALK\n·\n2 MIN DRIVE\n05\n15:45 — 16:45\nNATURE\nJardin des Plantes\n\nFrance's oldest botanical garden unfurls in summer with perfumed rose and iris parterre beds. The long central allée is perfect for golden-hour photography.\n\n1 HR\n4.6\n(51K)\n11 MIN WALK\n·\n2 MIN DRIVE\n06\n20:00 — 22:30\nDINNER\nLa Tour d'Argent\n12:00 – 4:00 PM, 7:00 PM – 12:00 AM\n\nOverlooking Notre-Dame, this legendary institution has served pressed duck since 1582 with ceremony. The numbered caneton remains Paris's most theatrical dining ritual.\n\n2 HRS 30 MIN\n4.6\n(812)\nRES. REQUIRED\nHIDDEN GEM\n\nArènes de Lutèce — A 2nd-century Roman amphitheatre hidden inside a residential block of the 5th arrondissement, virtually unknown to passing tourists.\n\nYOU ARE VIEWING A SAMPLE ITINERARY\n\nReady for your own journey?\n\nCURATE MY ITINERARY\nVIEW PRICING\nALL\nDAY 1\nDAY 2\nDAY 3\nKeyboard shortcuts\nMap data ©2026 Google\nTerms\nDAY 1\nDAY 2\nDAY 3\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 1440,
+      "document": 1440,
+      "height": 960
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "BACK TO HOME",
+        "href": "/"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 1 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8542,2.3328&destination=48.8511,2.3526&waypoints=48.86,2.3266|48.8528,2.3418|48.8462,2.3461|48.8443,2.3596"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 2 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8647,2.3278&destination=48.8704,2.3016&waypoints=48.8606,2.3376|48.8638,2.337|48.8618,2.3421|48.8657,2.3039"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 3 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8626,2.3616&destination=48.8681,2.329&waypoints=48.8597,2.3621|48.8555,2.3645|48.8535,2.3769|48.8607,2.3522"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "CURATE MY ITINERARY",
+        "href": "/"
+      },
+      {
+        "text": "VIEW PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "",
+        "href": "https://maps.google.com/maps?ll=48.857352,2.33925&z=13&t=m&hl=en&gl=US&mapclient=apiv3"
+      },
+      {
+        "text": "Terms",
+        "href": "https://www.google.com/intl/en_US/help/terms_maps.html"
+      },
+      {
+        "text": "Report a map error",
+        "href": "https://www.google.com/maps/@48.8573517,2.33925,13z/data=!10m1!1e1!12b1?source=apiv3&rapsrc=apiv3"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "INPUT",
+        "type": "range",
+        "placeholder": "",
+        "required": false,
+        "label": "Filter hotels by star rating",
+        "id": ""
+      }
+    ],
+    "errors": [],
+    "screenshot": "sample-1440.png"
+  },
+  {
+    "route": "/pricing",
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "status": 200,
+    "url": "https://travalbee.com/pricing",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 3667,
+    "text": "TravalBee\nMY TRIPS\nDASHBOARD\nPRICING\nSIGN IN\nHOME\n\nSIMPLE PRICING\n\nPay once.\nTravel forever.\n\nFREE\n\n$0FOREVER\n5 AI Itineraries per month\nUp to 3 days per trip\nStandard Transit Modes\nBasic PDF Export\nStandard AI Routing\nGET STARTED FREE\n\nPREMIUM\n\n—/ MONTH\n10 AI Itineraries per month\nUp to 14 days per trip\nDedicated AI Concierge for personalised travel enquiries\nAdvanced Transit (Car/Regional)\nCOMING SOON\n\nCOMMON QUESTIONS\n\nWhat counts as one free itinerary?\n\nEach generation of a unique trip (destination + dates + preferences) counts as one. Viewing or sharing an existing itinerary does not consume your free generation.\n\nWhen do my itinerary credits reset?\n\nYour credits reset on your monthly billing date. Free users receive 5 itineraries per rolling 30-day window. Premium subscribers receive 10 itineraries per billing cycle, renewed automatically each month.\n\nIs my payment information secure?\n\nPayments are handled entirely by Stripe. TravalBee never stores your card details.\n\nDo you offer refunds?\n\nWe offer refunds within 7 days of purchase if you are not satisfied. See our Refund Policy for details.\n\nTravalBee\n\n© 2026 TRAVALBEE. ALL RIGHTS RESERVED.\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 1440,
+      "document": 1440,
+      "height": 1760
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "GET STARTED FREE",
+        "href": "/"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "pricing-1440.png"
+  },
+  {
+    "route": "/trips",
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
+    "status": 200,
+    "url": "https://travalbee.com/trips",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 4843,
+    "text": "TravalBee\nMY TRIPS\nDASHBOARD\nPRICING\n\nPRIVATE ACCESS\n\nYour passport awaits.\n\nSign in to view your curated itineraries, or create an account to begin planning your next journey.\n\nSIGN IN TO CONTINUE",
+    "layout": {
+      "viewport": 1440,
+      "document": 1440,
+      "height": 960
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "trips-1440.png"
+  },
+  {
+    "route": "/",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": 200,
+    "url": "https://travalbee.com/",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 2938,
+    "text": "TravalBee\nSIGN IN\n\nCURATED LUXURY JOURNEYS\n\nTraval\nBee\n\nUltra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.\n\nBEGIN YOUR JOURNEY\n→\nVIEW SAMPLE ITINERARY\n→\n\nSCROLL TO EXPLORE\n\n2 mins\n\nAVERAGE CURATION TIME\n\n120+\n\nDESTINATIONS WORLDWIDE\n\n100%\n\nHIDDEN GEMS INCLUDED\n\nZero\n\nTOURIST TRAPS\n\nHOW IT WORKS\n\nThree Steps.\nOne Perfect Trip.\n01\nTell Us Your Dream\n\nPick a destination, set your dates, and share your pace, budget, and dietary needs.\n\n02\nWe Curate Every Detail\n\nHidden gems, Michelin-worthy restaurants, and geographically coherent routes, crafted in seconds.\n\n03\nYour Dossier Is Ready\n\nA day-by-day itinerary with maps, transit times, and hotel recommendations. Save, share, or export as PDF.\n\nSEE IT IN ACTION\n\nTravalBee\n\nWatch the concierge craft a complete luxury itinerary — hidden gems, live maps, and curated restaurant picks — in under two minutes.\n\nTHE PHILOSOPHY\n\nThe Soul\nof a Journey\n01\n\nHIDDEN GEMS\n\nPlaces 95% of\nTravelers Never Find\n02\n\nPACE CONTROL\n\nSlow Mornings\nvs. High Octane\n\nEvery itinerary is calibrated to your rhythm: restorative silence or culturally immersive density.\n\n03\n\nPALATE FIRST\n\nReservations\nHand-Picked for You\n\nNo Yelp. No TripAdvisor. Only chef-driven tables, hidden izakayas, and legendary tasting menus sourced from local intelligence.\n\n04\n\"Travel is not about destinations.It is about becoming.\"\n\nTRAVALBEE · EST. 2026\n\nTravalBee\n\nCURATED LUXURY JOURNEYS\n\nPRICING\nFAQ\nPRIVACY\nTERMS\nCOOKIES\nREFUNDS\nSUPPORT\n\n© 2026 TRAVALBEE. ALL RIGHTS RESERVED.\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 4350
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "BEGIN YOUR JOURNEY\n→",
+        "href": "/curate"
+      },
+      {
+        "text": "VIEW SAMPLE ITINERARY\n→",
+        "href": "/sample"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "FAQ",
+        "href": "/faq"
+      },
+      {
+        "text": "PRIVACY",
+        "href": "/privacy"
+      },
+      {
+        "text": "TERMS",
+        "href": "/terms"
+      },
+      {
+        "text": "COOKIES",
+        "href": "/cookies"
+      },
+      {
+        "text": "REFUNDS",
+        "href": "/refunds"
+      },
+      {
+        "text": "SUPPORT",
+        "href": "/support"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "home-390.png"
+  },
+  {
+    "route": "/curate",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": 200,
+    "url": "https://travalbee.com/curate",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 3012,
+    "text": "TravalBee\nSIGN IN\nBACK TO HOME\nINSPIRE ME\nTAILOR MY TRIP\n\nTELL US YOUR DREAM\n\nCraft Your Journey.\n\nShare your destination, dates, and tastes. The rest is ours.\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 844
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "BACK TO HOME",
+        "href": "/"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "INPUT",
+        "type": "text",
+        "placeholder": "Where do you wish to disappear?",
+        "required": false,
+        "label": null,
+        "id": ""
+      }
+    ],
+    "errors": [],
+    "screenshot": "curate-390.png"
+  },
+  {
+    "route": "/sample",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": 200,
+    "url": "https://travalbee.com/sample",
+    "title": "Sample Itinerary | TravalBee | TravalBee",
+    "elapsedMs": 3524,
+    "text": "TravalBee\nSIGN IN\nBACK TO HOME\n\nSAMPLE ITINERARY\n\nParis\nDOWNLOAD PDF\nView Map\n\"Paris in July distills centuries of beauty into golden light, impeccable tables, and streets that reward every wandering hour.\"\n\nTHE CURATION\n\nECONOMIC\nPREMIUM\nLUXURY\n\nSHOWING: PREMIUM\n\n6TH ARRONDISSEMENT\n\nHôtel Lutetia\n\nSaint-Germain's Art Deco icon, beloved by writers and artists for a century of refined hospitality.\n\nRESERVE\n\n8TH ARRONDISSEMENT\n\nHôtel Plaza Athénée\n\nThe crimson-awning landmark on Avenue Montaigne synonymous with Dior couture and Alain Ducasse dining.\n\nRESERVE\n\nAffiliate disclosure: TravalBee earns a commission if you book through these links at no extra cost to you.\n\nALL DAYS\nDAY 1\nDAY 2\nDAY 3\n\nDAY 1\n\nLeft Bank Icons & Culinary Grandeur\nPACKED\n01\n08:30 — 09:15\nBREAKFAST\nCafé de Flore\n7:30 AM – 2:00 AM\n\nParis's most storied literary café opens its rattan chairs to morning boulevardiers. Order the café crème and a buttery croissant without hesitation.\n\n45 MIN\n3.9\n(14K)\n$$\n9 MIN WALK\n·\n2 MIN DRIVE\n02\n09:30 — 12:00\nMUSEUM\nMusée d'Orsay\n9:30 AM – 6:00 PM\n\nThe world's supreme Impressionist collection inhabits a soaring Beaux-Arts railway station. Van Gogh, Monet, and Renoir demand unhurried contemplation here.\n\n2 HRS 30 MIN\n4.8\n(115K)\n16 MIN WALK\n·\n3 MIN DRIVE\n03\n12:30 — 14:00\nLUNCH\nLapérouse\n7:00 PM – 2:00 AM\n\nA clandestine 17th-century riverside institution where private dining rooms whisper of Napoleon-era intrigue. The langoustine and black truffle menu is exceptional.\n\n1 HR 30 MIN\n4.4\n(2K)\nRES. REQUIRED\n10 MIN WALK\n·\n2 MIN DRIVE\n04\n14:30 — 15:30\nCULTURE\nPanthéon\n10:00 AM – 6:30 PM\n\nFoucault's pendulum swings beneath a dome that crowns the Left Bank skyline majestically. Voltaire, Rousseau, and Curie rest in the crypt below.\n\n1 HR\n4.6\n(68K)\n12 MIN WALK\n·\n2 MIN DRIVE\n05\n15:45 — 16:45\nNATURE\nJardin des Plantes\n\nFrance's oldest botanical garden unfurls in summer with perfumed rose and iris parterre beds. The long central allée is perfect for golden-hour photography.\n\n1 HR\n4.6\n(51K)\n11 MIN WALK\n·\n2 MIN DRIVE\n06\n20:00 — 22:30\nDINNER\nLa Tour d'Argent\n12:00 – 4:00 PM, 7:00 PM – 12:00 AM\n\nOverlooking Notre-Dame, this legendary institution has served pressed duck since 1582 with ceremony. The numbered caneton remains Paris's most theatrical dining ritual.\n\n2 HRS 30 MIN\n4.6\n(812)\nRES. REQUIRED\nHIDDEN GEM\n\nArènes de Lutèce — A 2nd-century Roman amphitheatre hidden inside a residential block of the 5th arrondissement, virtually unknown to passing tourists.\n\nYOU ARE VIEWING A SAMPLE ITINERARY\n\nReady for your own journey?\n\nCURATE MY ITINERARY\nVIEW PRICING\n\nWe use essential cookies for authentication and local storage to save your itineraries offline. We do not use advertising or tracking cookies. Privacy Policy\n\nDECLINE\nACCEPT ALL",
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 844
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "BACK TO HOME",
+        "href": "/"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 1 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8542,2.3328&destination=48.8511,2.3526&waypoints=48.86,2.3266|48.8528,2.3418|48.8462,2.3461|48.8443,2.3596"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 2 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8647,2.3278&destination=48.8704,2.3016&waypoints=48.8606,2.3376|48.8638,2.337|48.8618,2.3421|48.8657,2.3039"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "Open Day 3 in Google Maps →",
+        "href": "https://www.google.com/maps/dir/?api=1&origin=48.8626,2.3616&destination=48.8681,2.329&waypoints=48.8597,2.3621|48.8555,2.3645|48.8535,2.3769|48.8607,2.3522"
+      },
+      {
+        "text": "travalbee.com",
+        "href": "https://travalbee.com"
+      },
+      {
+        "text": "CURATE MY ITINERARY",
+        "href": "/"
+      },
+      {
+        "text": "VIEW PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "Privacy Policy",
+        "href": "/privacy"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "INPUT",
+        "type": "range",
+        "placeholder": "",
+        "required": false,
+        "label": "Filter hotels by star rating",
+        "id": ""
+      }
+    ],
+    "errors": [],
+    "screenshot": "sample-390.png"
+  },
+  {
+    "route": "/pricing",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": 200,
+    "url": "https://travalbee.com/pricing",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 6041,
+    "text": "TravalBee\nHOME\n\nSIMPLE PRICING\n\nPay once.\nTravel forever.\n\nFREE\n\n$0FOREVER\n5 AI Itineraries per month\nUp to 3 days per trip\nStandard Transit Modes\nBasic PDF Export\nStandard AI Routing\nGET STARTED FREE\n\nPREMIUM\n\n—/ MONTH\n10 AI Itineraries per month\nUp to 14 days per trip\nDedicated AI Concierge for personalised travel enquiries\nAdvanced Transit (Car/Regional)\nCOMING SOON\n\nCOMMON QUESTIONS\n\nWhat counts as one free itinerary?\n\nEach generation of a unique trip (destination + dates + preferences) counts as one. Viewing or sharing an existing itinerary does not consume your free generation.\n\nWhen do my itinerary credits reset?\n\nYour credits reset on your monthly billing date. Free users receive 5 itineraries per rolling 30-day window. Premium subscribers receive 10 itineraries per billing cycle, renewed automatically each month.\n\nIs my payment information secure?\n\nPayments are handled entirely by Stripe. TravalBee never stores your card details.\n\nDo you offer refunds?\n\nWe offer refunds within 7 days of purchase if you are not satisfied. See our Refund Policy for details.\n\nTravalBee\n\n© 2026 TRAVALBEE. ALL RIGHTS RESERVED.",
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 2202
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      },
+      {
+        "text": "GET STARTED FREE",
+        "href": "/"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "pricing-390.png"
+  },
+  {
+    "route": "/trips",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": 200,
+    "url": "https://travalbee.com/trips",
+    "title": "TravalBee | Bespoke Travel Curation",
+    "elapsedMs": 4999,
+    "text": "TravalBee\n\nPRIVATE ACCESS\n\nYour passport awaits.\n\nSign in to view your curated itineraries, or create an account to begin planning your next journey.\n\nSIGN IN TO CONTINUE",
+    "layout": {
+      "viewport": 390,
+      "document": 390,
+      "height": 844
+    },
+    "links": [
+      {
+        "text": "TravalBee",
+        "href": "/"
+      },
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "MY TRIPS",
+        "href": "/trips"
+      },
+      {
+        "text": "DASHBOARD",
+        "href": "/dashboard"
+      },
+      {
+        "text": "PRICING",
+        "href": "/pricing"
+      }
+    ],
+    "fields": [],
+    "errors": [],
+    "screenshot": "trips-390.png"
+  },
+  {
+    "route": "/robots.txt",
+    "status": 404,
+    "text": "<!DOCTYPE html><html lang=\"en\" class=\"__variable_2b785a __variable_e64f39\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/13971731025ec697-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" href=\"/_next/static/media/7b89a4fd5e90ede0-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" href=\"/_next/static/media/e18f83c737786aa7-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" as=\"image\" imageSrcSet=\"/_next/image?url=%2Fbee_compass_192_transparent.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fbee_compass_192_transparent.png&amp;w=256&amp;q=75 2x\" fetchPriority=\"high\"/><link rel=\"preload\" as=\"image\" imageSrcSet=\"/_next/image?url=%2Fbee_compass_512_transparent.png&amp;w=128&amp;q=75 1x, /_next/image?url=%2Fbee_compass_512_transparent.png&amp;w=256&amp;q=75 2x\" fetchPriority=\"high\"/><link rel=\"stylesheet\" href=\"/_next/static"
+  },
+  {
+    "route": "/sitemap.xml",
+    "status": 404,
+    "text": "<!DOCTYPE html><html lang=\"en\" class=\"__variable_2b785a __variable_e64f39\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><link rel=\"preload\" href=\"/_next/static/media/13971731025ec697-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" href=\"/_next/static/media/7b89a4fd5e90ede0-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" href=\"/_next/static/media/e18f83c737786aa7-s.p.woff2\" as=\"font\" crossorigin=\"\" type=\"font/woff2\"/><link rel=\"preload\" as=\"image\" imageSrcSet=\"/_next/image?url=%2Fbee_compass_192_transparent.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fbee_compass_192_transparent.png&amp;w=256&amp;q=75 2x\" fetchPriority=\"high\"/><link rel=\"preload\" as=\"image\" imageSrcSet=\"/_next/image?url=%2Fbee_compass_512_transparent.png&amp;w=128&amp;q=75 1x, /_next/image?url=%2Fbee_compass_512_transparent.png&amp;w=256&amp;q=75 2x\" fetchPriority=\"high\"/><link rel=\"stylesheet\" href=\"/_next/static"
+  }
+]

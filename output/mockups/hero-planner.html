@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hero planner mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F0E8; --paper-dark: #EDE8DC; --ink: #0A0A0A; --ink-light: #6B6B6B;
+    --orange: #C2410C; --beige: #DED4BC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ink); font-family: "DM Sans", system-ui, sans-serif; color: var(--ink); overflow: hidden; }
+  .micro { font-family: "DM Sans", sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; font-size: 11px; }
+
+  /* Background */
+  .bg { position: fixed; inset: 0;
+        background: url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90") center/cover no-repeat; }
+  .bg::after { content: ""; position: absolute; inset: 0;
+               background: linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,.25) 50%, rgba(0,0,0,.62)); }
+
+  /* Navbar */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 5; height: 120px; display: flex; align-items: center;
+        justify-content: space-between; padding: 0 48px; background: rgba(245,240,232,.82); backdrop-filter: blur(4px); }
+  .brand { display: flex; align-items: center; gap: 22px; }
+  .brand img { width: 104px; height: 104px; }
+  .brand span { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 44px; }
+  .links { display: flex; align-items: center; gap: 40px; color: var(--ink-light); }
+  .links .signin { border: 1px solid rgba(10,10,10,.2); color: var(--ink); padding: 16px 26px; }
+
+  /* Hero */
+  .hero { position: relative; z-index: 2; height: 100vh; padding: 168px 64px 0; color: #fff; }
+  .pre { color: rgba(255,255,255,.6); margin-bottom: 28px; }
+  h1 { font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 400; line-height: .92;
+       font-size: clamp(2.8rem, 12vw, 11rem); }
+  .rule { width: 96px; height: 1px; background: rgba(255,255,255,.4); margin: 28px 0 22px; }
+  .sub { color: rgba(255,255,255,.75); font-size: 18px; line-height: 1.6; max-width: 460px; }
+
+  /* ── The new quick planner ── */
+  .planner { margin-top: 40px; max-width: 900px; display: flex; background: var(--paper);
+             border: 1px solid rgba(10,10,10,.08); box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+  .field { flex: 1; padding: 16px 22px; border-right: 1px solid rgba(10,10,10,.1); }
+  .field label { display: block; color: var(--ink-light); font-size: 10px; margin-bottom: 7px; }
+  .field .value { font-size: 16px; color: var(--ink); white-space: nowrap; }
+  .field .value .muted { color: var(--ink-light); }
+  .field .value .arrow { color: var(--orange); margin: 0 8px; }
+  .field.dest { flex: 1.25; position: relative; }
+  .field.dest .value::after { content: ""; display: inline-block; width: 1px; height: 18px; background: var(--ink);
+                              vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .badge { display: inline-block; margin-left: 10px; font-size: 9px; letter-spacing: .18em; color: var(--orange);
+           border: 1px solid rgba(194,65,12,.35); padding: 3px 7px; vertical-align: 2px; }
+  .go { background: var(--orange); color: #fff; border: 0; padding: 0 34px; display: flex; align-items: center; gap: 14px;
+        font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .alt { display: inline-flex; gap: 10px; margin-top: 18px; color: rgba(255,255,255,.8); font-size: 11px;
+         border-bottom: 1px solid rgba(255,255,255,.3); padding-bottom: 4px; }
+
+  /* Autocomplete dropdown (shows the destination step) */
+  .ac { position: absolute; left: -1px; top: calc(100% + 1px); width: calc(100% + 2px); background: var(--paper);
+        border: 1px solid rgba(10,10,10,.1); box-shadow: 0 18px 40px rgba(0,0,0,.22); z-index: 3; }
+  .ac div { padding: 12px 22px; font-size: 14px; color: var(--ink); border-top: 1px solid rgba(10,10,10,.06); }
+  .ac div:first-child { border-top: 0; background: var(--paper-dark); }
+  .ac small { color: var(--ink-light); margin-left: 6px; }
+  .ac .pg { font-size: 10px; color: var(--ink-light); text-align: right; padding: 7px 14px; }
+
+  .scroll { position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.6);
+            font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+
+  /* Compact cookie notice */
+  .cookie { position: fixed; z-index: 6; right: 24px; bottom: 24px; background: var(--ink); color: rgba(245,240,232,.75);
+            display: flex; align-items: center; gap: 16px; padding: 12px 14px 12px 18px; font-size: 13px; }
+  .cookie a { color: var(--paper); text-decoration: underline; text-underline-offset: 2px; }
+  .cookie button { background: var(--orange); color: #fff; border: 0; padding: 8px 16px; font-size: 10px; }
+
+  /* ── Phone ── */
+  @media (max-width: 600px) {
+    nav { height: 72px; padding: 0 16px; }
+    .brand { gap: 12px; } .brand img { width: 60px; height: 60px; } .brand span { font-size: 26px; }
+    .links .hide-m { display: none; }
+    .links { gap: 12px; } .links .signin { padding: 10px 14px; font-size: 10px; }
+    .links .menu { border: 1px solid rgba(10,10,10,.15); width: 40px; height: 40px; display: grid; place-items: center; font-size: 16px; letter-spacing: 0; }
+    .hero { padding: 104px 20px 0; }
+    .pre { margin-bottom: 14px; font-size: 10px; }
+    h1 { font-size: 64px; }
+    .rule { margin: 18px 0 14px; }
+    .sub { font-size: 15px; max-width: 320px; }
+    .planner { flex-direction: column; margin-top: 26px; }
+    .field { border-right: 0; border-bottom: 1px solid rgba(10,10,10,.1); padding: 13px 16px; }
+    .field .value { font-size: 15px; }
+    .go { padding: 17px 0; justify-content: center; }
+    .ac { display: none; }
+    .alt { margin-top: 14px; }
+    .scroll { display: none; }
+    .cookie { left: 0; right: 0; bottom: 0; justify-content: space-between; font-size: 12px; padding: 10px 12px 10px 16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <nav>
+    <div class="brand">
+      <img src="/bee_compass_192_transparent.png" alt="">
+      <span>TravalBee</span>
+    </div>
+    <div class="links micro">
+      <span class="hide-m">My Trips</span><span class="hide-m">Dashboard</span><span class="hide-m">Pricing</span>
+      <span class="signin">Sign in</span>
+      <span class="menu" style="display:none">&#9776;</span>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <p class="pre micro">Curated Luxury Journeys</p>
+    <h1>Traval</h1>
+    <h1>Bee</h1>
+    <div class="rule"></div>
+    <p class="sub">Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.</p>
+
+    <!-- New quick planner -->
+    <form class="planner" onsubmit="return false">
+      <div class="field dest">
+        <label class="micro">Where to?</label>
+        <div class="value">Lisbon, Portugal</div>
+        <div class="ac">
+          <div>Lisbon<small>Portugal</small></div>
+          <div>Lisbon District<small>Portugal</small></div>
+          <div>Lisbon<small>Maine, USA</small></div>
+          <p class="pg">powered by Google</p>
+        </div>
+      </div>
+      <div class="field">
+        <label class="micro">When?</label>
+        <div class="value">Mon 9 Nov<span class="arrow">&rarr;</span>Wed 11 Nov <span class="badge micro">3 days</span></div>
+      </div>
+      <button class="go micro">Plan my trip <span>&rarr;</span></button>
+    </form>
+    <a class="alt micro">or view a sample itinerary <span>&rarr;</span></a>
+
+    <p class="scroll">Scroll to explore</p>
+  </section>
+
+  <div class="cookie">
+    <span>We use essential cookies only. <a>Privacy</a></span>
+    <button class="micro">OK</button>
+  </div>
+
+  <script>
+    // Phone layout: show the menu button like the live navbar.
+    if (matchMedia("(max-width: 600px)").matches) document.querySelector(".menu").style.display = "grid";
+  </script>
+</body>
+</html>

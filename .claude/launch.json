@@ -9,6 +9,13 @@
       "autoPort": false
     },
     {
+      "name": "hr-agent",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3100"],
+      "port": 3100,
+      "cwd": "D:\\hr-agent"
+    },
+    {
       "name": "pixel-sculptors",
       "runtimeExecutable": "npm.cmd",
       "runtimeArgs": ["run", "dev", "--", "--port", "5174"],

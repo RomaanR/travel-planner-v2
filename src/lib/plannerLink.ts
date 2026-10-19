@@ -6,13 +6,26 @@
 // `destination` alone pre-types the search box; with pid/lat/lng the destination
 // counts as selected and the form opens at the next step.
 
+import type { Interest, Pace, TravelParty } from "@/types/itinerary";
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const PACES: readonly Pace[] = ["relaxed", "moderate", "packed"];
+const PARTIES: readonly TravelParty[] = ["solo", "couple", "family", "group"];
+const INTERESTS: readonly Interest[] = [
+  "sightseeing", "museums-art", "food-dining", "nature-parks", "shopping", "nightlife",
+  "culture-history", "adventure-sports", "relaxation-wellness", "photography",
+];
 
 export type PlannerPrefill = {
   destination:    string;
   place?:         { placeId: string; lat: number; lng: number; isRegion: boolean };
   departureDate?: string;
   returnDate?:    string;
+  // Optional starting choices (e.g. from a home-page mood chip) — the visitor can change them.
+  pace?:          Pace;
+  travelParty?:   TravelParty;
+  interests?:     Interest[];
 };
 
 export function plannerHref(prefill?: PlannerPrefill | null): string {
@@ -28,6 +41,9 @@ export function plannerHref(prefill?: PlannerPrefill | null): string {
     params.set("from", prefill.departureDate);
     params.set("to", prefill.returnDate);
   }
+  if (prefill.pace) params.set("pace", prefill.pace);
+  if (prefill.travelParty) params.set("party", prefill.travelParty);
+  if (prefill.interests?.length) params.set("interests", prefill.interests.join(","));
   return `/curate?${params.toString()}`;
 }
 
@@ -64,6 +80,17 @@ export function readPlannerPrefill(search: string, today: string, maxDays: numbe
       prefill.returnDate    = to;
     }
   }
+
+  const pace = params.get("pace");
+  if (pace && (PACES as readonly string[]).includes(pace)) prefill.pace = pace as Pace;
+
+  const party = params.get("party");
+  if (party && (PARTIES as readonly string[]).includes(party)) prefill.travelParty = party as TravelParty;
+
+  const interests = (params.get("interests") ?? "")
+    .split(",")
+    .filter((i): i is Interest => (INTERESTS as readonly string[]).includes(i));
+  if (interests.length) prefill.interests = Array.from(new Set(interests)).slice(0, 10);
 
   return prefill;
 }

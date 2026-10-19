@@ -183,6 +183,9 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
       ...(prefill.departureDate && prefill.returnDate
         ? { departureDate: prefill.departureDate, returnDate: prefill.returnDate }
         : {}),
+      ...(prefill.pace ? { pace: prefill.pace } : {}),
+      ...(prefill.travelParty ? { travelParty: prefill.travelParty } : {}),
+      ...(prefill.interests ? { interests: prefill.interests } : {}),
     }));
     setStage(1);
   }, []);

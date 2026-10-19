@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import { planLikeThisHref } from "@/lib/planLikeThis";
+import { SAMPLE_TRIP_ID } from "@/lib/sampleTrip";
 import type { ItineraryResponse } from "@/types/itinerary";
 import Navbar from "@/components/Navbar";
 import ItineraryViewer from "@/components/ItineraryViewer";
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 // Photos for this trip are self-hosted under public/sample/ (see scripts/clone-sample-trip.mjs)
 // rather than Google photoReference tokens, which expire after roughly a month —
 // this page is a permanent marketing fixture and must never depend on a live API call.
-const SAMPLE_TRIP_ID = "2bc902f5-6db2-47ea-97d4-f5431a445a9a";
+// Sample trip ID lives in src/lib/sampleTrip.ts (shared with the home page card).
 
 export const metadata: Metadata = {
   title: "Sample Itinerary | TravalBee",

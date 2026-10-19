@@ -1,0 +1,78 @@
+
+> travel-temp@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3002
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · instrumentationHook
+
+ ✓ Starting...
+ ○ (serwist) Serwist is disabled.
+ ○ (serwist) Serwist is disabled.
+ ○ Compiling /instrumentation ...
+ ✓ Compiled /instrumentation in 3.2s (1166 modules)
+ ✓ Ready in 7s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 772ms (874 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 15.9s (4634 modules)
+ GET / 200 in 17396ms
+ ✓ Compiled in 1788ms (1194 modules)
+ ✓ Compiled in 2.8s (2002 modules)
+ ✓ Compiled in 1477ms (1194 modules)
+ ✓ Compiled in 1552ms (1194 modules)
+ ✓ Compiled in 1729ms (1194 modules)
+ ✓ Compiled in 1188ms (1194 modules)
+ ✓ Compiled in 1050ms (1194 modules)
+ ✓ Compiled in 1389ms (1194 modules)
+ ✓ Compiled in 931ms (1194 modules)
+ ✓ Compiled in 1024ms (1194 modules)
+ ✓ Compiled in 729ms (1194 modules)
+ ✓ Compiled in 1087ms (1194 modules)
+ ✓ Compiled in 714ms (1194 modules)
+ ✓ Compiled in 981ms (1194 modules)
+ ✓ Compiled in 635ms (1194 modules)
+ ✓ Compiled in 863ms (1194 modules)
+ ✓ Compiled in 1068ms (1194 modules)
+ ✓ Compiled in 773ms (1194 modules)
+ ✓ Compiled in 554ms (1194 modules)
+ ✓ Compiled in 902ms (1194 modules)
+ ✓ Compiled in 1188ms (1194 modules)
+ ✓ Compiled in 1162ms (1194 modules)
+ ✓ Compiled in 974ms (1194 modules)
+ ✓ Compiled in 764ms (1194 modules)
+ ✓ Compiled in 1434ms (1194 modules)
+ ✓ Compiled in 1615ms (1194 modules)
+ ✓ Compiled in 1034ms (1194 modules)
+ ✓ Compiled in 1115ms (1194 modules)
+ ✓ Compiled in 909ms (1194 modules)
+ ✓ Compiled in 5.5s (1194 modules)
+ ✓ Compiled in 594ms (1194 modules)
+ ✓ Compiled in 1495ms (1194 modules)
+ ✓ Compiled in 757ms (1194 modules)
+ ✓ Compiled in 646ms (1194 modules)
+ ✓ Compiled in 3.8s (1194 modules)
+ ✓ Compiled in 1197ms (1194 modules)
+ ✓ Compiled in 3.8s (2001 modules)
+ ✓ Compiled in 1302ms (808 modules)
+ ✓ Compiled in 2.3s (2002 modules)
+ ✓ Compiled in 2.1s (2001 modules)
+ ✓ Compiled in 5.6s (2002 modules)
+ ✓ Compiled in 4.1s (1194 modules)
+ ✓ Compiled in 395ms (1194 modules)
+ ✓ Compiled in 485ms (1194 modules)
+ ✓ Compiled in 415ms (1194 modules)
+ ✓ Compiled in 625ms (1194 modules)
+ ✓ Compiled in 611ms (1194 modules)
+ ✓ Compiled in 1278ms (1194 modules)
+ ✓ Compiled in 797ms (1194 modules)
+ ✓ Compiled in 4.1s (1194 modules)
+ ✓ Compiled in 1362ms (1194 modules)
+ ✓ Compiled in 664ms (1194 modules)
+ ✓ Compiled in 1108ms (1194 modules)
+ ✓ Compiled in 1075ms (1194 modules)
+ ✓ Compiled in 1431ms (1194 modules)
+Terminate batch job (Y/N)? [?25h
+Terminate batch job (Y/N)? 
