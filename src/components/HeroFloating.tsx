@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { ArrowRight } from "lucide-react";
 import HeroPlanner from "./HeroPlanner";
+import HeroDossier, { type PlannerDraft } from "./HeroDossier";
 import { HERO_MOODS, HERO_PHOTOS } from "@/content/heroDestinations";
 import type { SampleSummary } from "@/lib/sampleTrip";
 
@@ -28,6 +29,10 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
   const [shuffled, setShuffled] = useState(HERO_PHOTOS);
   const [bgIndex, setBgIndex] = useState(0);
   const photo = shuffled[bgIndex];
+
+  // What the visitor is typing in the planner — the dossier card responds to it.
+  const [draft, setDraft] = useState<PlannerDraft | null>(null);
+  const onDraftChange = useCallback((d: PlannerDraft) => setDraft(d), []);
 
   useEffect(() => {
     setShuffled(getShuffled(HERO_PHOTOS));
@@ -67,8 +72,11 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
       </div>
 
       <section className="relative z-10 min-h-screen flex flex-col justify-between overflow-hidden">
+        {/* Wide screens: a real day of an itinerary writing itself */}
+        <HeroDossier draft={draft} />
+
         {/* Top — heading block */}
-        <div className="px-8 md:px-16 pt-28 md:pt-32">
+        <div className="dossier-room px-8 md:px-16 pt-28 md:pt-32">
           {/* Pre-title */}
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -84,7 +92,7 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-            className="font-serif italic text-white leading-none mb-8 whitespace-nowrap"
+            className="hero-title font-serif italic text-white leading-none mb-8 whitespace-nowrap"
             style={{ fontSize: "clamp(3.25rem, 15vw, 11rem)" }}
           >
             TravalBee
@@ -113,9 +121,9 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
-            className="mt-10 md:mt-20"
+            className="hero-planner-wrap mt-10 md:mt-20"
           >
-            <HeroPlanner />
+            <HeroPlanner onDraftChange={onDraftChange} />
           </motion.div>
 
           {/* Below the planner: a starting point for the undecided, and the sample */}
@@ -123,7 +131,7 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.95 }}
-            className="mt-5 max-w-4xl flex flex-col lg:flex-row lg:items-start gap-5"
+            className="dossier-stack mt-5 max-w-4xl flex flex-col lg:flex-row lg:items-start gap-5"
           >
             {/* Mood chips — one tap fills destination + pace + interests */}
             <div className="flex-1 min-w-0">

@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 import { AUTOCOMPLETE_FIELDS, readSelectedDestination, type SelectedDestination } from "@/lib/placeSelection";
 import { plannerHref } from "@/lib/plannerLink";
 import { formatDateLocal, getLocalToday, parseDateLocal } from "@/lib/dateUtils";
+import type { PlannerDraft } from "./HeroDossier";
 
 // Same loader options as the planner form — @react-google-maps/api allows one
 // set of options per page load.
@@ -69,7 +70,7 @@ function MapsLoader({ onLoaded }: { onLoaded: () => void }) {
 }
 
 /** Home-page quick planner: destination + dates → the planner, already filled in. */
-export default function HeroPlanner() {
+export default function HeroPlanner({ onDraftChange }: { onDraftChange?: (draft: PlannerDraft) => void }) {
   const router   = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const today    = useMemo(getLocalToday, []);
@@ -83,6 +84,9 @@ export default function HeroPlanner() {
   const [hint, setHint]           = useState<string | null>(null);
 
   const onMapsLoaded = useCallback(() => setMapsReady(true), []);
+
+  // Tell the hero what the visitor is filling in, so the dossier card can respond.
+  useEffect(() => { onDraftChange?.({ destination: typed, from, to }); }, [typed, from, to, onDraftChange]);
 
   useEffect(() => {
     const id = window.setTimeout(() => setWantMaps(true), IDLE_LOAD_MS);
@@ -173,7 +177,7 @@ export default function HeroPlanner() {
         </label>
 
         {/* When? */}
-        <div className="flex-1 min-w-0 px-4 md:px-5 py-3 md:py-4 border-b md:border-b-0 md:border-r border-ink/10">
+        <div className="flex-1 min-w-0 md:min-w-[250px] px-4 md:px-5 py-3 md:py-4 border-b md:border-b-0 md:border-r border-ink/10">
           <span className="flex items-center justify-between micro-copy text-[10px] text-ink-light mb-1.5">
             When?
             {days > 0 && (
