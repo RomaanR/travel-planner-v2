@@ -16,7 +16,7 @@ export default function Navbar() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-3 md:py-5 border-b border-black/5 bg-paper/80 backdrop-blur-sm print:hidden"
+      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-2.5 md:py-3.5 border-b border-black/5 bg-paper/80 backdrop-blur-sm print:hidden"
       >
       {/* Wordmark */}
       <Link href="/" className="flex items-center gap-2 md:gap-3">
@@ -24,23 +24,23 @@ export default function Navbar() {
         <Image
           src="/bee_compass_192_transparent.png"
           alt="TravalBee Logo"
-          width={78}
-          height={78}
-          className="md:hidden w-[78px] h-[78px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-13px", marginBottom: "-13px", marginLeft: "-10px" }}
+          width={64}
+          height={64}
+          className="md:hidden w-[64px] h-[64px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-10px", marginBottom: "-10px", marginLeft: "-8px" }}
           priority
         />
-        {/* Desktop logo — 120px, larger negative margins to keep navbar slim */}
+        {/* Desktop logo — negative margins keep the bar slim */}
         <Image
           src="/bee_compass_512_transparent.png"
           alt="TravalBee Logo"
-          width={108}
-          height={108}
-          className="hidden md:block w-[112px] h-[104px] object-contain rounded-none flex-shrink-0"
-          style={{ marginTop: "-24px", marginBottom: "-24px" }}
+          width={88}
+          height={82}
+          className="hidden md:block w-[88px] h-[82px] object-contain rounded-none flex-shrink-0"
+          style={{ marginTop: "-19px", marginBottom: "-19px" }}
           priority
         />
-        <span className="font-serif italic text-2xl md:text-4xl text-ink leading-none">
+        <span className="font-serif italic text-[22px] md:text-[32px] text-ink leading-none">
           TravalBee
         </span>
       </Link>
@@ -55,7 +55,7 @@ export default function Navbar() {
             aria-label="Home"
             className="text-ink-light hover:text-ink transition-colors"
           >
-            <Home size={22} strokeWidth={1.5} />
+            <Home size={20} strokeWidth={1.5} />
           </Link>
           <Link
             href="/trips"

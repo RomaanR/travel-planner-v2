@@ -134,7 +134,7 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [x] Hero dossier (wide screens ≥1280×760): a real Paris day writes itself, then turns to Day 2; steps aside when the visitor types a destination; pauses on hover; static under reduced motion — content in `src/content/heroDossier.ts`
 - [ ] More dossier cities (Lisbon, Kyoto…): generate + review one day each, add self-hosted photos and a public sample page per city
 - [ ] Set `NEXT_PUBLIC_APP_URL=https://travalbee.com` in Vercel (canonical/sitemap fall back to it anyway)
-- [ ] Navbar "SIGN IN" wraps onto two lines at 375 px width (pre-existing)
+- [x] Navbar "SIGN IN" wrapping onto two lines at 375 px — fixed with the smaller navbar
 - [ ] **Trip Ideas section** (agent-managed): cards like "48 hours of food in Lisbon" → full ready-made itinerary → "Make it mine" copies it into the planner with the user's dates; each idea is a crawlable page
 - [ ] **"Where to go this month"** seasonal strip, agent-drafted monthly
 - [ ] Add real user quotes once there are users (unsupported claims replaced 2026-10-19)

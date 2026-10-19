@@ -7,7 +7,7 @@ export default function NavbarAuth() {
     <div className="flex items-center">
       <SignedOut>
         <SignInButton mode="modal">
-          <button className="micro-copy border border-ink/20 px-5 py-2.5 text-ink hover:bg-ink hover:text-paper transition-all duration-300 cursor-pointer">
+          <button className="micro-copy border border-ink/20 px-4 md:px-5 py-2 md:py-2.5 whitespace-nowrap text-ink hover:bg-ink hover:text-paper transition-all duration-300 cursor-pointer">
             SIGN IN
           </button>
         </SignInButton>
