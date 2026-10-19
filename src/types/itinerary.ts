@@ -90,7 +90,10 @@ export type TimelineItem = {
   dietaryNote?: string;
   // Google Places enriched fields (same as legacy Activity / DiningRec)
   photoUrl?: string;        // legacy — full URL with embedded key (old saved trips only)
-  photoReference?: string;  // new — raw photo_reference token; rendered via /api/photo proxy
+  photoReference?: string;  // legacy photo_reference token OR Places API (New) photo name "places/…/photos/…"; rendered via /api/photo proxy
+  photoAuthorName?: string; // required credit for Google photos
+  photoAuthorUri?: string;  // the author's Google Maps profile
+  googleMapsUri?: string;   // the place on Google Maps
   placeId?: string;         // Google Places place_id — enables accurate Maps URLs (name + location)
   rating?: number;
   userRatingsTotal?: number;

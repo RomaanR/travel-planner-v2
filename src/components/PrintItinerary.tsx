@@ -126,7 +126,7 @@ interface PrintItineraryProps {
 
 // ─── Day page ─────────────────────────────────────────────────────────────────
 
-function PrintDayPage({ rawDay, isFirst, destination }: { rawDay: DayPlan; isFirst: boolean; destination: string }) {
+function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }) {
   const day   = normalizeDayPlan(rawDay);
   const items = day.timeline ?? [];
 
@@ -164,7 +164,7 @@ function PrintDayPage({ rawDay, isFirst, destination }: { rawDay: DayPlan; isFir
         {items.map((item: TimelineItem, i: number) => {
           const imageUrl =
             item.photoReference
-              ? `/api/photo?ref=${item.photoReference}`
+              ? `/api/photo?ref=${encodeURIComponent(item.photoReference)}`
               : item.photoUrl
               ?? getFallbackImage(item.category ?? item.type);
 
@@ -497,7 +497,7 @@ export default function PrintItinerary({
 
       {/* ── DAY PAGES ── */}
       {itinerary.days.map((day, i) => (
-        <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} destination={itinerary.destination} />
+        <PrintDayPage key={day.day} rawDay={day} isFirst={i === 0} />
       ))}
 
     </div>

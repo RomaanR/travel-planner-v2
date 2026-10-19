@@ -84,7 +84,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
   // When false, we fall back to a curated Unsplash image — never show a blank placeholder.
   const hasGooglePhoto = !!(item.photoReference || item.photoUrl) && !imgError;
   const imageSrc = hasGooglePhoto
-    ? (item.photoReference ? `/api/photo?ref=${item.photoReference}` : item.photoUrl!)
+    ? (item.photoReference ? `/api/photo?ref=${encodeURIComponent(item.photoReference)}` : item.photoUrl!)
     : getFallbackImage(item);
   const displayName = item.title ?? "";
   const displayDesc = item.description ?? item.cuisine ?? "";
@@ -139,6 +139,25 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
           sizes="(max-width: 768px) 100vw, 192px"
           onError={hasGooglePhoto ? () => setImgError(true) : undefined}
         />
+        {/* Google requires crediting the photo's author wherever the photo is shown. */}
+        {hasGooglePhoto && item.photoAuthorName && (
+          <span className="absolute bottom-0 left-0 right-0 bg-ink/45 px-2 py-0.5 font-sans text-[9px] leading-tight text-paper truncate print:hidden">
+            Photo:{" "}
+            {item.photoAuthorUri ? (
+              <a
+                href={item.photoAuthorUri}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-paper/40 hover:decoration-paper"
+              >
+                {item.photoAuthorName}
+              </a>
+            ) : (
+              item.photoAuthorName
+            )}
+            {" "}&middot; Google
+          </span>
+        )}
       </div>
 
       {/* Right: Content */}

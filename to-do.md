@@ -86,11 +86,19 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Run a small eval of Haiku 5.5 ($0.10/$0.50) against the spatial rules; switch if quality holds (the earlier failed test was Haiku 4.5)
 
 ## 3. Cut Google cost (quick wins, before the library)
-- [ ] Key `PlaceCache` by Google `place_id`, not by Claude's spelling of the name
-- [ ] Fix the cache-key bug that strips non-ASCII names (`buildCacheKey` — Japanese/Arabic names collapse to an empty key and collide)
-- [ ] Photo proxy (`/api/photo`): check whether every view hits Google; add CDN caching (`s-maxage`) if Google's terms allow
-- [ ] Migrate to Places API (New) with field masks / cheaper SKUs (check current pricing)
-- [ ] Check Google Maps Platform terms on what can be stored (place IDs indefinitely; coordinates and other content limited)
+- [x] Places API (New): free IDs-only Text Search biased to the destination + Place Details by ID with field masks ("full" $20/1k, "basic" $5/1k for nature/adventure) — `src/lib/places.ts`
+- [x] Dedupe spellings: a new spelling resolves (free) to a place ID already cached → reused, no paid call
+- [x] Fix the cache-key bug that strips non-ASCII names
+- [x] Google coordinates replace the model's when within 15 km
+- [x] Photo credits (author + link) on timeline cards; `/api/photo` accepts new photo names and counts fetches per day in Redis
+- [x] Destination photo via free ID search + photos-only details; Autocomplete widgets request Basic fields only
+- [x] Live test 2026-10-19 (8 fresh places): Google $0.392 → $0.160 (−59%), trip total $0.43 → $0.20
+- [x] Checked Google terms: only place IDs (indefinitely) and coordinates (30 days) may be stored
+- [ ] **Owner decision 2026-10-19: keep caching ratings/hours/photo names and saved-trip content for now** (outside Google's terms) — revisit before scaling / with ADR-0006/0007
+- [ ] Photo credits still missing on trip cards (/trips), shared/PDF views; Google logo when Places data is shown without a Google map
+- [ ] Show the daily photo-fetch count (`travalbee:photo-fetches:*`) in `/admin/metrics`
+- [ ] Booking-link hotel lookup (`affiliate.ts`) still uses legacy Find Place ($17/1k, on click only)
+- [ ] Check the real Google Cloud bill — free monthly allowances may already cover current volume
 
 ## 4. Core refactor
 - [ ] **One generation service** used by every entry point: one shared request schema, one prompt builder (remove the copy-pasted code between the two routes)

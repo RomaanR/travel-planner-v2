@@ -35,6 +35,9 @@ import {
 } from "@/lib/dateUtils";
 
 const LIBRARIES: ("places")[] = ["places"];
+// Only the fields we read from getPlace() — all in the Basic data tier, so a
+// selection isn't billed for contact or atmosphere data we never use.
+const AUTOCOMPLETE_FIELDS = ["name", "formatted_address", "geometry", "place_id", "types"];
 
 // ─── Option data ──────────────────────────────────────────────────────────────
 
@@ -378,7 +381,7 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
             <Autocomplete
               onLoad={(ref) => (autocompleteRef.current = ref)}
               onPlaceChanged={onPlaceChanged}
-              options={{ types: ["(regions)"] }}
+              options={{ types: ["(regions)"], fields: AUTOCOMPLETE_FIELDS }}
             >
               <input
                 type="text"
@@ -605,6 +608,7 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
                         onPlaceChanged={onHotelPlaceChanged}
                         options={{
                           types: ["lodging"],
+                          fields: AUTOCOMPLETE_FIELDS,
                           // Bias results toward the selected destination so "pa" returns
                           // Paris hotels, not hotels near the user's current location.
                           ...(form.lat && form.lng ? {

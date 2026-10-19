@@ -35,6 +35,14 @@ import {
   isValidRequestId,
 } from "@/lib/generationStore";
 import { waitUntil } from "@vercel/functions";
+import {
+  type PlacesUsage,
+  distanceKm,
+  emptyPlacesUsage,
+  getPlaceDetails,
+  placesUsageCost,
+  resolvePlaceId,
+} from "@/lib/places";
 import type { PlaceCache } from "@prisma/client";
 import type { DayPlan, Coordinate, TransitInfo, ItineraryResponse } from "@/types/itinerary";
 
@@ -295,24 +303,38 @@ function extractEditorial(raw: string): string {
   }
 }
 
-// ─── Enrichment (mirrors main route) ─────────────────────────────────────────
+// ─── Enrichment — Google Places API (New) ────────────────────────────────────
+//
+// Per timeline item:
+//   1. PlaceCache by name|city (30-day TTL)                               → free
+//   2. miss → resolve the place ID with an IDs-only Text Search           → free
+//   3. a row for that place ID already exists (another spelling)         → reuse, free
+//   4. otherwise Place Details by ID ("full" $20/1k, "basic" $5/1k)       → paid, cached
+// See src/lib/places.ts for SKUs and prices.
 
 const client     = new Anthropic();
 const MODEL      = "claude-sonnet-4-6";
-// USD per token for MODEL, and per Google Places call — update together with MODEL.
+// USD per token for MODEL — update together with MODEL. Google prices live in src/lib/places.ts.
 const CLAUDE_INPUT_COST  = 3  / 1_000_000;
 const CLAUDE_OUTPUT_COST = 15 / 1_000_000;
-const GOOGLE_TEXT_SEARCH_COST = 0.032;
-const GOOGLE_DETAILS_COST     = 0.017;
-const PLACES_BASE = "https://maps.googleapis.com/maps/api/place";
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const SKIP_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
+// Outdoor stops have no meaningful hours/price — "basic" details (location + photos) cost 75% less.
+const BASIC_DETAILS_CATEGORIES = new Set(["NATURE", "ADVENTURE"]);
+// Use Google's coordinates instead of the model's only when they agree this closely
+// (guards against a wrong match moving a pin to the other side of the region).
+const MAX_COORD_CORRECTION_KM = 15;
 
 type PlacesEnrichment = {
   photoReference?: string; placeId?: string; rating?: number;
   userRatingsTotal?: number; openNow?: boolean; hoursOpen?: string; priceLevel?: number;
+  photoAuthorName?: string; photoAuthorUri?: string; googleMapsUri?: string;
+  location?: Coordinate;
 };
-type ApiCounters = { textSearch: number; details: number; cacheHits: number };
+type EnrichCounters = {
+  usage:     PlacesUsage;
+  cacheHits: number; // served from PlaceCache (incl. another spelling of the same place)
+  fetched:   number; // paid Place Details lookups
+};
 
 // Unicode-aware: keeps letters and digits in every script, so non-Latin names
 // ("鮨 さいとう", "مطعم") get distinct keys instead of collapsing to an empty string.
@@ -337,107 +359,118 @@ function hoursForWeekday(weeklyHours: string[], weekdayIdx: number): string | un
   return stripped || undefined;
 }
 
-async function fetchWeeklyHours(placeId: string, apiKey: string, counters: ApiCounters): Promise<string[] | null> {
-  try {
-    counters.details++; // billed whether or not hours come back
-    const det = await fetch(`${PLACES_BASE}/details/json?place_id=${placeId}&fields=opening_hours&key=${apiKey}`, { signal: AbortSignal.timeout(1500) });
-    if (!det.ok) return null;
-    const dj = await det.json();
-    const weekdayText: string[] | undefined = dj?.result?.opening_hours?.weekday_text;
-    return weekdayText?.length ? weekdayText : null;
-  } catch {
-    return null;
-  }
-}
-
-function haversineKm(a: Coordinate, b: Coordinate): number {
-  const R = 6371, dLat = (b.lat - a.lat) * (Math.PI / 180), dLon = (b.lng - a.lng) * (Math.PI / 180);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * (Math.PI / 180)) * Math.cos(b.lat * (Math.PI / 180)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.asin(Math.sqrt(h));
-}
-
 function getDayTransits(stops: Coordinate[]): TransitInfo[] {
   if (stops.length < 2) return stops.map(() => ({}));
   const out: TransitInfo[] = [{}];
   for (let i = 0; i < stops.length - 1; i++) {
-    const km = haversineKm(stops[i], stops[i + 1]);
+    const km = distanceKm(stops[i], stops[i + 1]);
     out.push({ walkingMinutes: Math.max(1, Math.round((km / 5) * 60)), drivingMinutes: Math.max(1, Math.round((km / 25) * 60)) });
   }
   return out;
 }
 
+const isFresh = (row: PlaceCache) =>
+  !(!row.photoReference && row.photoUrl) && Date.now() - row.fetchedAt.getTime() < CACHE_TTL_MS;
+
+/** A cached row satisfies a request if it was fetched at the same or a richer level. */
+const coversLevel = (row: PlaceCache, level: "full" | "basic") =>
+  level === "basic" || row.detailsLevel === "full" || row.detailsLevel === null; // null = legacy row (has rating/hours)
+
+function fromRow(row: PlaceCache, weekdayIdx: number, destinationLng: number): PlacesEnrichment {
+  // Hours for the weekday of THIS itinerary day, not the day the place was cached.
+  const hoursOpen = row.weeklyHours.length > 0 ? hoursForWeekday(row.weeklyHours, weekdayIdx) : row.hoursOpen ?? undefined;
+  return {
+    photoReference:   row.photoReference ?? undefined,
+    placeId:          row.placeId ?? undefined,
+    rating:           row.rating ?? undefined,
+    userRatingsTotal: row.userRatingsTotal ?? undefined,
+    priceLevel:       row.priceLevel ?? undefined,
+    hoursOpen,
+    openNow:          hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : undefined,
+    googleMapsUri:    row.googleMapsUri ?? undefined,
+    photoAuthorName:  row.photoAuthorName ?? undefined,
+    photoAuthorUri:   row.photoAuthorUri ?? undefined,
+    location:         row.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : undefined,
+  };
+}
+
+/** Row data shared by a cache write and an alias copy (everything except cacheKey). */
+function rowData(row: PlaceCache) {
+  return {
+    photoReference: row.photoReference, photoUrl: null, placeId: row.placeId,
+    rating: row.rating, userRatingsTotal: row.userRatingsTotal, hoursOpen: row.hoursOpen,
+    weeklyHours: row.weeklyHours, priceLevel: row.priceLevel, lat: row.lat, lng: row.lng,
+    googleMapsUri: row.googleMapsUri, photoAuthorName: row.photoAuthorName,
+    photoAuthorUri: row.photoAuthorUri, detailsLevel: row.detailsLevel, fetchedAt: row.fetchedAt,
+  };
+}
+
 async function enrichPlace(
-  name: string, city: string, apiKey: string, skipDetails: boolean,
-  counters: ApiCounters, destinationLng: number, weekdayIdx: number,
-  preloaded: PlaceCache | null | undefined = undefined
+  name: string, city: string, level: "full" | "basic",
+  counters: EnrichCounters, center: Coordinate, searchRadiusM: number, weekdayIdx: number,
+  preloaded: PlaceCache | null,
 ): Promise<PlacesEnrichment | null> {
   const cacheKey = buildCacheKey(name, city);
-  let cached: PlaceCache | null;
-  if (preloaded !== undefined) {
-    cached = preloaded;
-  } else {
-    try { cached = await prisma.placeCache.findUnique({ where: { cacheKey } }); }
-    catch { cached = null; }
-  }
-  const isOldFormat = !cached?.photoReference && !!cached?.photoUrl;
-  if (cached && !isOldFormat && Date.now() - cached.fetchedAt.getTime() < CACHE_TTL_MS) {
+
+  // 1. Same spelling, cached.
+  if (preloaded && isFresh(preloaded) && coversLevel(preloaded, level)) {
     counters.cacheHits++;
-    let weeklyHours = cached.weeklyHours;
-    // Rows cached before weekly hours were stored: refresh the hours only
-    // (one Details call by place ID — no new Text Search).
-    if (weeklyHours.length === 0 && cached.hoursOpen && !skipDetails && cached.placeId) {
-      const fetched = await fetchWeeklyHours(cached.placeId, apiKey, counters);
-      if (fetched) {
-        weeklyHours = fetched;
-        await prisma.placeCache.update({ where: { cacheKey }, data: { weeklyHours: fetched } }).catch(() => {});
-      }
-    }
-    // Hours for the weekday of THIS itinerary day, not the day the place was cached.
-    const hoursOpen = weeklyHours.length > 0
-      ? hoursForWeekday(weeklyHours, weekdayIdx)
-      : cached.hoursOpen ?? undefined;
-    return {
-      photoReference: cached.photoReference ?? undefined, placeId: cached.placeId ?? undefined,
-      rating: cached.rating ?? undefined, userRatingsTotal: cached.userRatingsTotal ?? undefined,
-      hoursOpen, priceLevel: cached.priceLevel ?? undefined,
-      openNow: hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : undefined,
-    };
+    return fromRow(preloaded, weekdayIdx, center.lng);
   }
-  try {
-    counters.textSearch++; // billed whether or not a result comes back
-    const res = await fetch(`${PLACES_BASE}/textsearch/json?query=${encodeURIComponent(`${name} ${city}`)}&key=${apiKey}`, { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const place = data.results?.[0];
-    if (!place) return null;
-    const photoRef = place.photos?.[0]?.photo_reference;
-    const weeklyHours = !skipDetails && place.place_id
-      ? (await fetchWeeklyHours(place.place_id, apiKey, counters)) ?? []
-      : [];
-    const hoursOpen = hoursForWeekday(weeklyHours, weekdayIdx);
-    const enrichment: PlacesEnrichment = {
-      photoReference: photoRef ?? undefined, placeId: place.place_id ?? undefined,
-      rating: place.rating, userRatingsTotal: place.user_ratings_total,
-      openNow: hoursOpen ? parseOpenNow(hoursOpen, destinationLng) : place.opening_hours?.open_now,
-      hoursOpen, priceLevel: place.price_level,
-    };
-    const row = {
-      photoReference: photoRef ?? null, photoUrl: null, placeId: enrichment.placeId ?? null,
-      rating: enrichment.rating ?? null, userRatingsTotal: enrichment.userRatingsTotal ?? null,
-      hoursOpen: enrichment.hoursOpen ?? null, weeklyHours, priceLevel: enrichment.priceLevel ?? null,
-    };
-    // Awaited: on serverless, a fire-and-forget write can be cut off when the response ends.
-    await prisma.placeCache.upsert({
-      where:  { cacheKey },
-      update: { ...row, fetchedAt: new Date() },
-      create: { cacheKey, ...row },
-    }).catch(() => {});
-    return enrichment;
-  } catch { return null; }
+
+  // 2. Resolve the place ID — free.
+  const placeId = await resolvePlaceId(`${name} ${city}`, center, counters.usage, { radiusM: searchRadiusM });
+  if (!placeId) return null;
+
+  // 3. Another spelling of the same place is already cached — reuse it for free.
+  const alias = await prisma.placeCache.findFirst({
+    where:   { placeId, cacheKey: { not: cacheKey } },
+    orderBy: { fetchedAt: "desc" },
+  }).catch(() => null);
+  if (alias && isFresh(alias) && coversLevel(alias, level)) {
+    counters.cacheHits++;
+    const data = rowData(alias);
+    await prisma.placeCache.upsert({ where: { cacheKey }, update: data, create: { cacheKey, ...data } }).catch(() => {});
+    return fromRow(alias, weekdayIdx, center.lng);
+  }
+
+  // 4. Paid details lookup.
+  const details = await getPlaceDetails(placeId, level, counters.usage);
+  if (!details) return null;
+  counters.fetched++;
+
+  const data = {
+    photoReference:   details.photoName ?? null,
+    photoUrl:         null,
+    placeId:          details.placeId,
+    rating:           details.rating ?? null,
+    userRatingsTotal: details.userRatingsTotal ?? null,
+    hoursOpen:        hoursForWeekday(details.weeklyHours, weekdayIdx) ?? null,
+    weeklyHours:      details.weeklyHours,
+    priceLevel:       details.priceLevel ?? null,
+    lat:              details.location?.lat ?? null,
+    lng:              details.location?.lng ?? null,
+    googleMapsUri:    details.googleMapsUri ?? null,
+    photoAuthorName:  details.photoAuthorName ?? null,
+    photoAuthorUri:   details.photoAuthorUri ?? null,
+    detailsLevel:     level,
+    fetchedAt:        new Date(),
+  };
+  // Awaited: on serverless, a fire-and-forget write can be cut off when the response ends.
+  const row = await prisma.placeCache.upsert({
+    where:  { cacheKey },
+    update: data,
+    create: { cacheKey, ...data },
+  }).catch(() => null);
+
+  return row
+    ? fromRow(row, weekdayIdx, center.lng)
+    : fromRow({ id: "", cacheKey, updatedAt: new Date(), ...data } as PlaceCache, weekdayIdx, center.lng);
 }
 
 async function enrichDay(
-  day: DayPlan, destination: string, apiKey: string, counters: ApiCounters, lng: number, departureDate: string,
+  day: DayPlan, destination: string, counters: EnrichCounters,
+  center: Coordinate, searchRadiusM: number, departureDate: string,
 ): Promise<DayPlan> {
   const items = day.timeline ?? [];
   const weekdayIdx = weekdayIndexFor(departureDate, day.day);
@@ -446,14 +479,24 @@ async function enrichDay(
   const cacheMap = new Map(cachedRows.map((r) => [r.cacheKey, r]));
 
   const results = await Promise.allSettled(
-    items.map((item) => enrichPlace(item.title, destination, apiKey,
-      SKIP_DETAILS_CATEGORIES.has(item.category ?? ""), counters, lng, weekdayIdx,
-      cacheMap.get(buildCacheKey(item.title, destination)) ?? null))
+    items.map((item) => enrichPlace(
+      item.title, destination,
+      BASIC_DETAILS_CATEGORIES.has(item.category ?? "") ? "basic" : "full",
+      counters, center, searchRadiusM, weekdayIdx,
+      cacheMap.get(buildCacheKey(item.title, destination)) ?? null,
+    ))
   );
 
   const enrichedItems = items.map((item, i) => {
     const r = results[i];
-    return r.status === "fulfilled" && r.value ? { ...item, ...r.value } : item;
+    if (r.status !== "fulfilled" || !r.value) return item;
+    const { location, ...enrichment } = r.value;
+    // Prefer Google's pin when it confirms the model's (the model's can be off by a few streets).
+    const coordinates =
+      location && item.coordinates && distanceKm(location, item.coordinates) <= MAX_COORD_CORRECTION_KM
+        ? location
+        : item.coordinates;
+    return { ...item, ...enrichment, coordinates };
   });
 
   for (const item of enrichedItems) {
@@ -684,10 +727,12 @@ export async function POST(req: Request) {
     return Response.json({ resume: true, requestId }, { status: 202 });
   }
 
-  const apiKey     = process.env.MAPS_SERVER_KEY ?? "";
   const isTailor   = safeBody.planningMode === "tailor";
   const userPrompt = isTailor ? buildTailorPrompt(safeBody) : buildPrompt(safeBody);
-  const counters: ApiCounters = { textSearch: 0, details: 0, cacheHits: 0 };
+  const counters: EnrichCounters = { usage: emptyPlacesUsage(), cacheHits: 0, fetched: 0 };
+  // Place lookups are biased to the destination; regional / car trips spread wider.
+  const center: Coordinate = { lat: safeBody.lat, lng: safeBody.lng };
+  const searchRadiusM = safeBody.isRegion || safeBody.transportMode === "car-driver" ? 50_000 : 30_000;
 
   // Persisting progress must never fail the generation itself.
   const persist = (write: Promise<void>) =>
@@ -750,7 +795,7 @@ export async function POST(req: Request) {
             send({ type: "enriching", day: rawDay.day, totalDays: safeBody.duration });
             await persist(writer!.enriching(rawDay.day));
 
-            const enrichedDay = await enrichDay(rawDay, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate);
+            const enrichedDay = await enrichDay(rawDay, safeBody.destination, counters, center, searchRadiusM, safeBody.departureDate);
             enrichedDays.push(enrichedDay);
 
             const editorialSoFar = extractEditorial(fullText);
@@ -795,7 +840,7 @@ export async function POST(req: Request) {
             );
             const enrichedMissingDays = await Promise.all(
               missingDays.map((day) =>
-                enrichDay(day, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate)
+                enrichDay(day, safeBody.destination, counters, center, searchRadiusM, safeBody.departureDate)
               )
             );
             fallbackDays = [...enrichedDays, ...enrichedMissingDays];
@@ -839,7 +884,7 @@ export async function POST(req: Request) {
         stopReason:   finalMsg.stop_reason,
         elapsedMs:    Date.now() - t0,
         cacheHits:    counters.cacheHits,
-        googleCalls:  counters.textSearch,
+        googleCalls:  counters.fetched,
       });
 
       // ── Record the charged generation ────────────────────────────────────────
@@ -892,7 +937,7 @@ export async function POST(req: Request) {
     const inputTokens  = usage?.input_tokens  ?? 0;
     const outputTokens = usage?.output_tokens ?? 0;
     const aiCost     = inputTokens * CLAUDE_INPUT_COST + outputTokens * CLAUDE_OUTPUT_COST;
-    const googleCost = counters.textSearch * GOOGLE_TEXT_SEARCH_COST + counters.details * GOOGLE_DETAILS_COST;
+    const googleCost = placesUsageCost(counters.usage);
     await prisma.costLog.create({
       data: {
         userId:             userId ?? null,
@@ -905,8 +950,8 @@ export async function POST(req: Request) {
         googleCost,
         totalCost:          aiCost + googleCost,
         cacheHits:          counters.cacheHits,
-        cacheMisses:        counters.textSearch,
-        googleDetailsCalls: counters.details,
+        cacheMisses:        counters.fetched,
+        googleDetailsCalls: counters.usage.detailsFull + counters.usage.detailsBasic,
         success,
         errorType,
       },
