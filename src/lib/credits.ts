@@ -10,19 +10,16 @@ import { prisma } from "@/lib/db";
 //             Stripe webhook, reserved atomically BEFORE generating and refunded
 //             if generation fails on our side.
 //
-// Only successful generations are charged. Failures on our side and abandoned
-// streams are not: iOS kills backgrounded fetches and the client retries
-// automatically, so charging aborts would bill users twice. Abuse via repeated
-// aborts is bounded by the hourly rate limit and the one-at-a-time lock.
+// Only successful generations are charged, once per requestId. Leaving the page
+// doesn't cancel a generation — the server finishes it and the page resumes it
+// (src/lib/generationStore.ts) — so a retry or reload never charges twice.
+// Failures on our side are never charged.
 
 export const FREE_MONTHLY_GENERATIONS = 5;
 export const PREMIUM_MONTHLY_CREDITS  = 10;
 export const FREE_MAX_DAYS            = 3;
 
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-
-/** CostLog.errorType for a stream the visitor abandoned (logged for cost analytics, not charged). */
-export const CLIENT_ABORT = "client_abort";
 
 type Db = Prisma.TransactionClient | PrismaClient;
 

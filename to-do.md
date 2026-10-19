@@ -40,7 +40,42 @@ Work on feature branches from clean `main`; never `git add .` in this worktree.
 - [ ] Rotate `MAPS_SERVER_KEY` (it appeared in photo URLs before this fix)
 - [ ] Optional: set a dedicated `ITINERARY_SIGNING_SECRET` (falls back to a key derived from `CLERK_SECRET_KEY`)
 - [ ] Contract step after deploy: delete old-format `PlaceCache` rows, remove `isOldFormat`, drop `PlaceCache.photoUrl` and `hoursOpen`
-- [ ] Guests on iOS: a backgrounded generation is aborted and the auto-retry hits the 1/day limit
+- [ ] Guests on iOS: a backgrounded generation is aborted and the auto-retry hits the 1/day limit → fixed by §1b below
+
+## 1b. Generation survives leaving the page (iOS Safari) — START 2026-10-19
+Goal: the app runs flawlessly when the user switches apps, locks the phone or Safari reloads the tab, using the patterns robust apps use: **work runs on the server independent of the browser connection, results are persisted, and the page resumes from server state.**
+
+Root cause today: generation is one 60–120 s streaming request owned by the page. iOS suspends background tabs within seconds and cuts the connection (and may discard the tab entirely). The route passes `req.signal` to Anthropic, so the disconnect **cancels the generation**; the client's iOS retry then restarts from zero (guests hit the 1/day limit). Not a client- vs server-side rendering issue.
+
+**Step 1 — quick fix (no lost work, no double charge)**
+- [x] Assign a `requestId` per generation, kept in sessionStorage (not the URL — decided 2026-10-19)
+- [x] Stop cancelling Anthropic on client disconnect; the server finishes under Vercel `waitUntil`
+- [x] Persist progress + finished itinerary + save token in Redis for 24 h under `requestId` (`src/lib/generationStore.ts`)
+- [x] On stream loss / `visibilitychange` / `pageshow` / reload: follow `GET /api/generations/{id}` instead of regenerating
+- [x] Retry never consumes quota twice (same `requestId` attaches with 202)
+- [x] Local live test 2026-10-19: cut after day 1 → server finished → resumed → re-POST attached → exactly 1 CostLog row
+- [ ] Test on a real iPhone: switch apps mid-generation, lock screen, kill-and-reopen tab, airplane mode, as guest
+- [ ] Known trade-off: leaving mid-generation and starting a different trip returns "already being prepared" until the first finishes (≤ ~2 min) — consider an explicit cancel
+- [ ] Known gap: a premium credit reserved by a run killed at maxDuration is not refunded (status `stalled`) — fixed by step 2 leases
+
+**Step 2 — proper fix (ADR-0004, durable jobs)**
+- [ ] `GenerationJob` table; `POST /api/generations` → 202 `{ jobId }`
+- [ ] Queue worker (Upstash QStash/Workflow) generates day by day, persisting each day
+- [ ] Page resumes from the job: shows saved days, then follows progress (polling or SSE)
+- [ ] Lease/heartbeat, max attempts, dead-letter state; credit reservation released on failure
+- [ ] Save trip from the job result on the server (no token round-trip)
+
+**Robustness patterns to apply across the app** (from successful apps)
+- [ ] Idempotency keys on every write a retry can repeat (generate, save, delete, checkout)
+- [ ] Nothing important only in memory: URL + server state are the source of truth; local storage is a cache
+- [ ] Resume on `visibilitychange`/`pageshow`/`online`; never restart work the server already did
+- [ ] Timeouts + retries with backoff per external provider; graceful degradation (Google down → trip without photos)
+- [ ] Spend kill-switch and feature flags; alerts on failure rate and daily spend (ADR-0014, to write)
+
+## 1c. CI/CD (planned, on hold) — see ADR-0010
+- [ ] Phase 1: fix 2 type errors, re-enable build checks, GitHub Actions (typecheck, lint, Vitest, build, audit), first unit tests, branch protection on `main`
+- [ ] Phase 2: `prisma migrate` baseline, migrations applied from CI, separate staging DB for previews
+- [ ] Phase 3: Playwright smoke on preview URLs and after production deploy, Sentry releases
 - [ ] Turn type/lint checks back on in `next.config.mjs` and fix the 5 TypeScript errors
 
 ## 2. Cut Claude cost

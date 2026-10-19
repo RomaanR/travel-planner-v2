@@ -18,7 +18,6 @@ import {
   getClientIp,
 } from "@/lib/ratelimit";
 import {
-  CLIENT_ABORT,
   FREE_MAX_DAYS,
   FREE_MONTHLY_GENERATIONS,
   PREMIUM_MONTHLY_CREDITS,
@@ -29,6 +28,13 @@ import {
   reservePremiumCredit,
 } from "@/lib/credits";
 import { createSaveToken } from "@/lib/saveToken";
+import {
+  canAccessGeneration,
+  createGeneration,
+  getGeneration,
+  isValidRequestId,
+} from "@/lib/generationStore";
+import { waitUntil } from "@vercel/functions";
 import type { PlaceCache } from "@prisma/client";
 import type { DayPlan, Coordinate, TransitInfo, ItineraryResponse } from "@/types/itinerary";
 
@@ -554,12 +560,21 @@ function extractCompleteDays(buffer: string): { days: string[]; remaining: strin
   return { days, remaining };
 }
 
+
 // ─── Route ────────────────────────────────────────────────────────────────────
+//
+// The generation is owned by the SERVER, not by the HTTP connection:
+//   - progress is persisted under the client's requestId (src/lib/generationStore.ts)
+//   - the work runs under waitUntil(), so it finishes even if the browser leaves
+//     (iOS suspends background tabs and cuts their connections within seconds)
+//   - the response stream only forwards live events while a client is attached;
+//     a client that lost the stream reads GET /api/generations/{requestId}
+//   - re-POSTing a known requestId attaches to it (202) — never a second charge
 
 export async function POST(req: Request) {
   // Order matters: everything that can reject a request for free (validation,
-  // entitlement) runs BEFORE anything that spends quota (rate limit, credit
-  // reservation), so a bad request never costs a visitor their daily trip.
+  // attach, entitlement) runs BEFORE anything that spends quota (rate limit,
+  // credit reservation), so a bad request never costs a visitor their daily trip.
 
   // ── Identity ─────────────────────────────────────────────────────────────────
   const { userId } = await auth();
@@ -574,11 +589,25 @@ export async function POST(req: Request) {
   try { raw = await req.json(); }
   catch { return Response.json({ error: "Invalid JSON" }, { status: 400 }); }
 
+  const requestId = (raw as { requestId?: unknown } | null)?.requestId;
+  if (!isValidRequestId(requestId)) {
+    return Response.json({ error: "Invalid request", details: { requestId: ["Must be a UUID"] } }, { status: 400 });
+  }
+
   const parsed = ItinerarySchema.safeParse(raw);
   if (!parsed.success) {
     return Response.json({ error: "Invalid request", details: parsed.error.flatten().fieldErrors }, { status: 400 });
   }
   const safeBody = parsed.data;
+
+  // ── Attach to an existing generation (retry, reload, double tap) ─────────────
+  const existing = await getGeneration(requestId);
+  if (existing) {
+    if (!canAccessGeneration(existing, userId ?? null)) {
+      return Response.json({ error: "not_found" }, { status: 404 });
+    }
+    return Response.json({ resume: true, requestId }, { status: 202 });
+  }
 
   // ── Entitlement (read-only) ──────────────────────────────────────────────────
   const credit = userId ? await getCreditStatus(userId) : null;
@@ -646,187 +675,214 @@ export async function POST(req: Request) {
     );
   }
 
-  const apiKey    = process.env.MAPS_SERVER_KEY ?? "";
-  const isTailor  = safeBody.planningMode === "tailor";
+  // ── Claim the requestId (atomic) ─────────────────────────────────────────────
+  const writer = await createGeneration(requestId, userId ?? null, safeBody.destination, safeBody.duration);
+  if (!writer) {
+    // A concurrent request with the same id won — undo our holds and attach to it.
+    if (isPremium && userId) await refundPremiumCredit(userId).catch(() => {});
+    await releaseGenerationLock(identity).catch(() => {});
+    return Response.json({ resume: true, requestId }, { status: 202 });
+  }
+
+  const apiKey     = process.env.MAPS_SERVER_KEY ?? "";
+  const isTailor   = safeBody.planningMode === "tailor";
   const userPrompt = isTailor ? buildTailorPrompt(safeBody) : buildPrompt(safeBody);
   const counters: ApiCounters = { textSearch: 0, details: 0, cacheHits: 0 };
 
-  // ── Build streaming ReadableStream ───────────────────────────────────────────
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encode = (obj: unknown) => new TextEncoder().encode(JSON.stringify(obj) + "\n");
+  // Persisting progress must never fail the generation itself.
+  const persist = (write: Promise<void>) =>
+    write.catch((err) => console.error(`[itinerary-stream] Failed to persist progress for ${requestId}:`, err));
 
-      // Hoisted above the try block so the catch handler below can still report
-      // partial token usage and a specific error type when generation fails.
-      let finalUsage: { input_tokens: number; output_tokens: number } | undefined;
-      let errorTypeOverride: string | null = null;
+  // ── Live stream: a subscriber, not the owner ─────────────────────────────────
+  const encoder = new TextEncoder();
+  let controllerRef: ReadableStreamDefaultController<Uint8Array> | null = null;
+  let clientAttached = true;
 
-      try {
-        controller.enqueue(encode({ type: "start", destination: safeBody.destination, totalDays: safeBody.duration }));
+  const send = (event: Record<string, unknown>) => {
+    if (!clientAttached || !controllerRef) return;
+    try { controllerRef.enqueue(encoder.encode(JSON.stringify(event) + "\n")); }
+    catch { clientAttached = false; } // the client went away — keep working
+  };
+  const endStream = () => {
+    clientAttached = false;
+    try { controllerRef?.close(); } catch { /* already closed */ }
+  };
 
-        let buffer       = "";
-        let fullText     = "";
-        const enrichedDays: DayPlan[] = [];
-        const t0         = Date.now();
-
-        const anthropicStream = await client.messages.stream({
-          model:      MODEL,
-          max_tokens: 16000,
-          system:     SYSTEM_PROMPT,
-          messages:   [{ role: "user", content: userPrompt }],
-        }, { signal: req.signal, timeout: 180_000 });
-
-        for await (const chunk of anthropicStream) {
-          if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
-            buffer   += chunk.delta.text;
-            fullText += chunk.delta.text;
-
-            const { days: completeDays, remaining } = extractCompleteDays(buffer);
-            buffer = remaining;
-
-            for (const dayJson of completeDays) {
-              const rawDay = JSON.parse(dayJson) as DayPlan;
-              console.info(
-                `[itinerary-stream] Parsed Day ${rawDay.day} at ${Date.now() - t0}ms`
-              );
-
-              controller.enqueue(encode({ type: "enriching", day: rawDay.day, totalDays: safeBody.duration }));
-
-              const enrichedDay = await enrichDay(rawDay, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate);
-              enrichedDays.push(enrichedDay);
-
-              controller.enqueue(encode({
-                type:      "day",
-                day:       enrichedDay,
-                editorial: extractEditorial(fullText),
-                totalDays: safeBody.duration,
-                elapsedMs: Date.now() - t0,
-              }));
-            }
-          }
-        }
-
-        const finalMsg = await anthropicStream.finalMessage();
-        finalUsage = finalMsg.usage;
-        if (finalMsg.stop_reason === "max_tokens") {
-          errorTypeOverride = "max_tokens";
-          throw new Error(
-            "Our concierge ran out of space generating your itinerary. Please try a shorter trip or a more relaxed pace."
-          );
-        }
-
-        // Parse the full accumulated text for editorial, recommendedStays, and fallback days
-        let editorial        = extractEditorial(fullText);
-        let recommendedStays: ItineraryResponse["recommendedStays"] | undefined;
-        let fallbackDays: DayPlan[] = [...enrichedDays];
-        try {
-          const fullParsed = JSON.parse(sanitizeJson(fullText));
-          editorial        = fullParsed.editorial ?? "";
-          recommendedStays = fullParsed.recommendedStays;
-          if (Array.isArray(fullParsed.days) && fullParsed.days.length > 0) {
-            const emittedDayNumbers = new Set(enrichedDays.map((day) => day.day));
-            const missingDays = (fullParsed.days as DayPlan[]).filter(
-              (day) => !emittedDayNumbers.has(day.day)
-            );
-
-            if (missingDays.length > 0) {
-              console.info(
-                `[itinerary-stream] Enriching ${missingDays.length} day(s) missed by the incremental parser`
-              );
-              const enrichedMissingDays = await Promise.all(
-                missingDays.map((day) =>
-                  enrichDay(day, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate)
-                )
-              );
-              fallbackDays = [...enrichedDays, ...enrichedMissingDays];
-            }
-          }
-        } catch (parseError) {
-          // Valid complete day objects can survive a trailing root-level syntax
-          // error. The exact day-count check below rejects partial responses.
-          console.warn(
-            `[itinerary-stream] Full JSON parse failed after ${enrichedDays.length} streamed day(s):`,
-            parseError instanceof Error ? parseError.message : "Unknown parse error"
-          );
-        }
-
-        fallbackDays.sort((a, b) => a.day - b.day);
-        if (fallbackDays.length !== safeBody.duration) {
-          throw new Error(
-            `The stream completed with ${fallbackDays.length} of ${safeBody.duration} days. Please try again.`
-          );
-        }
-
-        // Signed snapshot of exactly what we generated — the only thing saveTripToDb accepts.
-        const saveToken = createSaveToken(
-          { destination: safeBody.destination, editorial, days: fallbackDays, recommendedStays },
-          safeBody,
-        );
-
-        controller.enqueue(encode({
-          type:            "done",
-          editorial,
-          recommendedStays,
-          fallbackDays,
-          saveToken,
-          totalDays:       safeBody.duration,
-          inputTokens:     finalMsg.usage.input_tokens,
-          outputTokens:    finalMsg.usage.output_tokens,
-          stopReason:      finalMsg.stop_reason,
-          elapsedMs:       Date.now() - t0,
-          cacheHits:       counters.cacheHits,
-          googleCalls:     counters.textSearch,
-        }));
-
-        // ── Record the charged generation (awaited — serverless may freeze after close) ──
-        await writeCostLog({ usage: finalMsg.usage, success: true, errorType: null });
-        if (userId) {
-          try {
-            // Premium: the credit was reserved up front. Free: the CostLog row above is the charge.
-            if (isPremium) await recordPremiumGeneration(userId);
-            else           await recordFreeGeneration(userId);
-          } catch (err) {
-            console.error("[itinerary-stream] Failed to update generation counters:", err);
-          }
-        }
-
-      } catch (e) {
-        // The visitor closed the tab, navigated away, or iOS killed the backgrounded
-        // fetch (the client then retries). Logged for cost analytics, not charged.
-        const isAbort = req.signal.aborted;
-
-        if (!isAbort) {
-          try { controller.enqueue(encode({ type: "error", message: (e as Error).message })); }
-          catch { /* stream already closed */ }
-        }
-
-        const errorType = isAbort
-          ? CLIENT_ABORT
-          : errorTypeOverride ??
-            (e instanceof SyntaxError
-              ? "json_parse"
-              : e instanceof Error && /of \d+ days/.test(e.message)
-                ? "incomplete_days"
-                : "generation_error");
-
-        await writeCostLog({ usage: finalUsage, success: false, errorType });
-
-        // Never charge a premium user for an incomplete generation.
-        if (isPremium && userId) {
-          await refundPremiumCredit(userId).catch((err) =>
-            console.error("[itinerary-stream] Failed to refund premium credit:", err));
-        }
-        // Guests get their daily trip back when WE failed. Not on abort — that
-        // would allow unlimited guest generations by aborting and retrying.
-        if (!userId && !isAbort) {
-          await anonymousItineraryRatelimit.resetUsedTokens(identity).catch(() => {});
-        }
-      } finally {
-        await releaseGenerationLock(identity).catch(() => {});
-        try { controller.close(); } catch { /* already closed by the client */ }
-      }
-    },
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) { controllerRef = controller; },
+    cancel()          { clientAttached = false; }, // disconnect does NOT cancel the work
   });
+
+  // ── The generation itself ────────────────────────────────────────────────────
+  async function generate(): Promise<void> {
+    // Hoisted so the failure path can still report partial usage and a specific error type.
+    let finalUsage: { input_tokens: number; output_tokens: number } | undefined;
+    let errorTypeOverride: string | null = null;
+
+    try {
+      send({ type: "start", requestId, destination: safeBody.destination, totalDays: safeBody.duration });
+
+      let buffer       = "";
+      let fullText     = "";
+      const enrichedDays: DayPlan[] = [];
+      const t0         = Date.now();
+
+      // No client abort signal: leaving the page must not cancel a paid generation.
+      const anthropicStream = await client.messages.stream({
+        model:      MODEL,
+        max_tokens: 16000,
+        system:     SYSTEM_PROMPT,
+        messages:   [{ role: "user", content: userPrompt }],
+      }, { timeout: 180_000 });
+
+      for await (const chunk of anthropicStream) {
+        if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
+          buffer   += chunk.delta.text;
+          fullText += chunk.delta.text;
+
+          const { days: completeDays, remaining } = extractCompleteDays(buffer);
+          buffer = remaining;
+
+          for (const dayJson of completeDays) {
+            const rawDay = JSON.parse(dayJson) as DayPlan;
+            console.info(`[itinerary-stream] Parsed Day ${rawDay.day} at ${Date.now() - t0}ms`);
+
+            send({ type: "enriching", day: rawDay.day, totalDays: safeBody.duration });
+            await persist(writer!.enriching(rawDay.day));
+
+            const enrichedDay = await enrichDay(rawDay, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate);
+            enrichedDays.push(enrichedDay);
+
+            const editorialSoFar = extractEditorial(fullText);
+            await persist(writer!.addDay(enrichedDay, editorialSoFar));
+            send({
+              type:      "day",
+              day:       enrichedDay,
+              editorial: editorialSoFar,
+              totalDays: safeBody.duration,
+              elapsedMs: Date.now() - t0,
+            });
+          }
+        }
+      }
+
+      const finalMsg = await anthropicStream.finalMessage();
+      finalUsage = finalMsg.usage;
+      if (finalMsg.stop_reason === "max_tokens") {
+        errorTypeOverride = "max_tokens";
+        throw new Error(
+          "Our concierge ran out of space generating your itinerary. Please try a shorter trip or a more relaxed pace."
+        );
+      }
+
+      // Parse the full accumulated text for editorial, recommendedStays, and fallback days
+      let editorial        = extractEditorial(fullText);
+      let recommendedStays: ItineraryResponse["recommendedStays"] | undefined;
+      let fallbackDays: DayPlan[] = [...enrichedDays];
+      try {
+        const fullParsed = JSON.parse(sanitizeJson(fullText));
+        editorial        = fullParsed.editorial ?? "";
+        recommendedStays = fullParsed.recommendedStays;
+        if (Array.isArray(fullParsed.days) && fullParsed.days.length > 0) {
+          const emittedDayNumbers = new Set(enrichedDays.map((day) => day.day));
+          const missingDays = (fullParsed.days as DayPlan[]).filter(
+            (day) => !emittedDayNumbers.has(day.day)
+          );
+
+          if (missingDays.length > 0) {
+            console.info(
+              `[itinerary-stream] Enriching ${missingDays.length} day(s) missed by the incremental parser`
+            );
+            const enrichedMissingDays = await Promise.all(
+              missingDays.map((day) =>
+                enrichDay(day, safeBody.destination, apiKey, counters, safeBody.lng, safeBody.departureDate)
+              )
+            );
+            fallbackDays = [...enrichedDays, ...enrichedMissingDays];
+          }
+        }
+      } catch (parseError) {
+        // Valid complete day objects can survive a trailing root-level syntax
+        // error. The exact day-count check below rejects partial responses.
+        console.warn(
+          `[itinerary-stream] Full JSON parse failed after ${enrichedDays.length} streamed day(s):`,
+          parseError instanceof Error ? parseError.message : "Unknown parse error"
+        );
+      }
+
+      fallbackDays.sort((a, b) => a.day - b.day);
+      if (fallbackDays.length !== safeBody.duration) {
+        throw new Error(
+          `The stream completed with ${fallbackDays.length} of ${safeBody.duration} days. Please try again.`
+        );
+      }
+
+      // Signed snapshot of exactly what we generated — the only thing saveTripToDb accepts.
+      const saveToken = createSaveToken(
+        { destination: safeBody.destination, editorial, days: fallbackDays, recommendedStays },
+        safeBody,
+      );
+
+      // Persist BEFORE telling the client, so a poll right after "done" sees it.
+      await persist(writer!.complete({ days: fallbackDays, editorial, recommendedStays, saveToken }));
+
+      send({
+        type:         "done",
+        requestId,
+        editorial,
+        recommendedStays,
+        fallbackDays,
+        saveToken,
+        totalDays:    safeBody.duration,
+        inputTokens:  finalMsg.usage.input_tokens,
+        outputTokens: finalMsg.usage.output_tokens,
+        stopReason:   finalMsg.stop_reason,
+        elapsedMs:    Date.now() - t0,
+        cacheHits:    counters.cacheHits,
+        googleCalls:  counters.textSearch,
+      });
+
+      // ── Record the charged generation ────────────────────────────────────────
+      await writeCostLog({ usage: finalMsg.usage, success: true, errorType: null });
+      if (userId) {
+        try {
+          // Premium: the credit was reserved up front. Free: the CostLog row above is the charge.
+          if (isPremium) await recordPremiumGeneration(userId);
+          else           await recordFreeGeneration(userId);
+        } catch (err) {
+          console.error("[itinerary-stream] Failed to update generation counters:", err);
+        }
+      }
+
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Generation failed";
+      await persist(writer!.fail(message));
+      send({ type: "error", message });
+
+      const errorType =
+        errorTypeOverride ??
+        (e instanceof SyntaxError
+          ? "json_parse"
+          : e instanceof Error && /of \d+ days/.test(e.message)
+            ? "incomplete_days"
+            : "generation_error");
+
+      await writeCostLog({ usage: finalUsage, success: false, errorType });
+
+      // Our failure — never charge for it.
+      if (isPremium && userId) {
+        await refundPremiumCredit(userId).catch((err) =>
+          console.error("[itinerary-stream] Failed to refund premium credit:", err));
+      }
+      if (!userId) {
+        // Give the guest their daily trip back so they can retry.
+        await anonymousItineraryRatelimit.resetUsedTokens(identity).catch(() => {});
+      }
+    } finally {
+      await releaseGenerationLock(identity).catch(() => {});
+      endStream();
+    }
+  }
 
   async function writeCostLog({ usage, success, errorType }: {
     usage:     { input_tokens: number; output_tokens: number } | undefined;
@@ -857,12 +913,17 @@ export async function POST(req: Request) {
     }).catch((err) => console.error("[itinerary-stream] Failed to write CostLog:", err));
   }
 
+  // Keeps the function alive until the generation settles, even after the
+  // client disconnects (bounded by maxDuration).
+  waitUntil(generate());
+
   return new Response(stream, {
     headers: {
-      "Content-Type":  "application/x-ndjson; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      "Connection":    "keep-alive",
+      "Content-Type":      "application/x-ndjson; charset=utf-8",
+      "Cache-Control":     "no-cache, no-transform",
+      "Connection":        "keep-alive",
       "X-Accel-Buffering": "no",
+      "X-Request-Id":      requestId,
     },
   });
 }
