@@ -80,8 +80,9 @@ export default function HeroFloating() {
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
     onOpenChange: setIsOpen,
-    placement: "right",
-    middleware: [offset(12), flip(), shift({ padding: 8 })],
+    // Opens to the right of the link and downward, away from the planner above it.
+    placement: "right-start",
+    middleware: [offset(16), flip({ fallbackPlacements: ["bottom-start"] }), shift({ padding: 8 })],
   });
 
   const hover = useHover(context, { delay: { open: 300, close: 100 } });
@@ -160,7 +161,7 @@ export default function HeroFloating() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
-            className="mt-8 md:mt-10"
+            className="mt-10 md:mt-20"
           >
             <HeroPlanner />
           </motion.div>
