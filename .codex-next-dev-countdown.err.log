@@ -1,5 +1,0 @@
- ⚠ Port 3000 is in use, trying 3001 instead.
- ⚠ Port 3001 is in use, trying 3002 instead.
-<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: EPERM: operation not permitted, rename 'D:\travel-plannner-v2\.next\cache\webpack\client-development\8.pack.gz_' -> 'D:\travel-plannner-v2\.next\cache\webpack\client-development\8.pack.gz'
-<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: EPERM: operation not permitted, rename 'D:\travel-plannner-v2\.next\cache\webpack\client-development\8.pack.gz_' -> 'D:\travel-plannner-v2\.next\cache\webpack\client-development\8.pack.gz'
-<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: incorrect header check

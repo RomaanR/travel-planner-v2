@@ -44,3 +44,15 @@ public/sw.js.map
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Local-only working files (screenshots, social/marketing drafts, scratch, dev logs)
+/output/
+/tmp/
+/scripts/mobile-screenshots/
+/.new-assets/
+# Voice-Agent is a separate repository — nested git repos break Vercel builds
+/Voice-Agent/
+# loose scratch images in the repo root
+/beelogo.png
+/travelbee-*.png
+.codex-next-dev*.log
