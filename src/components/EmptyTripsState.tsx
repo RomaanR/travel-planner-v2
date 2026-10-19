@@ -70,7 +70,7 @@ export default function EmptyTripsState() {
 
         {/* CTA — high-contrast burnt-orange */}
         <Link
-          href="/"
+          href="/curate"
           className="inline-flex items-center gap-3 bg-burnt-orange text-white micro-copy px-10 py-4
                      hover:bg-ink transition-colors duration-300"
         >

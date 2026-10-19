@@ -32,10 +32,9 @@ import {
   computeDuration,
 } from "@/lib/dateUtils";
 
+import { AUTOCOMPLETE_FIELDS } from "@/lib/placeSelection";
+
 const LIBRARIES: ("places")[] = ["places"];
-// Only the fields we read from getPlace() — all in the Basic data tier, so a
-// selection isn't billed for contact or atmosphere data we never use.
-const AUTOCOMPLETE_FIELDS = ["name", "formatted_address", "geometry", "place_id", "types"];
 
 // ─── Regex ────────────────────────────────────────────────────────────────────
 

@@ -19,14 +19,14 @@ Work on feature branches from clean `main`; never `git add .` in this worktree.
 ---
 
 ## 0. Measure first
-- [ ] Pull avg cost per trip and the Claude vs Google split from `/admin/metrics`
+- [x] Cost split measured 2026-10-19: Google 92% (~$0.83/trip) vs Claude ~$0.07 — before the Places API (New) change
 - [ ] Check the Google Cloud billing breakdown by SKU (Text Search, Details, Photos)
 - [ ] Add a simple activation funnel: visit → planner → itinerary generated → saved/shared (segment real users vs friends/family)
 
 ## 1. Urgent fixes (from the 2026-09-06 audit)
-- [ ] Stop leaking `MAPS_SERVER_KEY` in destination image URLs (`getPlacePhoto.ts`, `/api/trips`, shared-page metadata); proxy images, then rotate the key
-- [ ] Retire the old `/api/itinerary` route (or apply the same limits) — it bypasses the guest 1/day + 3-day rules
-- [ ] Credits: reserve before generating, finalise on success, release on failure (no double-spend from parallel requests); stop relying on a dashboard visit to reset balances
+- [x] Stop leaking `MAPS_SERVER_KEY` in destination image URLs (`getPlacePhoto.ts`, `/api/trips`, shared-page metadata); proxy images, then rotate the key
+- [x] Retire the old `/api/itinerary` route (or apply the same limits) — it bypasses the guest 1/day + 3-day rules
+- [x] Credits: reserve before generating, finalise on success, release on failure (no double-spend from parallel requests); stop relying on a dashboard visit to reset balances
 - [ ] Pricing page: remove "Pay once. Travel forever." and the disabled "Coming Soon" checkout; every limit hit must lead to an action that actually works
 - [x] Fix Stripe billing P1–P7 (renewals, payment records, ordering, missing events, `invoice.paid`, duplicate subscriptions, atomic idempotency) — branch `fix/stripe-billing`, see [`docs/stripe-setup.md`](docs/stripe-setup.md)
 - [x] Apply new billing tables (done 2026-10-18)
@@ -40,7 +40,7 @@ Work on feature branches from clean `main`; never `git add .` in this worktree.
 - [ ] Rotate `MAPS_SERVER_KEY` (it appeared in photo URLs before this fix)
 - [ ] Optional: set a dedicated `ITINERARY_SIGNING_SECRET` (falls back to a key derived from `CLERK_SECRET_KEY`)
 - [ ] Contract step after deploy: delete old-format `PlaceCache` rows, remove `isOldFormat`, drop `PlaceCache.photoUrl` and `hoursOpen`
-- [ ] Guests on iOS: a backgrounded generation is aborted and the auto-retry hits the 1/day limit → fixed by §1b below
+- [x] Guests on iOS: a backgrounded generation is aborted and the auto-retry hits the 1/day limit → fixed by §1b below
 
 ## 1b. Generation survives leaving the page (iOS Safari) — START 2026-10-19
 Goal: the app runs flawlessly when the user switches apps, locks the phone or Safari reloads the tab, using the patterns robust apps use: **work runs on the server independent of the browser connection, results are persisted, and the page resumes from server state.**
@@ -54,7 +54,7 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [x] On stream loss / `visibilitychange` / `pageshow` / reload: follow `GET /api/generations/{id}` instead of regenerating
 - [x] Retry never consumes quota twice (same `requestId` attaches with 202)
 - [x] Local live test 2026-10-19: cut after day 1 → server finished → resumed → re-POST attached → exactly 1 CostLog row
-- [ ] Test on a real iPhone: switch apps mid-generation, lock screen, kill-and-reopen tab, airplane mode, as guest
+- [x] Test on a real iPhone (passed 2026-10-19): switch apps mid-generation, lock screen, kill-and-reopen tab, airplane mode, as guest
 - [ ] Known trade-off: leaving mid-generation and starting a different trip returns "already being prepared" until the first finishes (≤ ~2 min) — consider an explicit cancel
 - [ ] Known gap: a premium credit reserved by a run killed at maxDuration is not refunded (status `stalled`) — fixed by step 2 leases
 
@@ -76,7 +76,7 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Phase 1: fix 2 type errors, re-enable build checks, GitHub Actions (typecheck, lint, Vitest, build, audit), first unit tests, branch protection on `main`
 - [ ] Phase 2: `prisma migrate` baseline, migrations applied from CI, separate staging DB for previews
 - [ ] Phase 3: Playwright smoke on preview URLs and after production deploy, Sentry releases
-- [ ] Turn type/lint checks back on in `next.config.mjs` and fix the 5 TypeScript errors
+- [ ] Turn type/lint checks back on in `next.config.mjs` and fix the 2 remaining TypeScript errors (`RefinePanel.tsx`, `SearchBar.tsx`)
 
 ## 2. Cut Claude cost
 - [ ] Switch `claude-sonnet-4-6` → `claude-sonnet-5-5` ($3/$15 → $2/$10), test on a few cities first
@@ -95,7 +95,11 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [x] Live test 2026-10-19 (8 fresh places): Google $0.392 → $0.160 (−59%), trip total $0.43 → $0.20
 - [x] Checked Google terms: only place IDs (indefinitely) and coordinates (30 days) may be stored
 - [ ] **Owner decision 2026-10-19: keep caching ratings/hours/photo names and saved-trip content for now** (outside Google's terms) — revisit before scaling / with ADR-0006/0007
-- [ ] Photo credits still missing on trip cards (/trips), shared/PDF views; Google logo when Places data is shown without a Google map
+- [ ] **Photo credits (Google requirement — risk: key suspension)**, ~1 h. Timeline cards are done; still missing on:
+  - [ ] My Trips cards — destination photo (`TripsClient.tsx`; needs author from `getPlacePhoto.ts`)
+  - [ ] Shared trip page + trip header destination photo (`/shared/[id]`, `/trips/[id]`)
+  - [ ] PDF export activity photos (`PrintItinerary.tsx` — currently hidden in print)
+- [ ] Google logo next to Places data (ratings, hours) wherever no Google map is on screen (PDF, mobile list view with map hidden)
 - [ ] Show the daily photo-fetch count (`travalbee:photo-fetches:*`) in `/admin/metrics`
 - [ ] Booking-link hotel lookup (`affiliate.ts`) still uses legacy Find Place ($17/1k, on click only)
 - [ ] Check the real Google Cloud bill — free monthly allowances may already cover current volume
@@ -121,13 +125,17 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Cities outside the library: fall back to the current full-AI path, or don't offer them yet
 
 ## 6. Home page
-- [ ] **Quick planner in the hero:** "Where to?" + dates directly on the home page, prefilled into the planner
+- [x] **Quick planner in the hero** (2026-10-19): "TravalBee" on one line; destination + dates → planner opens prefilled at the next step; Google script loads after idle/first tap
+- [x] Compact cookie notice (no misleading "Decline"); never covers the main actions on phones
+- [x] Copy you can stand behind: stats strip, bento cells, step 2, loader steps, shared page
+- [x] Every create button opens the planner; sample/shared pages get "Plan a Trip Like This" (prefilled)
+- [x] SEO basics: robots.txt, sitemap.xml, canonical, branded share image, noindex on shared trips
+- [x] Funnel events (Vercel Analytics): hero_planner_submitted → planner_submitted → itinerary_ready → trip_saved — needs Vercel Pro for custom events
+- [ ] Set `NEXT_PUBLIC_APP_URL=https://travalbee.com` in Vercel (canonical/sitemap fall back to it anyway)
+- [ ] Navbar "SIGN IN" wraps onto two lines at 375 px width (pre-existing)
 - [ ] **Trip Ideas section** (agent-managed): cards like "48 hours of food in Lisbon" → full ready-made itinerary → "Make it mine" copies it into the planner with the user's dates; each idea is a crawlable page
 - [ ] **"Where to go this month"** seasonal strip, agent-drafted monthly
-- [ ] Replace unsupported claims ("100% hidden gems", "Zero tourist traps", "95% never find", loader's "Michelin guides" copy) with real examples; add real user quotes later
-- [ ] Fix the mobile cookie banner covering the main call-to-action
-- [ ] Every "create" button (mobile menu, sample, shared page, pricing) opens the planner directly instead of going back to `/`
-- [ ] SEO basics: `robots.txt`, `sitemap.xml`, canonical URLs, homepage share image
+- [ ] Add real user quotes once there are users (unsupported claims replaced 2026-10-19)
 - [ ] _Parked:_ daily travel news — revisit later as a small "Travel briefing" strip using the same agent workflow
 
 ## 7. Content agent (approval workflow)
@@ -144,7 +152,7 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Switch from `prisma db push` to `prisma migrate` before the refactor changes the schema
 
 ## 9. Housekeeping
-- [ ] Decide on the uncommitted local changes (`dietaryNote` → `null`, `PrintItinerary` prop cleanup, `cross-env` 4GB dev script)
+- [x] Uncommitted local changes resolved (legacy route deleted; `PrintItinerary` cleanup and `cross-env` dev script committed)
 - [ ] Clean up untracked logs, screenshots and temp folders; add them to `.gitignore`
 - [ ] Remove or gate `/stream-test`
 - [ ] Merge CLAUDE.md and CLAUDE-v2.md into one up-to-date spec (current CLAUDE.md is the old Seek Wander version)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { computeMapPoints } from "@/lib/itineraryUtils";
+import { planLikeThisHref } from "@/lib/planLikeThis";
 import type { ItineraryResponse } from "@/types/itinerary";
 import Navbar from "@/components/Navbar";
 import ItineraryViewer from "@/components/ItineraryViewer";
@@ -34,6 +35,8 @@ export default async function SamplePage() {
   const mapCenter  = mapPoints[0]
     ? { lat: mapPoints[0].lat, lng: mapPoints[0].lng }
     : { lat: 40.758, lng: -73.985 };
+  // Opens the planner on this destination (cached lookup; falls back to a plain link).
+  const planHref = await planLikeThisHref(trip.destination, trip.request, mapPoints);
 
   const bottomCta = (
     <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-10">
@@ -43,10 +46,10 @@ export default async function SamplePage() {
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <Link
-          href="/"
+          href={planHref}
           className="micro-copy bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
         >
-          Curate My Itinerary
+          Plan a Trip Like This
         </Link>
         <Link
           href="/pricing"

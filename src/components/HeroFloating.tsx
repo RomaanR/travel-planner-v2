@@ -12,17 +12,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-
-// Load auth-aware CTA client-side only — prevents SSR throws when ClerkProvider is absent
-const BeginJourneyButton = dynamic(() => import("./BeginJourneyButton"), {
-  ssr: false,
-  loading: () => (
-    <span className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4">
-      Begin Your Journey <span>&rarr;</span>
-    </span>
-  ),
-});
+import HeroPlanner from "./HeroPlanner";
 
 const BG_IMAGES = [
   {
@@ -90,7 +80,7 @@ export default function HeroFloating() {
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
     onOpenChange: setIsOpen,
-    placement: "top-end",
+    placement: "right",
     middleware: [offset(12), flip(), shift({ padding: 8 })],
   });
 
@@ -136,24 +126,15 @@ export default function HeroFloating() {
             Curated Luxury Journeys
           </motion.p>
 
-          {/* Main heading */}
+          {/* Main heading — one line */}
           <motion.h1
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-            className="font-serif italic text-white leading-none mb-2"
-            style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
+            className="font-serif italic text-white leading-none mb-8 whitespace-nowrap"
+            style={{ fontSize: "clamp(3.25rem, 15vw, 11rem)" }}
           >
-            Traval
-          </motion.h1>
-          <motion.h1
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.45 }}
-            className="font-serif italic text-white leading-none mb-8"
-            style={{ fontSize: "clamp(2.8rem, 12vw, 14rem)" }}
-          >
-            Bee
+            TravalBee
           </motion.h1>
 
           {/* Thin rule */}
@@ -174,53 +155,45 @@ export default function HeroFloating() {
             Ultra-curated itineraries crafted around you: hidden gems, Michelin-worthy tables, and the moments between.
           </motion.p>
 
-        </div>
-
-        {/* Bottom-right — CTA buttons (absolute on desktop, flow on mobile) */}
-        <div className="md:absolute md:bottom-16 md:right-20 px-8 md:px-0 pb-24 md:pb-0 flex w-full flex-col items-end gap-4 md:w-[340px] md:gap-6">
-          {/* Thin vertical accent line */}
+          {/* Quick planner — destination + dates straight into the planner */}
           <motion.div
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: 0.75 }}
-            className="origin-top hidden md:block w-px h-16 bg-white/25 self-center"
-          />
-
-          {/* Primary CTA */}
-          <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
+            className="mt-8 md:mt-10"
           >
-            <BeginJourneyButton />
+            <HeroPlanner />
           </motion.div>
 
-          {/* Secondary CTA — sample itinerary (floating UI reference) */}
+          {/* Secondary CTA — sample itinerary (floating preview on hover) */}
           <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.95 }}
-            className="w-[260px]"
+            className="mt-4 md:mt-5"
           >
-            <div ref={refs.setReference} {...getReferenceProps()}>
+            <div ref={refs.setReference} {...getReferenceProps()} className="inline-block">
               <Link
                 href="/sample"
-                className="micro-copy inline-flex w-full items-center justify-center gap-2 whitespace-nowrap bg-[#DED4BC] text-ink hover:bg-paper-dark px-6 py-3 transition-all duration-300"
+                className="micro-copy inline-flex items-center gap-2 text-white/85 hover:text-white border-b border-white/30 hover:border-white pb-1 transition-colors duration-300"
               >
-                <span>View Sample Itinerary</span>
-                <span className="text-ink/60">&rarr;</span>
+                <span>or view a sample itinerary</span>
+                <span>&rarr;</span>
               </Link>
             </div>
           </motion.div>
 
         </div>
 
+        {/* Bottom spacer — keeps content clear of the cookie notice on small screens */}
+        <div className="h-24 md:h-0" aria-hidden />
+
         {/* Scroll indicator — bottom-center float animation */}
         <motion.p
           initial={{ y: 0, opacity: 0.4 }}
           animate={{ y: 10, opacity: 1 }}
           transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 uppercase tracking-[0.2em] text-[10px] text-white/60"
+          className="hidden md:block absolute bottom-10 left-1/2 -translate-x-1/2 uppercase tracking-[0.2em] text-[10px] text-white/60"
         >
           Scroll to Explore
         </motion.p>

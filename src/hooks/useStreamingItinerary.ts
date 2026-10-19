@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
 import type {
   DayPlan,
   ItineraryRequest,
@@ -179,6 +180,8 @@ export function useStreamingItinerary() {
   const streamAbortRef = useRef<AbortController | null>(null);
   const streamingRef = useRef(false);
   const daysRef = useRef<DayPlan[]>([]);
+  // Whether the current run had to resume from the server snapshot (funnel analytics).
+  const resumedRef = useRef(false);
 
   const abort = useCallback(() => {
     if (runRef.current) runRef.current.cancelled = true;
@@ -230,6 +233,7 @@ export function useStreamingItinerary() {
     savePendingRequestId(fingerprint, requestId);
 
     daysRef.current = [];
+    resumedRef.current = false;
     setDays([]);
     setSaveToken(null);
     setMeta(null);
@@ -269,6 +273,8 @@ export function useStreamingItinerary() {
         recommendedStays: result.recommendedStays,
       };
       saveCache(fingerprint, completed, result.saveToken);
+      // Funnel: a generation reached the visitor (not fired for session-cache restores).
+      track("itinerary_ready", { days: mergedDays.length, resumed: resumedRef.current });
       toast.success("Itinerary Prepared", {
         id: "curate-task",
         description: "Your bespoke journey is ready for review.",
@@ -279,6 +285,7 @@ export function useStreamingItinerary() {
     // ── Snapshot polling (resume) ──────────────────────────────────────────────
     const followSnapshot = async (): Promise<ItineraryResponse | null> => {
       setResuming(true);
+      resumedRef.current = true;
       let delay = POLL_MS;
 
       while (isCurrent()) {

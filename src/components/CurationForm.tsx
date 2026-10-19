@@ -33,11 +33,10 @@ import {
   formatDateLocal,
   computeDuration,
 } from "@/lib/dateUtils";
+import { AUTOCOMPLETE_FIELDS, readSelectedDestination } from "@/lib/placeSelection";
+import { readPlannerPrefill } from "@/lib/plannerLink";
 
 const LIBRARIES: ("places")[] = ["places"];
-// Only the fields we read from getPlace() — all in the Basic data tier, so a
-// selection isn't billed for contact or atmosphere data we never use.
-const AUTOCOMPLETE_FIELDS = ["name", "formatted_address", "geometry", "place_id", "types"];
 
 // ─── Option data ──────────────────────────────────────────────────────────────
 
@@ -166,11 +165,26 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
     libraries: LIBRARIES,
   });
 
-  // ── Pre-fill from ?destination= query param ───────────────────────────────
+  // ── Pre-fill from a planner link (home-page quick planner, "Plan a trip like this") ──
+  // ?destination= pre-types the search box; with pid/lat/lng the destination is
+  // already selected and the form opens at the next step. See src/lib/plannerLink.ts.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const dest = params.get("destination");
-    if (dest) setInputValue(dest);
+    const prefill = readPlannerPrefill(window.location.search, getLocalToday(), 14);
+    if (!prefill) return;
+    setInputValue(prefill.destination);
+    if (!prefill.place) return;
+    setIsRegion(prefill.place.isRegion);
+    setForm((f) => ({
+      ...f,
+      destination: prefill.destination,
+      placeId:     prefill.place!.placeId,
+      lat:         prefill.place!.lat,
+      lng:         prefill.place!.lng,
+      ...(prefill.departureDate && prefill.returnDate
+        ? { departureDate: prefill.departureDate, returnDate: prefill.returnDate }
+        : {}),
+    }));
+    setStage(1);
   }, []);
 
   // ── Credits hint — show once per session, dismiss on search focus ──────────
@@ -189,34 +203,16 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
   // ── Destination ──────────────────────────────────────────────────────────────
   function onPlaceChanged() {
     if (!autocompleteRef.current) return;
-    const place = autocompleteRef.current.getPlace();
-    if (!place?.geometry?.location || !place?.place_id) return;
-
-    // Use place.name ("Istanbul") not formatted_address ("Istanbul, İstanbul, Türkiye").
-    // Guard against Google returning administrative area names like
-    // "Metropolitan City of Rome Capital" or "Province of Barcelona" — these break
-    // the AI's spatial reasoning and trip naming. Fall back to the user's typed input
-    // (e.g. "Rome") which is always a clean city-level string.
-    const ADMIN_AREA_RE = /^(metropolitan city of|province of|region of|county of|prefecture of|district of|municipality of)\b/i;
-    const rawName = place.name || place.formatted_address || inputValue;
-    const cleanDestination = ADMIN_AREA_RE.test(rawName) ? (inputValue.trim() || rawName) : rawName;
-
-    // Detect whether the selected place is a broad region (e.g. "Kansai", "Tuscany")
-    // rather than a specific city. City types short-circuit to false; admin/natural
-    // area types (without a co-present locality) flag as region. "country" excluded —
-    // whole-country selections are too broad for region-mode to be useful.
-    const placeTypes = place.types ?? [];
-    const CITY_TYPES   = new Set(["locality", "sublocality", "neighborhood", "postal_town", "sublocality_level_1"]);
-    const REGION_TYPES = new Set(["administrative_area_level_1", "administrative_area_level_2", "natural_feature", "colloquial_area"]);
-    const hasCity      = placeTypes.some((t) => CITY_TYPES.has(t));
-    const hasRegion    = placeTypes.some((t) => REGION_TYPES.has(t));
-    setIsRegion(!hasCity && hasRegion);
+    // Name cleaning and region detection are shared with the home-page planner.
+    const choice = readSelectedDestination(autocompleteRef.current.getPlace(), inputValue);
+    if (!choice) return;
+    setIsRegion(choice.isRegion);
 
     const update = {
-      destination: cleanDestination,
-      placeId: place.place_id,
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
+      destination: choice.destination,
+      placeId:     choice.placeId,
+      lat:         choice.lat,
+      lng:         choice.lng,
     };
     setInputValue(update.destination);
     setForm((f) => ({ ...f, ...update }));

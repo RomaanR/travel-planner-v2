@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ChevronLeft, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { track } from "@vercel/analytics";
 import Navbar from "@/components/Navbar";
 import CurationForm from "@/components/CurationForm";
 import TailorForm from "@/components/TailorForm";
@@ -20,6 +21,7 @@ export default function CurateClient({ credits }: { credits?: number }) {
   async function handleGenerate(data: ItineraryRequest) {
     setLoading(true);
     try {
+      track("planner_submitted", { mode, days: data.duration });
       sessionStorage.setItem("itineraryRequest", JSON.stringify(data));
       router.push("/itinerary");
     } finally {

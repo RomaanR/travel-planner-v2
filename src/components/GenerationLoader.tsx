@@ -6,11 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 // ── Loading copy ───────────────────────────────────────────────────────────────
 
 const STEPS = [
-  "Reviewing your preferences…",
-  "Sourcing vetted luxury accommodations…",
-  "Cross-referencing Michelin guides…",
-  "Mapping realistic routes and transit times…",
-  "Finalising your bespoke itinerary…",
+  "Reading your preferences…",
+  "Shaping each day…",
+  "Choosing tables for your diet and budget…",
+  "Checking opening hours on Google Maps…",
+  "Mapping your route…",
 ];
 
 const TAILOR_STEPS = [

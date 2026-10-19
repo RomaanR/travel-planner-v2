@@ -3,53 +3,53 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+// Shared with the earlier Accept/Decline banner, so visitors who already
+// answered it don't see this notice again.
 const CONSENT_KEY = "travalbee_cookie_consent";
 
+/**
+ * Informational notice. The site only uses strictly necessary storage
+ * (sign-in session, saved itineraries, offline archive) — nothing to opt out of,
+ * so there is no "Decline". Kept compact so it never covers the main actions:
+ * a small card bottom-right on desktop, a slim bar on phones.
+ */
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Only show if user has not already made a choice
-    if (!localStorage.getItem(CONSENT_KEY)) {
-      setVisible(true);
+    try {
+      if (!localStorage.getItem(CONSENT_KEY)) setVisible(true);
+    } catch {
+      // Storage blocked (private mode) — skip the notice rather than show it on every page.
     }
   }, []);
 
-  function accept() {
-    localStorage.setItem(CONSENT_KEY, "accepted");
-    setVisible(false);
-  }
-
-  function decline() {
-    localStorage.setItem(CONSENT_KEY, "declined");
+  function dismiss() {
+    try { localStorage.setItem(CONSENT_KEY, "acknowledged"); } catch { /* best effort */ }
     setVisible(false);
   }
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-ink text-paper border-t border-paper/10 px-6 md:px-12 py-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-8 print:hidden">
-      <p className="font-sans text-sm text-paper/70 leading-relaxed flex-1">
-        We use essential cookies for authentication and local storage to save your itineraries offline.
-        We do not use advertising or tracking cookies.{" "}
-        <Link href="/privacy" className="text-paper underline underline-offset-2 hover:text-paper/60 transition-colors">
-          Privacy Policy
+    <div
+      role="region"
+      aria-label="Cookie notice"
+      className="fixed z-50 bottom-0 inset-x-0 md:inset-x-auto md:bottom-6 md:right-6 bg-ink text-paper/75
+                 flex items-center justify-between gap-4 pl-4 pr-3 py-2.5 md:pl-5 md:py-3 print:hidden"
+    >
+      <p className="font-sans text-xs md:text-[13px] leading-snug">
+        We use essential cookies only.{" "}
+        <Link href="/privacy" className="text-paper underline underline-offset-2 hover:text-paper/70 transition-colors">
+          Privacy
         </Link>
       </p>
-      <div className="flex items-center gap-3 shrink-0">
-        <button
-          onClick={decline}
-          className="micro-copy text-paper/50 hover:text-paper transition-colors px-4 py-2.5 border border-paper/20 hover:border-paper/40"
-        >
-          Decline
-        </button>
-        <button
-          onClick={accept}
-          className="micro-copy bg-burnt-orange text-white px-6 py-2.5 hover:bg-burnt-orange/90 transition-colors"
-        >
-          Accept All
-        </button>
-      </div>
+      <button
+        onClick={dismiss}
+        className="micro-copy text-[10px] bg-burnt-orange text-white px-4 py-2 hover:bg-burnt-orange/90 transition-colors shrink-0"
+      >
+        OK
+      </button>
     </div>
   );
 }

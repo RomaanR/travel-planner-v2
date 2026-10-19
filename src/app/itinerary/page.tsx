@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -109,6 +110,7 @@ export default function ItineraryPage() {
           itineraryData: itinerary as { editorial?: string; days?: { theme?: string }[] },
         });
       }
+      track("trip_saved", { days: saved.days });
       toast.success("Passport Updated", {
         description: "This journey has been saved to your archive.",
       });

@@ -11,6 +11,7 @@ import ItineraryViewer from "@/components/ItineraryViewer";
 import type { ItineraryResponse, MapPoint } from "@/types/itinerary";
 import { computeMapPoints, normalizeDayPlan } from "@/lib/itineraryUtils";
 import { getDestinationPhotoUrl } from "@/lib/getPlacePhoto";
+import { planLikeThisHref } from "@/lib/planLikeThis";
 
 // ─── Dynamic OG Metadata ──────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // Shared trips are people's own plans — viewable by link, never listed in search.
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,
@@ -76,23 +79,26 @@ export default async function SharedTripPage({
           lng: 139.6503,
         });
 
+  // Opens the planner on this destination (falls back to a plain planner link).
+  const planHref = await planLikeThisHref(trip.destination, trip.request, mapPoints);
+
   // Acquisition CTA — replaces save/PDF buttons
   const bottomCta = (
     <div className="mt-14 border-t border-ink/5 pt-10 text-center pb-10">
       <div className="w-8 h-px bg-burnt-orange mx-auto mb-8" />
-      <p className="micro-copy text-ink-light mb-4">Trusted by discerning travelers</p>
+      <p className="micro-copy text-ink-light mb-4">Curated by TravalBee</p>
       <p className="font-serif italic text-3xl text-ink mb-3">
         Inspired by this journey?
       </p>
       <p className="font-sans text-sm text-ink-light mb-8 max-w-sm mx-auto leading-relaxed">
         Every itinerary is bespoke &mdash; tailored to your pace, palate,
-        and travel party. Hidden gems, curated dining, and every detail handled in under 30 seconds.
+        and travel party. Hidden gems, curated dining, and every detail handled in about a minute.
       </p>
       <Link
-        href="/"
+        href={planHref}
         className="micro-copy bg-burnt-orange text-white px-10 py-4 hover:bg-ink transition-colors duration-300 inline-block"
       >
-        Create Your Free Itinerary &rarr;
+        Plan a Trip Like This &rarr;
       </Link>
     </div>
   );
@@ -114,10 +120,10 @@ export default async function SharedTripPage({
             {trip.destination}
           </h1>
           <Link
-            href="/"
+            href={planHref}
             className="micro-copy bg-burnt-orange text-white px-6 py-3 hover:bg-ink transition-colors duration-300 inline-block"
           >
-            Create Your Own &rarr;
+            Plan a Trip Like This &rarr;
           </Link>
         </div>
 
@@ -133,10 +139,10 @@ export default async function SharedTripPage({
               </h1>
             </div>
             <Link
-              href="/"
+              href={planHref}
               className="micro-copy bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300 shrink-0"
             >
-              Create Your Own &rarr;
+              Plan a Trip Like This &rarr;
             </Link>
           </div>
         </div>

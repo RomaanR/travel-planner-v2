@@ -22,8 +22,12 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://travalbee.com";
+
 export function generateMetadata(): Metadata {
   return {
+    // Resolves relative canonical / Open Graph URLs (incl. app/opengraph-image).
+    metadataBase: new URL(SITE_URL),
     title: {
       default: "TravalBee | Bespoke Travel Curation",
       template: "%s | TravalBee",

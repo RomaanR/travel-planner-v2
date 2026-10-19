@@ -47,7 +47,7 @@ export default function BentoGrid() {
               Hidden Gems
             </p>
             <h3 className="font-serif italic text-3xl md:text-5xl text-white leading-tight">
-              Places 95% of<br />Travelers Never Find
+              A Hidden Gem Every Day,<br />Off the Main Trail
             </h3>
           </div>
         </motion.div>
@@ -88,10 +88,10 @@ export default function BentoGrid() {
             />
             <p className="micro-copy text-paper/50 mb-3">Palate First</p>
             <h3 className="font-serif italic text-2xl md:text-4xl text-paper leading-tight">
-              Reservations<br />Hand-Picked for You
+              Tables Chosen<br />for Your Palate
             </h3>
             <p className="mt-4 text-paper/60 text-sm leading-relaxed font-sans">
-              No Yelp. No TripAdvisor. Only chef-driven tables, hidden izakayas, and legendary tasting menus sourced from local intelligence.
+              Restaurants chosen for your diet and budget, with ratings and opening hours checked on Google Maps.
             </p>
           </div>
         </motion.div>

@@ -119,7 +119,7 @@ export default function PricingPage() {
               ))}
             </ul>
             <Link
-              href="/"
+              href="/curate"
               className="block text-center micro-copy border border-ink/20 px-6 py-3.5 hover:bg-ink hover:text-paper transition-all"
             >
               Get Started Free
