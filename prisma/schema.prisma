@@ -151,3 +151,51 @@ model Dispute {
 
   @@index([userId])
 }
+
+// ─── Travel news (official advisories and alerts) ─────────────────────────────
+// Filled daily by /api/cron/news from official feeds. Phase 1 covers the launch
+// countries in src/lib/news/countries.ts. See docs/adr/0013-travel-news.md.
+
+model NewsItem {
+  id          String   @id @default(uuid())
+  source      String // "fcdo" | "state" | "gdacs"
+  externalId  String // stable identity of one update within a source
+  countryCode String // ISO 3166-1 alpha-2
+  topics      String[] @default([]) // entry | safety | health | weather | disaster | advisory
+  severity    Int      @default(0) // 0 info … 4 critical
+  title       String
+  summary     String // plain text, never HTML
+  url         String // the official page this came from
+  publishedAt DateTime
+  fetchedAt   DateTime @default(now())
+  status      String   @default("published") // "published" | "hidden"
+
+  @@unique([source, externalId])
+  @@index([countryCode, publishedAt(sort: Desc)])
+  @@index([publishedAt(sort: Desc)])
+}
+
+// Latest US State Department level per country — powers the hub badge and level-change detection.
+model AdvisoryLevel {
+  source      String
+  countryCode String
+  level       Int
+  label       String // e.g. "Exercise Increased Caution"
+  url         String
+  publishedAt DateTime // the advisory's own date
+  checkedAt   DateTime @updatedAt
+
+  @@id([source, countryCode])
+}
+
+// Per-feed bookkeeping: conditional-GET validators and the outcome of the last run.
+model NewsFeedState {
+  feed          String    @id // e.g. "fcdo:japan", "state", "gdacs"
+  etag          String?
+  lastModified  String?
+  lastRunAt     DateTime?
+  lastSuccessAt DateTime?
+  lastStatus    String? // "ok" | "not_modified" | "error"
+  lastError     String?
+  itemsAdded    Int       @default(0)
+}

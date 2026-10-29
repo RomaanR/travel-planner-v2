@@ -21,6 +21,7 @@
     "@upstash/redis": "^1.37.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/functions": "3.9.11",
+    "fast-xml-parser": "5.11.2",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",

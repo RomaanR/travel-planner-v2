@@ -70,6 +70,12 @@ export default function Navbar() {
             DASHBOARD
           </Link>
           <Link
+            href="/news"
+            className="micro-copy text-ink-light hover:text-ink transition-colors"
+          >
+            NEWS
+          </Link>
+          <Link
             href="/pricing"
             className="micro-copy text-ink-light hover:text-ink transition-colors"
           >

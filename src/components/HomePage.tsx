@@ -12,8 +12,10 @@ import BentoGrid from "@/components/BentoGrid";
 import HeroClassic from "@/components/HeroClassic";
 import HeroFloating from "@/components/HeroFloating";
 import type { SampleSummary } from "@/lib/sampleTrip";
+import BriefingStrip from "@/components/news/BriefingStrip";
+import type { NewsView } from "@/lib/news/types";
 
-export default function HomePage({ sample }: { sample: SampleSummary }) {
+export default function HomePage({ sample, news }: { sample: SampleSummary; news: NewsView[] }) {
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
@@ -49,6 +51,9 @@ export default function HomePage({ sample }: { sample: SampleSummary }) {
           ))}
         </div>
       </section>
+
+      {/* ── Travel briefing (hidden until there is news) ── */}
+      <BriefingStrip items={news} />
 
       {/* ── How It Works ───────────────────────────────────── */}
       <section className="px-8 md:px-16 py-20 max-w-screen-xl mx-auto">
@@ -166,6 +171,9 @@ export default function HomePage({ sample }: { sample: SampleSummary }) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <Link href="/news" className="micro-copy text-ink-light hover:text-ink transition-colors">
+              News
+            </Link>
             <Link href="/pricing" className="micro-copy text-ink-light hover:text-ink transition-colors">
               Pricing
             </Link>

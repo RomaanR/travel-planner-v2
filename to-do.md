@@ -140,6 +140,19 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Add real user quotes once there are users (unsupported claims replaced 2026-10-19)
 - [ ] _Parked:_ daily travel news — revisit later as a small "Travel briefing" strip using the same agent workflow
 
+## 6b. Travel news (ADR-0013) — Phase 1 built 2026-10-28, branch feat/travel-news
+- [x] Official feeds ingested daily: UK FCDO (OGL v3), US State Dept levels, GDACS Orange/Red alerts — 10 launch countries
+- [x] /news (country + topic filters), /news/[country] hubs, home "Travel briefing" strip, nav + sitemap links, "Plan a trip" CTAs
+- [ ] Apply the news tables (`NewsItem`, `AdvisoryLevel`, `NewsFeedState`) and run the first ingest; set `CRON_SECRET` in Vercel (already used by cleanup)
+- [ ] Confirm reuse terms with GDACS and the US State Dept (we only publish constructed facts until then)
+- [ ] Legal review of the disclaimer/attribution wording
+- [ ] Alert when a feed has not succeeded for >3 days (NewsFeedState.lastSuccessAt)
+- [ ] Phase 2: weather forecasts + best-time-to-visit (MET Norway licence check first; Open-Meteo free tier is non-commercial)
+- [ ] Phase 3: editorial briefs with approval (ADR-0012) + email digest via Resend
+- [ ] Phase 4: alerts when the advisory changes for a saved trip's destination
+- [ ] More countries (one row each in src/lib/news/countries.ts); Smartraveller/Canada feeds need another route
+- [ ] Hourly refresh needs the Vercel Pro plan (Hobby cron = once a day)
+
 ## 7. Content agent (approval workflow)
 - [ ] Vercel cron runs weekly (Trip Ideas) / monthly (seasonal strip)
 - [ ] Claude + web search researches and writes a draft → saved in the DB as `pending`

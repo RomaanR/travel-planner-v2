@@ -18,6 +18,7 @@ Format: lightweight [MADR](https://adr.github.io/madr/). One decision per file, 
 | [0010](0010-ci-quality-gates-and-testing.md) | CI quality gates and testing strategy | Proposed |
 | [0011](0011-configuration-as-code-and-secrets.md) | Platform configuration as code and secrets handling | Proposed |
 | [0012](0012-content-agent-approval-workflow.md) | Content agent with human approval | Proposed |
+| [0013](0013-travel-news.md) | Travel news from official sources | Proposed |
 
 ## Template
 

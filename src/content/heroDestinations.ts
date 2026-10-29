@@ -7,7 +7,7 @@ import type { Interest, Pace, TravelParty } from "@/types/itinerary";
 
 type City = { name: string; placeId: string; lat: number; lng: number };
 
-const CITIES = {
+export const CITIES = {
   kyoto:     { name: "Kyoto",     placeId: "ChIJ8cM8zdaoAWARPR27azYdlsA", lat: 35.0116, lng: 135.7681 },
   lisbon:    { name: "Lisbon",    placeId: "ChIJO_PkYRozGQ0R0DaQ5L3rAAQ", lat: 38.7223, lng: -9.1393 },
   rome:      { name: "Rome",      placeId: "ChIJu46S-ZZhLxMROG5lkwZ3D7k", lat: 41.9028, lng: 12.4964 },
@@ -15,7 +15,7 @@ const CITIES = {
   paris:     { name: "Paris",     placeId: "ChIJD7fiBh9u5kcRYJSMaMOCCwQ", lat: 48.8566, lng: 2.3522 },
 } satisfies Record<string, City>;
 
-function cityHref(city: City, extra: { pace?: Pace; travelParty?: TravelParty; interests?: Interest[] } = {}) {
+export function cityHref(city: City, extra: { pace?: Pace; travelParty?: TravelParty; interests?: Interest[] } = {}) {
   return plannerHref({
     destination: city.name,
     place: { placeId: city.placeId, lat: city.lat, lng: city.lng, isRegion: false },

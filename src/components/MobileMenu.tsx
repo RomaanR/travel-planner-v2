@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { label: "Curate a Journey", href: "/curate" },
   { label: "My Passport",      href: "/trips" },
   { label: "Dashboard",        href: "/dashboard" },
+  { label: "Travel News",      href: "/news" },
   { label: "Pricing",          href: "/pricing" },
   { label: "FAQ",              href: "/faq" },
 ];
