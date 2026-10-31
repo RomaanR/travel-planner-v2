@@ -37,7 +37,9 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
     : "border border-ink/10 bg-paper";
 
   return (
-    <article className={`h-full flex flex-col gap-3 p-5 md:p-6 ${frame}`}>
+    // Compact cards (home strip, history) fill their cell so rows line up; full cards keep their own
+    // height so expanding one section does not stretch its neighbour.
+    <article className={`${compact ? "h-full" : ""} flex flex-col gap-3 p-5 md:p-6 ${frame}`}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 micro-copy text-xs text-ink-light">
         <Link href={`/news/${item.countrySlug}`} className="text-ink hover:text-burnt-orange transition-colors py-1 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
           <Flag code={item.countryCode} />
