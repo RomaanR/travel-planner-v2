@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
 import Flag from "./Flag";
 import SourceLink from "./SourceLink";
-import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, formatNewsDate, severityTag } from "@/lib/news/types";
+import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, displayTitle, formatNewsDate, severityTag } from "@/lib/news/types";
 
 // Red and orange are reserved for serious alerts; the card itself takes the alert's colour.
 export const TONE: Record<string, string> = {
@@ -58,7 +58,7 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
         </p>
       )}
 
-      <h3 className={`font-serif italic text-ink leading-tight ${compact ? "text-xl md:text-[22px]" : "text-2xl"}`}>{item.title}</h3>
+      <h3 className={`font-serif italic font-bold text-ink leading-tight ${compact ? "text-xl md:text-[22px]" : "text-2xl"}`}>{displayTitle(item)}</h3>
       <p className={`font-sans text-base text-ink/85 leading-relaxed ${compact ? "line-clamp-3" : ""}`}>{item.summary}</p>
 
       {item.alsoAffects && item.alsoAffects.length > 0 && (

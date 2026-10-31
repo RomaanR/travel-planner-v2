@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowRight } from "lucide-react";
 import Flag from "./Flag";
 import { TONE } from "./NewsCard";
 import type { Pulse } from "@/lib/news/query";
-import { STATE_LEVEL, formatNewsDate, severityTag } from "@/lib/news/types";
+import { STATE_LEVEL, displayTitle, formatNewsDate, severityTag } from "@/lib/news/types";
 
 // US State Dept level colours (same four-step scale as the map on /news).
 const LEVEL_FILL: Record<number, string> = { 1: "#2F6DB5", 2: "#E3B934", 3: "#D9531E", 4: "#8B1A10" };
@@ -44,7 +44,7 @@ export default function HeroPulse({ pulse }: { pulse: Pulse | null }) {
                 <span><span className="sr-only">{tag.authority}: </span>{tag.label}</span>
               </p>
             )}
-            <h2 className="font-serif italic text-[26px] leading-[1.15] mt-2.5 group-hover:text-burnt-orange transition-colors">{alert.title}</h2>
+            <h2 className="font-serif italic font-bold text-[26px] leading-[1.15] mt-2.5 group-hover:text-burnt-orange transition-colors">{displayTitle(alert)}</h2>
             <p className="font-sans text-[13px] leading-relaxed text-ink/80 mt-2 line-clamp-3">{alert.summary}</p>
           </Link>
         )}

@@ -100,6 +100,20 @@ export function splitNews(items: NewsView[], now = Date.now()) {
   return { alerts, latest, history };
 }
 
+/**
+ * Heading as shown on cards. The severity tag and the flag line already say "Red alert" and
+ * the country, so repeating them in the heading is noise ("Red alert: Cyclone X — Japan" → "Cyclone X").
+ */
+export function displayTitle(item: Pick<NewsView, "title" | "countryName">): string {
+  const esc = item.countryName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const t = item.title
+    .replace(/^(red|orange) alert:\s*/i, "")
+    .replace(new RegExp("\\s+[—-]\\s+" + esc + "$", "i"), "")
+    .replace(new RegExp("^" + esc + ":\\s*", "i"), "")
+    .trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : item.title;
+}
+
 /** "Updated" where the source gives a modified date; State Dept items carry a publication date. */
 export const DATE_LABEL: Record<string, string> = { fcdo: "Updated", gdacs: "Updated", state: "Published" };
 
