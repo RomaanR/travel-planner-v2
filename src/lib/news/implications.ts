@@ -52,7 +52,9 @@ export function implicationsFor(item: NewsView): Implication[] | null {
     });
   }
 
-  const uk = country ? { label: "UK: help abroad", href: `https://www.gov.uk/foreign-travel-advice/${country.fcdoSlug}/getting-help` } : null;
+  const uk = country?.fcdoSlug
+    ? { label: "UK: help abroad", href: `https://www.gov.uk/foreign-travel-advice/${country.fcdoSlug}/getting-help` }
+    : { label: "UK: travel advice by country", href: "https://www.gov.uk/foreign-travel-advice" };
   const us = { label: "US: enrol in STEP", href: STEP_URL };
   rows.push({
     label: "Official help",

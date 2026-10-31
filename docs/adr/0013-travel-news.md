@@ -44,3 +44,11 @@ Do **2 now** and keep 3 for a later phase.
 - **No event-wide measures per country:** GDACS area figures (e.g. drought "km2") describe the whole event, so they are omitted from our per-country summaries.
 - **Dates:** "Updated" (FCDO, GDACS) or "Published" (State Dept) comes from the source; "Checked" is the last successful run of our daily check (`NewsFeedState.lastSuccessAt`, oldest feed per source) and is not a human review.
 - **Severity:** each authority keeps its own wording and an icon; scales are never mapped to each other.
+
+## Update 2026-10-31: every country, in two tiers
+- **Popular tier (10 countries, `NEWS_COUNTRIES`):** UK FCDO written updates are fetched, they are the filter chips and feed "Latest updates".
+- **Basic tier (all ~213 countries the State Dept lists, `src/content/worldCountries.json`):** a page at `/news/<slug>` with the US level, its history and any current GDACS alert. Found through search and the map. Non-popular pages are rendered on first visit and cached (hourly), not pre-built.
+- **Storage:** `AdvisoryLevel` now holds every country's level; new table `AdvisoryChange` records each level change (history and "raised" alerts). First sightings of non-popular countries create no news item.
+- **Current alerts:** GDACS Orange/Red for any country (one card per event, listing the other countries), plus a US level raised to 3 or 4 within 30 days. "Latest updates" stays popular-only.
+- **Level 4 pages** carry no "Plan a trip" button.
+- **Not covered:** the US itself (the State Dept does not rate it), tiny territories not in the outline data, and written advisory text for non-popular countries (adding a country to the popular tier is one row plus a flag).

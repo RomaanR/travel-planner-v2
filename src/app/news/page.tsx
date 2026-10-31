@@ -8,7 +8,7 @@ import AdvisoryMap from "@/components/news/AdvisoryMap";
 import DestinationFilter from "@/components/news/DestinationFilter";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
-import { NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
+import { ALL_COUNTRIES, NEWS_COUNTRIES, countryByCode, countryBySlug } from "@/lib/news/countries";
 import { getCountryPulse, getFeedChecks, getNewsResult } from "@/lib/news/query";
 import { getWorldMap } from "@/lib/news/world";
 import { SORTS, TOPIC_GROUPS, type Sort, splitNews, topicGroupFor } from "@/lib/news/types";
@@ -47,7 +47,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
     getFeedChecks(),
     getWorldMap(),
   ]);
-  const { alerts, latest: newest, history } = splitNews(items);
+  const { alerts, latest: allLatest, history } = splitNews(items);
+  // Regular updates are for the popular countries; other countries appear here only through alerts.
+  const newest = allLatest.filter((i) => countryByCode(i.countryCode)?.popular);
   // "Most serious first" reorders regular updates; the default is newest first.
   const latest = sort === "serious"
     ? [...newest].sort((a, b) => b.severity - a.severity || Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
@@ -68,6 +70,8 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
   const chips = NEWS_COUNTRIES.map((c) => ({
     code: c.code, name: c.name, href: href({ country: c.slug }), active: country?.code === c.code, alert: pulse[c.code] >= 3,
   }));
+
+  const searchCountries = ALL_COUNTRIES.map((c) => ({ code: c.code, name: c.name, slug: c.slug }));
 
   return (
     <main className="min-h-screen bg-paper">
@@ -97,7 +101,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
         </FadeIn>
 
         <FadeIn delay={0.1} className="mb-6">
-          <DestinationFilter chips={chips} allHref={href({ country: undefined })} allActive={!country} />
+          <DestinationFilter chips={chips} countries={searchCountries} allHref={href({ country: undefined })} allActive={!country} />
         </FadeIn>
 
         <FadeIn delay={0.15} className="mb-6">

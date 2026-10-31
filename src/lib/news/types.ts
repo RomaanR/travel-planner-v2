@@ -26,6 +26,7 @@ export type FeedChecks = Partial<Record<NewsView["source"], string>>;
 /** Alerts stop being "current" after this long; older ones move to history. */
 export const GDACS_ACTIVE_DAYS = 14;
 export const OTHER_ACTIVE_DAYS = 60;
+export const STATE_ACTIVE_DAYS = 30;
 
 export const TOPICS = ["entry", "safety", "health", "weather", "disaster", "advisory"] as const;
 export type Topic = (typeof TOPICS)[number];
@@ -83,7 +84,7 @@ export function severityTag(item: Pick<NewsView, "source" | "severity">): Severi
 /** Whether the item still counts as a current alert (serious and recent enough). */
 export function isCurrentAlert(item: Pick<NewsView, "source" | "severity" | "publishedAt">, now = Date.now()): boolean {
   if (item.severity < 3) return false;
-  const days = item.source === "gdacs" ? GDACS_ACTIVE_DAYS : OTHER_ACTIVE_DAYS;
+  const days = item.source === "gdacs" ? GDACS_ACTIVE_DAYS : item.source === "state" ? STATE_ACTIVE_DAYS : OTHER_ACTIVE_DAYS;
   return now - Date.parse(item.publishedAt) <= days * 86_400_000;
 }
 

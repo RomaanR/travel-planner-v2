@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { NEWS_COUNTRIES } from "./countries";
-import { type ParsedItem, parseFcdo, parseGdacs, parseState } from "./sources";
+import { type ParsedAdvisory, type ParsedItem, parseFcdo, parseGdacs, parseState } from "./sources";
 
 // Daily ingest of official travel feeds into NewsItem. Called by /api/cron/news.
 // Each feed is isolated: one failing never blocks the others, and every outcome is
@@ -94,36 +94,63 @@ async function ingestState(): Promise<FeedResult> {
     if (res.kind === "not_modified") return { added: 0, notModified: true };
 
     const advisories = parseState(res.text);
-    if (advisories.length === 0) throw new Error("State Dept feed parsed to zero launch-country advisories (format change?)");
+    if (advisories.length === 0) throw new Error("State Dept feed parsed to zero advisories (format change?)");
 
+    // One read for every stored level, so a daily run does a handful of writes, not hundreds.
+    const stored = new Map((await prisma.advisoryLevel.findMany({ where: { source: "state" } })).map((r) => [r.countryCode, r]));
     let added = 0;
+
+    // Countries we have not seen before: record the level only (no "news" about a first sighting),
+    // except the popular ones, whose first sighting is shown as an update as before.
+    const fresh = advisories.filter((a) => !stored.has(a.country.code));
+    if (fresh.length) {
+      await prisma.advisoryLevel.createMany({
+        data: fresh.map((a) => ({ source: "state", countryCode: a.country.code, level: a.level, label: a.label, url: a.url, publishedAt: a.publishedAt })),
+        skipDuplicates: true,
+      });
+      for (const adv of fresh.filter((a) => a.country.popular)) {
+        added += await insertItems([stateItem(adv, undefined)]);
+      }
+    }
+
     for (const adv of advisories) {
-      const key = { source_countryCode: { source: "state", countryCode: adv.country.code } };
-      const prev = await prisma.advisoryLevel.findUnique({ where: key });
-      const dateChanged = !prev || prev.publishedAt.getTime() !== adv.publishedAt.getTime();
-      if (prev && !dateChanged && prev.level === adv.level) continue;
+      const prev = stored.get(adv.country.code);
+      if (!prev) continue;
+      const levelChanged = prev.level !== adv.level;
+      const dateChanged = prev.publishedAt.getTime() !== adv.publishedAt.getTime();
+      if (!levelChanged && !dateChanged) continue;
 
-      // Our own sentence — the State Dept's advisory text is not copied.
-      const name = adv.country.name;
-      const summary = !prev
-        ? `The US State Department lists ${name} at Level ${adv.level} (${adv.label}).`
-        : prev.level !== adv.level
-          ? `The US State Department ${adv.level > prev.level ? "raised" : "lowered"} its advisory for ${name} from Level ${prev.level} to Level ${adv.level} (${adv.label}).`
-          : `The US State Department reissued its Level ${adv.level} advisory for ${name} (${adv.label}).`;
+      if (levelChanged) {
+        await prisma.advisoryChange.create({
+          data: { countryCode: adv.country.code, fromLevel: prev.level, toLevel: adv.level, changedAt: adv.publishedAt, url: adv.url },
+        });
+      }
+      // News: every update for a popular country; for others only a rise to Level 3 or 4 (a real alert).
+      const raisedToSerious = levelChanged && adv.level > prev.level && adv.level >= 3;
+      if (adv.country.popular || raisedToSerious) added += await insertItems([stateItem(adv, prev.level)]);
 
-      added += await insertItems([{
-        source: "state", externalId: `${adv.country.code}#${adv.publishedAt.toISOString()}`, countryCode: adv.country.code,
-        topics: ["advisory"], severity: adv.level, title: `${name}: US advisory is Level ${adv.level}`,
-        summary, url: adv.url, publishedAt: adv.publishedAt,
-      }]);
-      await prisma.advisoryLevel.upsert({
-        where:  key,
-        create: { source: "state", countryCode: adv.country.code, level: adv.level, label: adv.label, url: adv.url, publishedAt: adv.publishedAt },
-        update: { level: adv.level, label: adv.label, url: adv.url, publishedAt: adv.publishedAt },
+      await prisma.advisoryLevel.update({
+        where: { source_countryCode: { source: "state", countryCode: adv.country.code } },
+        data:  { level: adv.level, label: adv.label, url: adv.url, publishedAt: adv.publishedAt },
       });
     }
     return { added, etag: res.etag, lastModified: res.lastModified };
   });
+}
+
+/** Our own sentence for a State Dept advisory — their text is not copied. */
+function stateItem(adv: ParsedAdvisory, prevLevel: number | undefined): ParsedItem {
+  const name = adv.country.name;
+  const summary = prevLevel === undefined
+    ? `The US State Department lists ${name} at Level ${adv.level} (${adv.label}).`
+    : prevLevel !== adv.level
+      ? `The US State Department ${adv.level > prevLevel ? "raised" : "lowered"} its advisory for ${name} from Level ${prevLevel} to Level ${adv.level} (${adv.label}).`
+      : `The US State Department reissued its Level ${adv.level} advisory for ${name} (${adv.label}).`;
+  return {
+    source: "state", externalId: `${adv.country.code}#${adv.publishedAt.toISOString()}`, countryCode: adv.country.code,
+    topics: ["advisory"], severity: adv.level, title: `${name}: US advisory is Level ${adv.level}`,
+    summary, url: adv.url, publishedAt: adv.publishedAt,
+  };
 }
 
 async function ingestGdacs(): Promise<FeedResult> {
@@ -150,7 +177,8 @@ async function ingestGdacs(): Promise<FeedResult> {
 export async function runNewsIngest(): Promise<{ results: FeedResult[]; totalAdded: number }> {
   const off = disabledSources();
   const jobs: Promise<FeedResult>[] = [];
-  if (!off.has("fcdo")) for (const c of NEWS_COUNTRIES) jobs.push(ingestFcdo(c.fcdoSlug, c.code));
+  // UK written updates only for the popular countries; State Dept and GDACS cover every country.
+  if (!off.has("fcdo")) for (const c of NEWS_COUNTRIES) if (c.fcdoSlug) jobs.push(ingestFcdo(c.fcdoSlug, c.code));
   if (!off.has("state")) jobs.push(ingestState());
   if (!off.has("gdacs")) jobs.push(ingestGdacs());
 

@@ -95,7 +95,7 @@ export function parseFcdo(xml: string, country: NewsCountry): ParsedItem | null 
   if (!summary) return null;
 
   const link = Array.isArray(entry.link) ? entry.link.find((l: { "@_rel"?: string }) => l["@_rel"] === "alternate") : entry.link;
-  const fallback = `https://www.gov.uk/foreign-travel-advice/${country.fcdoSlug}`;
+  const fallback = `https://www.gov.uk/foreign-travel-advice/${country.fcdoSlug ?? country.slug}`;
 
   return {
     source:      "fcdo",

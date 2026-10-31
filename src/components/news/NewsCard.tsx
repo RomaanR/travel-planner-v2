@@ -67,12 +67,13 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
       {item.alsoAffects && item.alsoAffects.length > 0 && (
         <p className="font-sans text-sm text-ink-light">
           Also affecting:{" "}
-          {item.alsoAffects.map((o, i) => (
+          {item.alsoAffects.slice(0, 6).map((o, i) => (
             <span key={o.slug}>
               {i > 0 && ", "}
               <Link href={`/news/${o.slug}`} className="underline underline-offset-2 hover:text-burnt-orange">{o.name}</Link>
             </span>
           ))}
+          {item.alsoAffects.length > 6 && <span> and {item.alsoAffects.length - 6} more</span>}
         </p>
       )}
 

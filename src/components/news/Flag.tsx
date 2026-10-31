@@ -4,7 +4,7 @@ export default function Flag({ code, className = "" }: { code: string; className
     // Plain <img>: tiny self-hosted SVGs in /public/flags, no optimisation needed.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/flags/${code.toLowerCase()}.svg`}
+      src={`/flags/${code.toLowerCase()}.png`}
       alt=""
       width={20}
       height={14}

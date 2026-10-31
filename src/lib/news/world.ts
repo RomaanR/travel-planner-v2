@@ -1,6 +1,6 @@
 import paths from "@/content/worldMapPaths.json";
 import { parseStateAll } from "./sources";
-import { NEWS_COUNTRIES } from "./countries";
+import { matchCountryName } from "./countries";
 import { STATE_LEVEL } from "./types";
 
 // Data for the world advisory map: country outlines (Natural Earth 110m, public domain,
@@ -14,7 +14,7 @@ export type MapCountry = {
   d:      string;
   level?: number;
   label?: string;
-  slug?:  string; // launch countries link to their news hub
+  slug?:  string; // every country with a US level links to its page
 };
 
 // State Dept spellings → outline names.
@@ -28,9 +28,6 @@ const ALIAS: Record<string, string> = {
   "Gaza": "Palestine", "The West Bank": "Palestine", "Turkey": "Turkey",
 };
 
-// Outline names for our launch countries (to attach a news-hub link).
-const HUB_OUTLINE: Record<string, string> = { "Türkiye": "Turkey" };
-
 /** Empty when the feed is unreachable — the map then simply does not render. */
 export async function getWorldMap(): Promise<MapCountry[]> {
   if ((process.env.NEWS_DISABLED_SOURCES ?? "").split(",").map((s) => s.trim()).includes("state")) return [];
@@ -42,14 +39,16 @@ export async function getWorldMap(): Promise<MapCountry[]> {
     });
     if (!res.ok) return [];
     const levels = new Map<string, { level: number; label: string }>();
+    const slugs = new Map<string, string>();
     for (const s of parseStateAll(await res.text())) {
       const key = ALIAS[s.name] ?? s.name;
       const prev = levels.get(key);
       if (!prev || s.level > prev.level) levels.set(key, { level: s.level, label: STATE_LEVEL[s.level] ?? s.label });
+      const c = matchCountryName(s.name);
+      if (c) slugs.set(key, c.slug);
     }
-    const hubs = new Map(NEWS_COUNTRIES.map((c) => [HUB_OUTLINE[c.name] ?? c.name, c.slug]));
     return (paths as { n: string; d: string }[]).map((p) => ({
-      name: p.n, d: p.d, ...levels.get(p.n), slug: hubs.get(p.n),
+      name: p.n, d: p.d, ...levels.get(p.n), slug: slugs.get(p.n),
     }));
   } catch (err) {
     console.error("[news] getWorldMap failed:", err);

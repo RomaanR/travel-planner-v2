@@ -188,6 +188,20 @@ model AdvisoryLevel {
   @@id([source, countryCode])
 }
 
+// Every change of a country's US advisory level, kept for the country page's history and for
+// "level raised" alerts. Written by the news ingest when the stored level differs from the feed's.
+model AdvisoryChange {
+  id          String   @id @default(uuid())
+  countryCode String
+  fromLevel   Int
+  toLevel     Int
+  changedAt   DateTime // the advisory's own date
+  url         String
+  createdAt   DateTime @default(now())
+
+  @@index([countryCode, changedAt(sort: Desc)])
+}
+
 // Per-feed bookkeeping: conditional-GET validators and the outcome of the last run.
 model NewsFeedState {
   feed          String    @id // e.g. "fcdo:japan", "state", "gdacs"

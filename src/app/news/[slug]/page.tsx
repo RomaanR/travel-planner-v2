@@ -12,12 +12,13 @@ import NewsNote from "@/components/news/NewsNote";
 import SourceLink from "@/components/news/SourceLink";
 import { NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { planHrefFor } from "@/lib/news/plan";
-import { getAdvisory, getFeedChecks, getNews } from "@/lib/news/query";
+import { getAdvisory, getFeedChecks, getLevelChanges, getNews } from "@/lib/news/query";
 import { formatNewsDate, splitNews } from "@/lib/news/types";
 
-// One static page per covered country, refreshed hourly and when the daily ingest runs.
+// The popular countries are pre-built; every other country is rendered on first visit and then
+// cached, refreshed hourly (and when the daily ingest runs for the popular ones).
 export const revalidate = 3600;
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return NEWS_COUNTRIES.map((c) => ({ slug: c.slug }));
@@ -41,10 +42,11 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
   const country = countryBySlug(params.slug);
   if (!country) notFound();
 
-  const [advisory, all, checks] = await Promise.all([
+  const [advisory, all, checks, changes] = await Promise.all([
     getAdvisory(country.code),
     getNews({ countryCode: country.code, limit: 60 }),
     getFeedChecks(),
+    getLevelChanges(country.code),
   ]);
   const { alerts, latest: updates, history } = splitNews(all);
   const latestFcdo = all.find((i) => i.source === "fcdo" && !i.superseded);
@@ -58,16 +60,19 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
         <FadeIn className="mb-12">
           <p className="micro-copy text-ink-light mb-4">Travel News</p>
           <h1 className="font-serif italic text-5xl md:text-7xl text-ink leading-none mb-6 flex items-center gap-4"><Flag code={country.code} className="!w-10 !h-7 md:!w-14 md:!h-10" />{country.name}</h1>
-          <Link
-            href={planHrefFor(country)}
-            className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
-          >
-            Plan a trip to {country.name} <ArrowRight size={13} strokeWidth={1.5} />
-          </Link>
+          {/* No sales button for a country the US advises against travelling to at all. */}
+          {advisory?.level !== 4 && (
+            <Link
+              href={planHrefFor(country)}
+              className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"
+            >
+              Plan a trip to {country.name} <ArrowRight size={13} strokeWidth={1.5} />
+            </Link>
+          )}
         </FadeIn>
 
         {/* At a glance */}
-        <FadeIn delay={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-px bg-ink/10 border border-ink/10 mb-14">
+        <FadeIn delay={0.1} className={`grid grid-cols-1 ${country.popular ? "md:grid-cols-2" : ""} gap-px bg-ink/10 border border-ink/10 mb-14`}>
           <div className="bg-paper p-6 md:p-8">
             <h2 className="micro-copy text-xs text-ink-light mb-3">US State Department advisory</h2>
             {advisory ? (
@@ -84,6 +89,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
               <p className="font-sans text-sm text-ink-light">Not available yet.</p>
             )}
           </div>
+          {country.popular && (
           <div className="bg-paper p-6 md:p-8">
             <h2 className="micro-copy text-xs text-ink-light mb-3">Latest UK travel advice update</h2>
             {latestFcdo ? (
@@ -96,6 +102,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
               <p className="font-sans text-sm text-ink-light">Not available yet.</p>
             )}
           </div>
+          )}
         </FadeIn>
 
         {alerts.length > 0 && (
@@ -107,6 +114,29 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
           </FadeIn>
         )}
 
+        {changes.length > 0 && (
+          <FadeIn delay={0.18} className="mb-14">
+            <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-4">US level history</h2>
+            <ul className="border border-ink/10 bg-white divide-y divide-ink/10 max-w-2xl">
+              {changes.map((c) => (
+                <li key={c.changedAt + c.to} className="px-5 py-3 font-sans text-base text-ink/85">
+                  <time dateTime={c.changedAt} className="text-ink-light mr-3">{formatNewsDate(c.changedAt)}</time>
+                  {c.to > c.from ? "Raised" : "Lowered"} from Level {c.from} to Level {c.to}
+                </li>
+              ))}
+            </ul>
+          </FadeIn>
+        )}
+
+        {!country.popular && alerts.length === 0 && (
+          <FadeIn delay={0.2} className="mb-14">
+            <p className="font-sans text-base text-ink/85 max-w-2xl">
+              No current disaster alerts for {country.name}. Written travel-advice updates are available for our most popular destinations; for {country.name}, use the official advisory above.
+            </p>
+          </FadeIn>
+        )}
+
+        {(country.popular || updates.length > 0) && (
         <FadeIn delay={0.2}>
           <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-5">Latest updates</h2>
           {updates.length === 0 && alerts.length === 0 ? (
@@ -119,6 +149,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
             </CardColumns>
           )}
         </FadeIn>
+        )}
 
         {history.length > 0 && (
           <FadeIn delay={0.25} className="mt-14">

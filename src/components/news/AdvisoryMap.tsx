@@ -27,7 +27,7 @@ export default function AdvisoryMap({ countries }: { countries: MapCountry[] }) 
         <h2 id="map-title" className="font-sans font-bold uppercase tracking-widest text-sm text-ink">
           Travel advisory levels worldwide
         </h2>
-        <p className="font-sans text-sm text-ink-light">US State Department levels. Tap a level to filter; destinations we cover link to their news page.</p>
+        <p className="font-sans text-sm text-ink-light">US State Department levels. Tap a level to filter, or tap any country for its page.</p>
       </div>
 
       <div role="group" aria-label="Filter the map by advisory level" className="grid grid-cols-2 md:flex md:flex-wrap gap-2 mb-4">

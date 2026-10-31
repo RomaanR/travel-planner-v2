@@ -123,6 +123,19 @@ export async function getAdvisory(countryCode: string): Promise<AdvisoryView | n
   }
 }
 
+export type LevelChange = { from: number; to: number; changedAt: string; url: string };
+
+/** A country's US level changes, newest first. Empty until the first change after we start recording. */
+export async function getLevelChanges(countryCode: string, limit = 10): Promise<LevelChange[]> {
+  try {
+    const rows = await prisma.advisoryChange.findMany({ where: { countryCode }, orderBy: { changedAt: "desc" }, take: limit });
+    return rows.map((r) => ({ from: r.fromLevel, to: r.toLevel, changedAt: r.changedAt.toISOString(), url: r.url }));
+  } catch (err) {
+    console.error("[news] getLevelChanges failed:", err);
+    return [];
+  }
+}
+
 /** Highest severity among current alerts per country, for the index page's destination filter. */
 export async function getCountryPulse(): Promise<Record<string, number>> {
   const { alerts } = splitNews(await getNews({ limit: 200, sinceDays: 60 }));
