@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
 import Flag from "./Flag";
+import Implications from "./Implications";
 import SourceLink from "./SourceLink";
 import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, displayTitle, formatNewsDate, severityTag } from "@/lib/news/types";
 
@@ -72,6 +73,8 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
           ))}
         </p>
       )}
+
+      {variant !== "history" && !compact && <Implications item={item} />}
 
       <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <p className="font-sans text-sm text-ink-light">

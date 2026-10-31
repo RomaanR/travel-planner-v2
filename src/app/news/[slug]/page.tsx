@@ -100,7 +100,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
         {alerts.length > 0 && (
           <FadeIn delay={0.15} className="mb-14">
             <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-burnt-orange mb-5">Current alerts</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {alerts.map((item) => <NewsCard key={item.id} item={item} variant="alert" checkedAt={checks[item.source]} />)}
             </div>
           </FadeIn>
@@ -113,7 +113,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
               <p className="font-serif italic text-2xl text-ink-light">Nothing to report yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {updates.map((item) => <NewsCard key={item.id} item={item} checkedAt={checks[item.source]} />)}
             </div>
           )}
@@ -126,7 +126,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
                 Earlier updates and expired alerts ({history.length})
               </summary>
               <p className="font-sans text-sm text-ink-light mt-2 mb-5">Kept for reference only. These are no longer current.</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 {history.map((item) => <NewsCard key={item.id} item={item} variant="history" compact />)}
               </div>
             </details>

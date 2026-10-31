@@ -149,7 +149,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
               <FadeIn delay={0.2} className="mb-14">
                 <h2 id="alerts" className="scroll-mt-28 font-sans font-bold uppercase tracking-widest text-sm text-burnt-orange mb-2">Current alerts</h2>
                 <p className="font-sans text-sm text-ink-light mb-5">Serious warnings that are still active. Older alerts move to history.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                   {alerts.map((item) => <NewsCard key={item.id} item={item} variant="alert" checkedAt={checks[item.source]} />)}
                 </div>
               </FadeIn>
@@ -158,7 +158,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
             {latest.length > 0 && (
               <FadeIn delay={0.25} className="mb-14">
                 <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-5">Latest updates</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                   {latest.map((item) => <NewsCard key={item.id} item={item} checkedAt={checks[item.source]} />)}
                 </div>
               </FadeIn>
@@ -173,7 +173,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
                     <span className="ml-3 text-ink-light hidden group-open:inline" aria-hidden>&minus;</span>
                   </summary>
                   <p className="font-sans text-sm text-ink-light mt-2 mb-5">Kept for reference only. These are no longer current.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                     {history.map((item) => <NewsCard key={item.id} item={item} variant="history" compact />)}
                   </div>
                 </details>
