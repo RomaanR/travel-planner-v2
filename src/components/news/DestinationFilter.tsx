@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import Flag from "./Flag";
 
-export type DestinationChip = { code: string; name: string; href: string; active: boolean; alert: boolean };
+export type DestinationChip = { code: string; name: string; href: string; alert: boolean };
 export type SearchCountry = { code: string; name: string; slug: string };
 
 const chip = (active: boolean) =>
@@ -17,12 +17,10 @@ const norm = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerC
 const MAX_RESULTS = 12;
 
 /**
- * Destination search plus the popular-country chips. Typing searches every country we have a page
+ * Destination search plus the popular-country chips. Both open a country's page. Typing searches every country we have a page
  * for (names that start with the query first); results open that country's page. Filtering is local.
  */
-export default function DestinationFilter({ chips, countries, allHref, allActive }: {
-  chips: DestinationChip[]; countries: SearchCountry[]; allHref: string; allActive: boolean;
-}) {
+export default function DestinationFilter({ chips, countries }: { chips: DestinationChip[]; countries: SearchCountry[] }) {
   const [q, setQ] = useState("");
   const needle = norm(q.trim());
   const results = needle
@@ -75,9 +73,8 @@ export default function DestinationFilter({ chips, countries, allHref, allActive
             aria-label="Popular destinations"
             className="flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0 pb-2 md:pb-0 snap-x"
           >
-            <Link href={allHref} scroll={false} className={`${chip(allActive)} snap-start`}>All</Link>
             {chips.map((c) => (
-              <Link key={c.code} href={c.href} scroll={false} className={`${chip(c.active)} snap-start`}>
+              <Link key={c.code} href={c.href} className={`${chip(false)} snap-start`}>
                 <Flag code={c.code} />
                 {c.name}
                 {c.alert && (
@@ -89,7 +86,7 @@ export default function DestinationFilter({ chips, countries, allHref, allActive
               </Link>
             ))}
           </div>
-          <p className="font-sans text-sm text-ink-light mt-2">Popular destinations. Search to find any country.</p>
+          <p className="font-sans text-sm text-ink-light mt-2">Popular destinations. Each opens that country&apos;s page. Search to find any other country.</p>
         </>
       )}
     </div>

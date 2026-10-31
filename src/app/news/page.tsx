@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowDown } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import CardColumns from "@/components/news/CardColumns";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/news" },
 };
 
-// Reads ?country=, ?topic= and ?sort=, so this page renders per request.
+// Reads ?topic= and ?sort= (and redirects old ?country= links), so this page renders per request.
 export const dynamic = "force-dynamic";
 
 const chip = (active: boolean) =>
@@ -37,12 +38,15 @@ const OFFICIAL = [
 type Params = { country?: string; topic?: string; sort?: string };
 
 export default async function NewsPage({ searchParams }: { searchParams: Params }) {
-  const country = searchParams.country ? countryBySlug(searchParams.country) : undefined;
+  // Older links filtered this page by country; a country now has its own page.
+  const legacyCountry = searchParams.country ? countryBySlug(searchParams.country) : undefined;
+  if (legacyCountry) redirect(`/news/${legacyCountry.slug}`);
+
   const topic = topicGroupFor(searchParams.topic);
   const sort: Sort = SORTS.find((s) => s === searchParams.sort) ?? "newest";
 
   const [{ items, failed }, pulse, checks, worldMap] = await Promise.all([
-    getNewsResult({ countryCode: country?.code, topic, limit: 100 }),
+    getNewsResult({ topic, limit: 100 }),
     getCountryPulse(),
     getFeedChecks(),
     getWorldMap(),
@@ -55,12 +59,10 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
     ? [...newest].sort((a, b) => b.severity - a.severity || Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
     : newest;
 
-  const href = (o: { country?: string; topic?: string; sort?: string }) => {
+  const href = (o: { topic?: string; sort?: string }) => {
     const q = new URLSearchParams();
-    const c = "country" in o ? o.country : country?.slug;
     const t = "topic" in o ? o.topic : topic;
     const s = "sort" in o ? o.sort : sort;
-    if (c) q.set("country", c);
     if (t) q.set("topic", t);
     if (s && s !== "newest") q.set("sort", s);
     const str = q.toString();
@@ -68,7 +70,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
   };
 
   const chips = NEWS_COUNTRIES.map((c) => ({
-    code: c.code, name: c.name, href: href({ country: c.slug }), active: country?.code === c.code, alert: pulse[c.code] >= 3,
+    code: c.code, name: c.name, href: `/news/${c.slug}`, alert: pulse[c.code] >= 3,
   }));
 
   const searchCountries = ALL_COUNTRIES.map((c) => ({ code: c.code, name: c.name, slug: c.slug }));
@@ -101,7 +103,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
         </FadeIn>
 
         <FadeIn delay={0.1} className="mb-6">
-          <DestinationFilter chips={chips} countries={searchCountries} allHref={href({ country: undefined })} allActive={!country} />
+          <DestinationFilter chips={chips} countries={searchCountries} />
         </FadeIn>
 
         <FadeIn delay={0.15} className="mb-6">
@@ -142,9 +144,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
           <FadeIn className="border border-ink/10 p-12 text-center">
             <p className="font-serif italic text-2xl text-ink mb-2">Nothing to report here.</p>
             <p className="font-sans text-base text-ink-light mb-4">
-              {country || topic ? "Try another destination or topic." : "Updates will appear after the next daily check."}
+              {topic ? "Try another topic." : "Updates will appear after the next daily check."}
             </p>
-            {(country || topic) && (
+            {topic && (
               <Link href="/news" scroll={false} className="micro-copy text-xs underline underline-offset-4 hover:text-burnt-orange">Clear filters</Link>
             )}
           </FadeIn>
