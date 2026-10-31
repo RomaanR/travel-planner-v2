@@ -9,10 +9,10 @@ import AdvisoryMap from "@/components/news/AdvisoryMap";
 import DestinationFilter from "@/components/news/DestinationFilter";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
-import { ALL_COUNTRIES, NEWS_COUNTRIES, countryByCode, countryBySlug } from "@/lib/news/countries";
+import { ALL_COUNTRIES, NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { getCountryPulse, getFeedChecks, getNewsResult } from "@/lib/news/query";
 import { getWorldMap } from "@/lib/news/world";
-import { SORTS, TOPIC_GROUPS, type Sort, splitNews, topicGroupFor } from "@/lib/news/types";
+import { TOPIC_GROUPS, splitNews, topicGroupFor } from "@/lib/news/types";
 
 export const metadata: Metadata = {
   title: "Travel News — advisories, entry rules & alerts",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/news" },
 };
 
-// Reads ?topic= and ?sort= (and redirects old ?country= links), so this page renders per request.
+// Reads ?topic= (and redirects old ?country= links), so this page renders per request.
 export const dynamic = "force-dynamic";
 
 const chip = (active: boolean) =>
@@ -35,7 +35,7 @@ const OFFICIAL = [
   { label: "GDACS disaster alerts", href: "https://www.gdacs.org/" },
 ];
 
-type Params = { country?: string; topic?: string; sort?: string };
+type Params = { country?: string; topic?: string };
 
 export default async function NewsPage({ searchParams }: { searchParams: Params }) {
   // Older links filtered this page by country; a country now has its own page.
@@ -43,7 +43,6 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
   if (legacyCountry) redirect(`/news/${legacyCountry.slug}`);
 
   const topic = topicGroupFor(searchParams.topic);
-  const sort: Sort = SORTS.find((s) => s === searchParams.sort) ?? "newest";
 
   const [{ items, failed }, pulse, checks, worldMap] = await Promise.all([
     getNewsResult({ topic, limit: 100 }),
@@ -51,23 +50,12 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
     getFeedChecks(),
     getWorldMap(),
   ]);
-  const { alerts, latest: allLatest, history } = splitNews(items);
-  // Regular updates are for the popular countries; other countries appear here only through alerts.
-  const newest = allLatest.filter((i) => countryByCode(i.countryCode)?.popular);
-  // "Most serious first" reorders regular updates; the default is newest first.
-  const latest = sort === "serious"
-    ? [...newest].sort((a, b) => b.severity - a.severity || Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
-    : newest;
+  // This page is about alerts: routine level notes live on each country's page and on the map.
+  // History keeps only alerts that have expired.
+  const { alerts, history: allHistory } = splitNews(items);
+  const history = allHistory.filter((i) => i.severity >= 3);
 
-  const href = (o: { topic?: string; sort?: string }) => {
-    const q = new URLSearchParams();
-    const t = "topic" in o ? o.topic : topic;
-    const s = "sort" in o ? o.sort : sort;
-    if (t) q.set("topic", t);
-    if (s && s !== "newest") q.set("sort", s);
-    const str = q.toString();
-    return str ? `/news?${str}` : "/news";
-  };
+  const href = (topicKey?: string) => (topicKey ? `/news?topic=${topicKey}` : "/news");
 
   const chips = NEWS_COUNTRIES.map((c) => ({
     code: c.code, name: c.name, href: `/news/${c.slug}`, alert: pulse[c.code] >= 3,
@@ -106,28 +94,20 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
           <DestinationFilter chips={chips} countries={searchCountries} />
         </FadeIn>
 
-        <FadeIn delay={0.15} className="mb-6">
+        <FadeIn delay={0.15} className="mb-10">
           <p id="topic-label" className="micro-copy text-xs text-ink-light mb-3">Topic</p>
           <div role="group" aria-labelledby="topic-label" className="flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0 pb-2 md:pb-0 snap-x">
-            <Link href={href({ topic: undefined })} scroll={false} className={`${chip(!topic)} snap-start`}>All updates</Link>
+            <Link href={href()} scroll={false} className={`${chip(!topic)} snap-start`}>All topics</Link>
             {TOPIC_GROUPS.map((g) => (
-              <Link key={g.key} href={href({ topic: g.key })} scroll={false} className={`${chip(topic === g.key)} snap-start`}>{g.label}</Link>
+              <Link key={g.key} href={href(g.key)} scroll={false} className={`${chip(topic === g.key)} snap-start`}>{g.label}</Link>
             ))}
-          </div>
-        </FadeIn>
-
-        <FadeIn delay={0.2} className="mb-10 flex flex-wrap items-center gap-3">
-          <span id="sort-label" className="micro-copy text-xs text-ink-light">Sort updates</span>
-          <div role="group" aria-labelledby="sort-label" className="flex gap-2">
-            <Link href={href({ sort: "newest" })} scroll={false} className={chip(sort === "newest")}>Newest</Link>
-            <Link href={href({ sort: "serious" })} scroll={false} className={chip(sort === "serious")}>Most serious first</Link>
           </div>
         </FadeIn>
 
         {failed ? (
           <FadeIn className="border border-ink/15 bg-white p-8" >
             <div role="alert">
-              <p className="font-serif italic text-2xl text-ink mb-2">We couldn&apos;t load the latest updates.</p>
+              <p className="font-serif italic text-2xl text-ink mb-2">We couldn&apos;t load the latest alerts.</p>
               <p className="font-sans text-base text-ink/85 mb-4 max-w-xl">
                 Please try again in a moment. In the meantime, check the official sources directly before you travel:
               </p>
@@ -140,11 +120,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
               </ul>
             </div>
           </FadeIn>
-        ) : items.length === 0 ? (
+        ) : alerts.length === 0 && history.length === 0 ? (
           <FadeIn className="border border-ink/10 p-12 text-center">
-            <p className="font-serif italic text-2xl text-ink mb-2">Nothing to report here.</p>
+            <p className="font-serif italic text-2xl text-ink mb-2">No current alerts.</p>
             <p className="font-sans text-base text-ink-light mb-4">
-              {topic ? "Try another topic." : "Updates will appear after the next daily check."}
+              {topic ? "Try another topic." : "Search a country above, or tap it on the map, for its advisory level."}
             </p>
             {topic && (
               <Link href="/news" scroll={false} className="micro-copy text-xs underline underline-offset-4 hover:text-burnt-orange">Clear filters</Link>
@@ -162,24 +142,15 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
               </FadeIn>
             )}
 
-            {latest.length > 0 && (
-              <FadeIn delay={0.25} className="mb-14">
-                <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-5">Latest updates</h2>
-                <CardColumns>
-                  {latest.map((item) => <NewsCard key={item.id} item={item} checkedAt={checks[item.source]} />)}
-                </CardColumns>
-              </FadeIn>
-            )}
-
             {history.length > 0 && (
               <FadeIn delay={0.3}>
                 <details className="group border-t border-ink/10 pt-6">
                   <summary className="cursor-pointer list-none font-sans font-bold uppercase tracking-widest text-sm text-ink min-h-[44px] flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
-                    Earlier updates and expired alerts ({history.length})
+                    Expired alerts ({history.length})
                     <span className="ml-3 text-ink-light group-open:hidden" aria-hidden>+</span>
                     <span className="ml-3 text-ink-light hidden group-open:inline" aria-hidden>&minus;</span>
                   </summary>
-                  <p className="font-sans text-sm text-ink-light mt-2 mb-5">Kept for reference only. These are no longer current.</p>
+                  <p className="font-sans text-sm text-ink-light mt-2 mb-5">Kept for reference only. These alerts are no longer current.</p>
                   <CardColumns>
                     {history.map((item) => <NewsCard key={item.id} item={item} variant="history" compact />)}
                   </CardColumns>
