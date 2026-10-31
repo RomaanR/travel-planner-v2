@@ -40,9 +40,9 @@ export default function DestinationFilter({ chips, allHref, allActive }: { chips
         aria-label="Destinations"
         className="flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0 pb-2 md:pb-0 snap-x"
       >
-        {!needle && <Link href={allHref} className={`${chip(allActive)} snap-start`}>All</Link>}
+        {!needle && <Link href={allHref} scroll={false} className={`${chip(allActive)} snap-start`}>All</Link>}
         {shown.map((c) => (
-          <Link key={c.code} href={c.href} className={`${chip(c.active)} snap-start`}>
+          <Link key={c.code} href={c.href} scroll={false} className={`${chip(c.active)} snap-start`}>
             <Flag code={c.code} />
             {c.name}
             {c.alert && (

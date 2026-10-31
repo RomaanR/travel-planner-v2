@@ -102,9 +102,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
         <FadeIn delay={0.15} className="mb-6">
           <p id="topic-label" className="micro-copy text-xs text-ink-light mb-3">Topic</p>
           <div role="group" aria-labelledby="topic-label" className="flex gap-2 overflow-x-auto md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0 pb-2 md:pb-0 snap-x">
-            <Link href={href({ topic: undefined })} className={`${chip(!topic)} snap-start`}>All updates</Link>
+            <Link href={href({ topic: undefined })} scroll={false} className={`${chip(!topic)} snap-start`}>All updates</Link>
             {TOPIC_GROUPS.map((g) => (
-              <Link key={g.key} href={href({ topic: g.key })} className={`${chip(topic === g.key)} snap-start`}>{g.label}</Link>
+              <Link key={g.key} href={href({ topic: g.key })} scroll={false} className={`${chip(topic === g.key)} snap-start`}>{g.label}</Link>
             ))}
           </div>
         </FadeIn>
@@ -112,8 +112,8 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
         <FadeIn delay={0.2} className="mb-10 flex flex-wrap items-center gap-3">
           <span id="sort-label" className="micro-copy text-xs text-ink-light">Sort updates</span>
           <div role="group" aria-labelledby="sort-label" className="flex gap-2">
-            <Link href={href({ sort: "newest" })} className={chip(sort === "newest")}>Newest</Link>
-            <Link href={href({ sort: "serious" })} className={chip(sort === "serious")}>Most serious first</Link>
+            <Link href={href({ sort: "newest" })} scroll={false} className={chip(sort === "newest")}>Newest</Link>
+            <Link href={href({ sort: "serious" })} scroll={false} className={chip(sort === "serious")}>Most serious first</Link>
           </div>
         </FadeIn>
 
@@ -140,7 +140,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
               {country || topic ? "Try another destination or topic." : "Updates will appear after the next daily check."}
             </p>
             {(country || topic) && (
-              <Link href="/news" className="micro-copy text-xs underline underline-offset-4 hover:text-burnt-orange">Clear filters</Link>
+              <Link href="/news" scroll={false} className="micro-copy text-xs underline underline-offset-4 hover:text-burnt-orange">Clear filters</Link>
             )}
           </FadeIn>
         ) : (
