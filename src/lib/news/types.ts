@@ -38,9 +38,9 @@ export const SOURCE_LABEL: Record<string, string> = {
   fcdo: "UK FCDO", state: "US State Dept", gdacs: "GDACS",
 };
 
-export type SeverityTag = { label: string; authority: string; tone: "quiet" | "warn" | "alert" };
+export type SeverityTag = { label: string; authority: string; tone: "quiet" | "orange" | "red" };
 
-const STATE_LEVEL: Record<number, string> = { 1: "Normal precautions", 2: "Increased caution", 3: "Reconsider travel", 4: "Do not travel" };
+export const STATE_LEVEL: Record<number, string> = { 1: "Normal precautions", 2: "Increased caution", 3: "Reconsider travel", 4: "Do not travel" };
 
 /**
  * A prominent tag only for things that deserve one. Each authority keeps its own wording:
@@ -48,15 +48,15 @@ const STATE_LEVEL: Record<number, string> = { 1: "Normal precautions", 2: "Incre
  */
 export function severityTag(item: Pick<NewsView, "source" | "severity">): SeverityTag | null {
   if (item.source === "state") {
-    const tone = item.severity >= 4 ? "alert" : item.severity === 3 ? "warn" : "quiet";
+    const tone = item.severity >= 4 ? "red" : item.severity === 3 ? "orange" : "quiet";
     return { label: `Level ${item.severity}: ${STATE_LEVEL[item.severity] ?? ""}`.trim(), authority: "US State Dept", tone };
   }
   if (item.source === "gdacs") {
-    return item.severity >= 4 ? { label: "Red alert", authority: "GDACS", tone: "alert" }
-      : item.severity === 3 ? { label: "Orange alert", authority: "GDACS", tone: "warn" } : null;
+    return item.severity >= 4 ? { label: "Red alert", authority: "GDACS", tone: "red" }
+      : item.severity === 3 ? { label: "Orange alert", authority: "GDACS", tone: "orange" } : null;
   }
-  if (item.severity >= 4) return { label: "Advises against all travel", authority: "UK FCDO", tone: "alert" };
-  if (item.severity === 3) return { label: "Advises against all but essential travel", authority: "UK FCDO", tone: "warn" };
+  if (item.severity >= 4) return { label: "Advises against all travel", authority: "UK FCDO", tone: "red" };
+  if (item.severity === 3) return { label: "Advises against all but essential travel", authority: "UK FCDO", tone: "orange" };
   return null;
 }
 

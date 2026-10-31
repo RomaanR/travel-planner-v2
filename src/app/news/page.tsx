@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import FadeIn from "@/components/news/FadeIn";
+import AdvisoryMap from "@/components/news/AdvisoryMap";
+import Flag from "@/components/news/Flag";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
 import { NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { getCountryPulse, getFeedChecks, getNews } from "@/lib/news/query";
+import { getWorldMap } from "@/lib/news/world";
 import { TOPICS, TOPIC_LABEL, splitNews } from "@/lib/news/types";
 
 export const metadata: Metadata = {
@@ -26,10 +29,11 @@ export default async function NewsPage({ searchParams }: { searchParams: { count
   const country = searchParams.country ? countryBySlug(searchParams.country) : undefined;
   const topic = TOPICS.find((t) => t === searchParams.topic);
 
-  const [items, pulse, checks] = await Promise.all([
+  const [items, pulse, checks, worldMap] = await Promise.all([
     getNews({ countryCode: country?.code, topic, limit: 100 }),
     getCountryPulse(),
     getFeedChecks(),
+    getWorldMap(),
   ]);
   const { alerts, latest, history } = splitNews(items);
 
@@ -55,6 +59,10 @@ export default async function NewsPage({ searchParams }: { searchParams: { count
           </p>
         </FadeIn>
 
+        <FadeIn delay={0.05}>
+          <AdvisoryMap countries={worldMap} />
+        </FadeIn>
+
         {/* Country filter — a dot marks destinations with a serious recent alert */}
         <FadeIn delay={0.1} className="mb-4">
           <p id="dest-label" className="micro-copy text-xs text-ink-light mb-3">Destination</p>
@@ -62,6 +70,7 @@ export default async function NewsPage({ searchParams }: { searchParams: { count
             <Link href={href(undefined, topic)} className={chip(!country)}>All</Link>
             {NEWS_COUNTRIES.map((c) => (
               <Link key={c.code} href={href(c.slug, topic)} className={`${chip(country?.code === c.code)} inline-flex items-center gap-2`}>
+                <Flag code={c.code} />
                 {c.name}
                 {pulse[c.code] >= 3 && (
                   <>

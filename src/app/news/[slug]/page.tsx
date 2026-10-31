@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import BackButton from "@/components/BackButton";
 import FadeIn from "@/components/news/FadeIn";
+import Flag from "@/components/news/Flag";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
 import SourceLink from "@/components/news/SourceLink";
@@ -55,7 +56,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
 
         <FadeIn className="mb-12">
           <p className="micro-copy text-ink-light mb-4">Travel News</p>
-          <h1 className="font-serif italic text-5xl md:text-7xl text-ink leading-none mb-6">{country.name}</h1>
+          <h1 className="font-serif italic text-5xl md:text-7xl text-ink leading-none mb-6 flex items-center gap-4"><Flag code={country.code} className="!w-10 !h-7 md:!w-14 md:!h-10" />{country.name}</h1>
           <Link
             href={planHrefFor(country)}
             className="micro-copy inline-flex items-center gap-3 bg-burnt-orange text-white px-8 py-4 hover:bg-ink transition-colors duration-300"

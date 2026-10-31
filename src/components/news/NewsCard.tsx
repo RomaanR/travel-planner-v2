@@ -1,12 +1,19 @@
 import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
+import Flag from "./Flag";
 import SourceLink from "./SourceLink";
 import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, formatNewsDate, severityTag } from "@/lib/news/types";
 
+// Red and orange are reserved for serious alerts; the card itself takes the alert's colour.
 const TONE: Record<string, string> = {
-  quiet: "border-ink/25 text-ink",
-  warn:  "border-burnt-orange text-burnt-orange",
-  alert: "border-burnt-orange bg-burnt-orange text-white",
+  quiet:  "border-ink/25 text-ink",
+  orange: "border-orange-600 bg-orange-100 text-orange-900",
+  red:    "border-red-700 bg-red-700 text-white",
+};
+const CARD: Record<string, string> = {
+  quiet:  "border border-ink/10 border-l-4 border-l-ink/40 bg-white",
+  orange: "border border-orange-500 border-l-[6px] bg-orange-50",
+  red:    "border border-red-700 border-l-[6px] bg-red-50",
 };
 
 type Props = {
@@ -24,14 +31,15 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
   const topics = item.topics.map((t) => TOPIC_LABEL[t]).filter(Boolean);
   const source = SOURCE_LABEL[item.source];
   const frame =
-    variant === "alert" ? "border border-ink/10 border-l-4 border-l-burnt-orange bg-white"
+    variant === "alert" ? CARD[tag?.tone ?? "quiet"]
     : variant === "history" ? "border border-ink/10 bg-paper opacity-90"
     : "border border-ink/10 bg-paper";
 
   return (
     <article className={`h-full flex flex-col gap-3 p-5 md:p-6 ${frame}`}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 micro-copy text-xs text-ink-light">
-        <Link href={`/news/${item.countrySlug}`} className="text-ink hover:text-burnt-orange transition-colors py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
+        <Link href={`/news/${item.countrySlug}`} className="text-ink hover:text-burnt-orange transition-colors py-1 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
+          <Flag code={item.countryCode} />
           {item.countryName}
         </Link>
         <span aria-hidden>&middot;</span>

@@ -137,6 +137,21 @@ export function parseState(xml: string): ParsedAdvisory[] {
   return out;
 }
 
+/** Every country in the State Dept feed (not just launch countries) — used for the advisory world map. */
+export type StateLevel = { name: string; level: number; label: string };
+export function parseStateAll(xml: string): StateLevel[] {
+  const doc = parser.parse(xml);
+  const items: Record<string, unknown>[] = doc?.rss?.channel?.item ?? [];
+  const out: StateLevel[] = [];
+  for (const item of items) {
+    const m = toPlainText(deepText(item.title)).match(STATE_TITLE);
+    const level = m ? Number(m[2]) : 0;
+    if (!m || level < 1 || level > 4) continue;
+    out.push({ name: m[1].trim(), level, label: clip(toPlainText(m[3]), 60) });
+  }
+  return out;
+}
+
 // ─── GDACS (global disaster alerts; one RSS feed) ─────────────────────────────
 
 const GDACS_TYPES: Record<string, { label: string; topic: NewsTopic }> = {
