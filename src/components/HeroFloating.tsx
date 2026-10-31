@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { track } from "@vercel/analytics";
 import { ArrowRight } from "lucide-react";
 import HeroPlanner from "./HeroPlanner";
-import HeroDossier, { type PlannerDraft } from "./HeroDossier";
+import HeroPulse from "./news/HeroPulse";
+import type { Pulse } from "@/lib/news/query";
 import { HERO_MOODS, HERO_PHOTOS } from "@/content/heroDestinations";
 import type { SampleSummary } from "@/lib/sampleTrip";
 
@@ -20,7 +21,7 @@ function getShuffled<T>(arr: T[]): T[] {
   return copy;
 }
 
-export default function HeroFloating({ sample }: { sample: SampleSummary }) {
+export default function HeroFloating({ sample, pulse }: { sample: SampleSummary; pulse: Pulse | null }) {
   // ── Background slideshow (random order, reshuffled each mount) ───
   // Starts with the deterministic, unshuffled order so server and client render
   // identically on first paint — shuffling with Math.random() before hydration
@@ -29,10 +30,6 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
   const [shuffled, setShuffled] = useState(HERO_PHOTOS);
   const [bgIndex, setBgIndex] = useState(0);
   const photo = shuffled[bgIndex];
-
-  // What the visitor is typing in the planner — the dossier card responds to it.
-  const [draft, setDraft] = useState<PlannerDraft | null>(null);
-  const onDraftChange = useCallback((d: PlannerDraft) => setDraft(d), []);
 
   useEffect(() => {
     setShuffled(getShuffled(HERO_PHOTOS));
@@ -72,8 +69,8 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
       </div>
 
       <section className="relative z-10 min-h-screen flex flex-col justify-between overflow-hidden">
-        {/* Wide screens: a real day of an itinerary writing itself */}
-        <HeroDossier draft={draft} />
+        {/* Wide screens: the most serious current alert and advisory levels */}
+        <HeroPulse pulse={pulse} />
 
         {/* Top — heading block */}
         <div className="dossier-room px-8 md:px-16 pt-28 md:pt-32">
@@ -123,7 +120,7 @@ export default function HeroFloating({ sample }: { sample: SampleSummary }) {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.85 }}
             className="hero-planner-wrap mt-10 md:mt-20"
           >
-            <HeroPlanner onDraftChange={onDraftChange} />
+            <HeroPlanner />
           </motion.div>
 
           {/* Below the planner: a starting point for the undecided, and the sample */}

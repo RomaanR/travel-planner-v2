@@ -5,7 +5,7 @@ import SourceLink from "./SourceLink";
 import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, formatNewsDate, severityTag } from "@/lib/news/types";
 
 // Red and orange are reserved for serious alerts; the card itself takes the alert's colour.
-const TONE: Record<string, string> = {
+export const TONE: Record<string, string> = {
   quiet:  "border-ink/25 text-ink",
   orange: "border-orange-600 bg-orange-100 text-orange-900",
   red:    "border-red-700 bg-red-700 text-white",

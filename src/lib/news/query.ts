@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NEWS_COUNTRIES, countryByCode } from "./countries";
-import { type AdvisoryView, type FeedChecks, type NewsView, TOPICS, splitNews } from "./types";
+import { type AdvisoryView, type FeedChecks, type NewsView, TOPIC_GROUPS, topicGroupFor, splitNews } from "./types";
 
 export type { AdvisoryView, FeedChecks, NewsView } from "./types";
 
@@ -30,14 +30,31 @@ async function newestIds(): Promise<Set<string>> {
   return new Set(rows.map((r) => r.id));
 }
 
-export async function getNews(opts: { countryCode?: string; topic?: string; limit?: number; sinceDays?: number } = {}): Promise<NewsView[]> {
+type NewsOpts = { countryCode?: string; topic?: string; limit?: number; sinceDays?: number };
+
+function topicWhere(topic?: string) {
+  const key = topicGroupFor(topic);
+  if (!key) return {};
+  const group = TOPIC_GROUPS.find((g) => g.key === key)!;
+  if (group.topics.length > 0) return { topics: { hasSome: [...group.topics] } };
+  const known = TOPIC_GROUPS.flatMap((g) => [...g.topics]);
+  return { NOT: { topics: { hasSome: known } } }; // "other": nothing in a named group
+}
+
+/** Empty list when the database is unavailable. */
+export async function getNews(opts: NewsOpts = {}): Promise<NewsView[]> {
+  return (await getNewsResult(opts)).items;
+}
+
+/** Like getNews, but says whether the load failed so a page can show an error instead of "nothing here". */
+export async function getNewsResult(opts: NewsOpts = {}): Promise<{ items: NewsView[]; failed: boolean }> {
   try {
     const [rows, newest] = await Promise.all([
       prisma.newsItem.findMany({
         where: {
           status: "published",
           ...(opts.countryCode ? { countryCode: opts.countryCode } : {}),
-          ...(opts.topic && (TOPICS as readonly string[]).includes(opts.topic) ? { topics: { has: opts.topic } } : {}),
+          ...topicWhere(opts.topic),
           ...(opts.sinceDays ? { publishedAt: { gte: new Date(Date.now() - opts.sinceDays * 86_400_000) } } : {}),
         },
         orderBy: { publishedAt: "desc" },
@@ -65,10 +82,10 @@ export async function getNews(opts: { countryCode?: string; topic?: string; limi
       }
       out.push(v);
     }
-    return out;
+    return { items: out, failed: false };
   } catch (err) {
     console.error("[news] getNews failed:", err);
-    return [];
+    return { items: [], failed: true };
   }
 }
 
@@ -118,4 +135,33 @@ export async function getCountryPulse(): Promise<Record<string, number>> {
     }
   }
   return pulse;
+}
+
+export type PulseRow = { code: string; name: string; slug: string; level: number };
+export type Pulse = { alert: NewsView | null; rows: PulseRow[]; checkedAt?: string };
+
+/** Home hero card: the most serious current alert plus four destinations with their State Dept level. */
+export async function getPulse(): Promise<Pulse | null> {
+  try {
+    const [news, levels, checks] = await Promise.all([
+      getNews({ limit: 60, sinceDays: 60 }),
+      prisma.advisoryLevel.findMany({ where: { source: "state" } }),
+      getFeedChecks(),
+    ]);
+    const { alerts } = splitNews(news);
+    const rows: PulseRow[] = [];
+    for (const l of levels) {
+      const c = countryByCode(l.countryCode);
+      if (c) rows.push({ code: c.code, name: c.name, slug: c.slug, level: l.level });
+    }
+    const order = (code: string) => NEWS_COUNTRIES.findIndex((c) => c.code === code);
+    // Highest level first, then launch-country order: stable, so the card does not reshuffle.
+    rows.sort((a, b) => b.level - a.level || order(a.code) - order(b.code));
+    const top = rows.slice(0, 4);
+    if (!alerts[0] && top.length === 0) return null;
+    return { alert: alerts[0] ?? null, rows: top, checkedAt: checks.state ?? checks.fcdo };
+  } catch (err) {
+    console.error("[news] getPulse failed:", err);
+    return null;
+  }
 }

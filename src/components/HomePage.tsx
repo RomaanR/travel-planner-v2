@@ -14,14 +14,15 @@ import HeroFloating from "@/components/HeroFloating";
 import type { SampleSummary } from "@/lib/sampleTrip";
 import BriefingStrip from "@/components/news/BriefingStrip";
 import type { NewsView } from "@/lib/news/types";
+import type { Pulse } from "@/lib/news/query";
 
-export default function HomePage({ sample, news }: { sample: SampleSummary; news: NewsView[] }) {
+export default function HomePage({ sample, news, pulse }: { sample: SampleSummary; news: NewsView[]; pulse: Pulse | null }) {
   return (
     <main className="min-h-screen bg-paper">
       <Navbar />
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      {USE_FLOATING_UI ? <HeroFloating sample={sample} /> : <HeroClassic />}
+      {USE_FLOATING_UI ? <HeroFloating sample={sample} pulse={pulse} /> : <HeroClassic />}
 
       {/* ── Everything below the hero — opaque wrapper to cover the fixed background ── */}
       <div className="relative z-10 bg-paper">

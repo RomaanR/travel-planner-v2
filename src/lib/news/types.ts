@@ -30,6 +30,26 @@ export const OTHER_ACTIVE_DAYS = 60;
 export const TOPICS = ["entry", "safety", "health", "weather", "disaster", "advisory"] as const;
 export type Topic = (typeof TOPICS)[number];
 
+/** The filter chips on /news. A group matches any of its underlying topics; "other" is everything else. */
+export const TOPIC_GROUPS = [
+  { key: "safety",  label: "Safety & advisories",       topics: ["safety", "advisory"] },
+  { key: "entry",   label: "Entry & visas",              topics: ["entry"] },
+  { key: "weather", label: "Weather & disasters",        topics: ["weather", "disaster"] },
+  { key: "health",  label: "Health",                     topics: ["health"] },
+  { key: "other",   label: "Transport & other",          topics: [] as string[] },
+] as const;
+export type TopicGroupKey = (typeof TOPIC_GROUPS)[number]["key"];
+
+/** Accepts a group key, or an older single-topic value from an existing link. */
+export function topicGroupFor(value?: string): TopicGroupKey | undefined {
+  if (!value) return undefined;
+  const g = TOPIC_GROUPS.find((x) => x.key === value || (x.topics as readonly string[]).includes(value));
+  return g?.key;
+}
+
+export const SORTS = ["newest", "serious"] as const;
+export type Sort = (typeof SORTS)[number];
+
 export const TOPIC_LABEL: Record<string, string> = {
   entry: "Entry requirements", safety: "Safety", health: "Health", weather: "Weather", disaster: "Disasters", advisory: "Advisory level",
 };
