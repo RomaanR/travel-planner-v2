@@ -37,3 +37,10 @@ Do **2 now** and keep 3 for a later phase.
 - GDACS/State Dept reuse terms must be confirmed (or permission obtained) before relying on them commercially; until then only constructed facts are shown.
 - Liability: content is a pointer to official advice, not advice. Legal review of the disclaimer wording is recommended.
 - Open: weather forecasts (MET Norway licence check; Open-Meteo free tier is non-commercial only), editorial briefs, email alerts for saved trips.
+
+## Update 2026-10-30: presentation and data-quality rules
+- **Current vs history:** a serious alert (severity 3+) is "current" for 14 days (GDACS) or 60 days (FCDO, State Dept); after that, or once a newer update from the same source exists for the country, it moves to a collapsed history section. No item appears twice.
+- **One event, one card:** GDACS rows are per country; the index merges rows of the same event and lists the other countries ("Also affecting").
+- **No event-wide measures per country:** GDACS area figures (e.g. drought "km2") describe the whole event, so they are omitted from our per-country summaries.
+- **Dates:** "Updated" (FCDO, GDACS) or "Published" (State Dept) comes from the source; "Checked" is the last successful run of our daily check (`NewsFeedState.lastSuccessAt`, oldest feed per source) and is not a human review.
+- **Severity:** each authority keeps its own wording and an icon; scales are never mapped to each other.

@@ -4,9 +4,9 @@ import { NEWS_ATTRIBUTION, NEWS_DISCLAIMER } from "@/lib/news/types";
 export default function NewsNote() {
   return (
     <div className="mt-14 border-t border-ink/10 pt-6 max-w-3xl">
-      <p className="micro-copy text-[10px] text-ink-light mb-2">About this page</p>
-      <p className="font-sans text-xs text-ink-light leading-relaxed">{NEWS_DISCLAIMER}</p>
-      <p className="font-sans text-xs text-ink-light/80 leading-relaxed mt-2">{NEWS_ATTRIBUTION}</p>
+      <h2 className="micro-copy text-xs text-ink mb-2">About this page</h2>
+      <p className="font-sans text-sm text-ink/85 leading-relaxed">{NEWS_DISCLAIMER}</p>
+      <p className="font-sans text-sm text-ink-light leading-relaxed mt-2">{NEWS_ATTRIBUTION}</p>
     </div>
   );
 }

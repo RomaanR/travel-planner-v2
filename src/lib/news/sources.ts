@@ -174,6 +174,10 @@ export function parseGdacs(xml: string): ParsedItem[] {
     const eventName = toPlainText(deepText(item["gdacs:eventname"]));
     const measure = toPlainText(deepText((item["gdacs:severity"] as Record<string, unknown> | undefined)?.["#text"] ?? item["gdacs:severity"]));
     const alertWord = alert === "red" ? "Red" : "Orange";
+    // GDACS measures describe the whole event. An affected area ("… in 2009754 km2") spans
+    // several countries, so attributing it to one country would be wrong — leave it out.
+    const eventWide = /km\s?2|km²/i.test(measure);
+    const shownMeasure = eventWide ? "" : measure;
 
     for (const country of countries) {
       out.push({
@@ -184,7 +188,7 @@ export function parseGdacs(xml: string): ParsedItem[] {
         topics:      [type.topic],
         severity,
         title:       `${alertWord} alert: ${type.label}${eventName && type.label === "Tropical cyclone" ? ` ${eventName}` : ""} — ${country.name}`,
-        summary:     clip(`GDACS, the EU/UN disaster alert system, reports ${alert === "orange" ? "an" : "a"} ${alert} alert for a ${type.label.toLowerCase()} affecting ${country.name}${measure ? ` (${measure})` : ""}. Check GDACS and local authorities for the latest details.`, 400),
+        summary:     clip(`GDACS, the EU/UN disaster alert system, reports ${alert === "orange" ? "an" : "a"} ${alert} alert for a ${type.label.toLowerCase()} affecting ${country.name}${shownMeasure ? ` (${shownMeasure})` : ""}.${eventWide ? " It is a wide-area event that may also affect neighbouring countries." : ""} Check GDACS and local authorities for the latest details.`, 400),
         url,
         publishedAt,
       });

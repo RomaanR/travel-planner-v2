@@ -10,8 +10,8 @@ import NewsNote from "@/components/news/NewsNote";
 import SourceLink from "@/components/news/SourceLink";
 import { NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { planHrefFor } from "@/lib/news/plan";
-import { getAdvisory, getNews } from "@/lib/news/query";
-import { formatNewsDate } from "@/lib/news/types";
+import { getAdvisory, getFeedChecks, getNews } from "@/lib/news/query";
+import { formatNewsDate, splitNews } from "@/lib/news/types";
 
 // One static page per covered country, refreshed hourly and when the daily ingest runs.
 export const revalidate = 3600;
@@ -39,12 +39,13 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
   const country = countryBySlug(params.slug);
   if (!country) notFound();
 
-  const [advisory, alerts, updates] = await Promise.all([
+  const [advisory, all, checks] = await Promise.all([
     getAdvisory(country.code),
-    getNews({ countryCode: country.code, sinceDays: 14, limit: 20 }).then((all) => all.filter((i) => i.source === "gdacs")),
-    getNews({ countryCode: country.code, limit: 30 }),
+    getNews({ countryCode: country.code, limit: 60 }),
+    getFeedChecks(),
   ]);
-  const latestFcdo = updates.find((i) => i.source === "fcdo");
+  const { alerts, latest: updates, history } = splitNews(all);
+  const latestFcdo = all.find((i) => i.source === "fcdo" && !i.superseded);
 
   return (
     <main className="min-h-screen bg-paper">
@@ -66,14 +67,14 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
         {/* At a glance */}
         <FadeIn delay={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-px bg-ink/10 border border-ink/10 mb-14">
           <div className="bg-paper p-6 md:p-8">
-            <p className="micro-copy text-[10px] text-ink-light mb-3">US State Department advisory</p>
+            <h2 className="micro-copy text-xs text-ink-light mb-3">US State Department advisory</h2>
             {advisory ? (
               <>
                 <p className="font-serif italic text-3xl text-ink leading-tight mb-1">
                   Level {advisory.level}: {LEVEL_NOTE[advisory.level]}
                 </p>
-                <p className="font-sans text-xs text-ink-light mb-4">
-                  {advisory.label} &middot; updated {formatNewsDate(advisory.publishedAt)}
+                <p className="font-sans text-sm text-ink-light mb-4">
+                  {advisory.label} &middot; published {formatNewsDate(advisory.publishedAt)}{checks.state ? <> &middot; checked {formatNewsDate(checks.state)}</> : null}
                 </p>
                 <SourceLink href={advisory.url} source="state">Read the full advisory</SourceLink>
               </>
@@ -82,11 +83,11 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
             )}
           </div>
           <div className="bg-paper p-6 md:p-8">
-            <p className="micro-copy text-[10px] text-ink-light mb-3">Latest UK travel advice update</p>
+            <h2 className="micro-copy text-xs text-ink-light mb-3">Latest UK travel advice update</h2>
             {latestFcdo ? (
               <>
                 <p className="font-serif italic text-2xl text-ink leading-tight mb-2 line-clamp-3">{latestFcdo.summary}</p>
-                <p className="font-sans text-xs text-ink-light mb-4">{formatNewsDate(latestFcdo.publishedAt)}</p>
+                <p className="font-sans text-sm text-ink-light mb-4">Updated {formatNewsDate(latestFcdo.publishedAt)}{checks.fcdo ? <> &middot; Checked {formatNewsDate(checks.fcdo)}</> : null}</p>
                 <SourceLink href={latestFcdo.url} source="fcdo">Read the full advice</SourceLink>
               </>
             ) : (
@@ -97,25 +98,39 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
 
         {alerts.length > 0 && (
           <FadeIn delay={0.15} className="mb-14">
-            <p className="micro-copy text-burnt-orange mb-4">Active alerts &middot; last 14 days</p>
+            <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-burnt-orange mb-5">Current alerts</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {alerts.map((item) => <NewsCard key={item.id} item={item} />)}
+              {alerts.map((item) => <NewsCard key={item.id} item={item} variant="alert" checkedAt={checks[item.source]} />)}
             </div>
           </FadeIn>
         )}
 
         <FadeIn delay={0.2}>
-          <p className="micro-copy text-ink mb-4">Recent updates</p>
-          {updates.length === 0 ? (
+          <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-5">Latest updates</h2>
+          {updates.length === 0 && alerts.length === 0 ? (
             <div className="border border-ink/10 p-12 text-center">
               <p className="font-serif italic text-2xl text-ink-light">Nothing to report yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {updates.map((item) => <NewsCard key={item.id} item={item} />)}
+              {updates.map((item) => <NewsCard key={item.id} item={item} checkedAt={checks[item.source]} />)}
             </div>
           )}
         </FadeIn>
+
+        {history.length > 0 && (
+          <FadeIn delay={0.25} className="mt-14">
+            <details className="group border-t border-ink/10 pt-6">
+              <summary className="cursor-pointer list-none font-sans font-bold uppercase tracking-widest text-sm text-ink min-h-[44px] flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
+                Earlier updates and expired alerts ({history.length})
+              </summary>
+              <p className="font-sans text-sm text-ink-light mt-2 mb-5">Kept for reference only. These are no longer current.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {history.map((item) => <NewsCard key={item.id} item={item} variant="history" compact />)}
+              </div>
+            </details>
+          </FadeIn>
+        )}
 
         <NewsNote />
       </section>

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { NEWS_COUNTRIES, countryByCode } from "./countries";
-import { type AdvisoryView, type NewsView, TOPICS } from "./types";
+import { type AdvisoryView, type FeedChecks, type NewsView, TOPICS, splitNews } from "./types";
 
-export type { AdvisoryView, NewsView } from "./types";
+export type { AdvisoryView, FeedChecks, NewsView } from "./types";
 
 // Read side of travel news. Every function returns a safe empty value if the
 // database is unavailable (or the tables are not there yet), so a news problem can
@@ -19,31 +19,81 @@ function toView(r: Row): NewsView | null {
   };
 }
 
+/** Ids of the newest FCDO / State Dept item per country — everything older has been superseded. */
+async function newestIds(): Promise<Set<string>> {
+  const rows = await prisma.newsItem.findMany({
+    where: { status: "published", source: { not: "gdacs" } },
+    distinct: ["source", "countryCode"],
+    orderBy: { publishedAt: "desc" },
+    select: { id: true },
+  });
+  return new Set(rows.map((r) => r.id));
+}
+
 export async function getNews(opts: { countryCode?: string; topic?: string; limit?: number; sinceDays?: number } = {}): Promise<NewsView[]> {
   try {
-    const rows = await prisma.newsItem.findMany({
-      where: {
-        status: "published",
-        ...(opts.countryCode ? { countryCode: opts.countryCode } : {}),
-        ...(opts.topic && (TOPICS as readonly string[]).includes(opts.topic) ? { topics: { has: opts.topic } } : {}),
-        ...(opts.sinceDays ? { publishedAt: { gte: new Date(Date.now() - opts.sinceDays * 86_400_000) } } : {}),
-      },
-      orderBy: { publishedAt: "desc" },
-      take:    Math.min(opts.limit ?? 60, 200),
-    });
-    return rows.map(toView).filter((v): v is NewsView => v !== null);
+    const [rows, newest] = await Promise.all([
+      prisma.newsItem.findMany({
+        where: {
+          status: "published",
+          ...(opts.countryCode ? { countryCode: opts.countryCode } : {}),
+          ...(opts.topic && (TOPICS as readonly string[]).includes(opts.topic) ? { topics: { has: opts.topic } } : {}),
+          ...(opts.sinceDays ? { publishedAt: { gte: new Date(Date.now() - opts.sinceDays * 86_400_000) } } : {}),
+        },
+        orderBy: { publishedAt: "desc" },
+        take:    Math.min(opts.limit ?? 60, 200),
+      }),
+      newestIds(),
+    ]);
+
+    // One GDACS event can hit several countries (one row each): show it once, listing the others.
+    const events = new Map<string, NewsView>();
+    const out: NewsView[] = [];
+    for (const r of rows) {
+      const v = toView(r);
+      if (!v) continue;
+      if (r.source !== "gdacs") {
+        v.superseded = !newest.has(r.id);
+      } else if (!opts.countryCode) {
+        const key = r.externalId.split(":")[0];
+        const first = events.get(key);
+        if (first) {
+          first.alsoAffects = [...(first.alsoAffects ?? []), { name: v.countryName, slug: v.countrySlug }];
+          continue;
+        }
+        events.set(key, v);
+      }
+      out.push(v);
+    }
+    return out;
   } catch (err) {
     console.error("[news] getNews failed:", err);
     return [];
   }
 }
 
-/** Home-page strip: serious items first, then newest. */
+/** When each source's daily check last succeeded (shown as "Checked" — never as human review). */
+export async function getFeedChecks(): Promise<FeedChecks> {
+  try {
+    const rows = await prisma.newsFeedState.findMany({ select: { feed: true, lastSuccessAt: true } });
+    const out: FeedChecks = {};
+    for (const r of rows) {
+      if (!r.lastSuccessAt) continue;
+      const source = r.feed.split(":")[0] as NewsView["source"];
+      const iso = r.lastSuccessAt.toISOString();
+      if (!out[source] || iso < out[source]!) out[source] = iso; // oldest feed bounds what we can claim
+    }
+    return out;
+  } catch (err) {
+    console.error("[news] getFeedChecks failed:", err);
+    return {};
+  }
+}
+
+/** Home-page strip: current alerts first, then the newest regular updates. History is never shown here. */
 export async function getBriefing(limit = 3): Promise<NewsView[]> {
-  const recent = await getNews({ limit: 40, sinceDays: 30 });
-  return [...recent]
-    .sort((a, b) => (b.severity >= 3 ? 1 : 0) - (a.severity >= 3 ? 1 : 0) || +new Date(b.publishedAt) - +new Date(a.publishedAt))
-    .slice(0, limit);
+  const { alerts, latest } = splitNews(await getNews({ limit: 40, sinceDays: 30 }));
+  return [...alerts, ...latest].slice(0, limit);
 }
 
 export async function getAdvisory(countryCode: string): Promise<AdvisoryView | null> {
@@ -56,10 +106,16 @@ export async function getAdvisory(countryCode: string): Promise<AdvisoryView | n
   }
 }
 
-/** Highest-severity recent item per country, for the index page's country strip. */
+/** Highest severity among current alerts per country, for the index page's destination filter. */
 export async function getCountryPulse(): Promise<Record<string, number>> {
-  const items = await getNews({ limit: 200, sinceDays: 30 });
+  const { alerts } = splitNews(await getNews({ limit: 200, sinceDays: 60 }));
   const pulse: Record<string, number> = Object.fromEntries(NEWS_COUNTRIES.map((c) => [c.code, 0]));
-  for (const i of items) pulse[i.countryCode] = Math.max(pulse[i.countryCode] ?? 0, i.severity);
+  for (const i of alerts) {
+    pulse[i.countryCode] = Math.max(pulse[i.countryCode] ?? 0, i.severity);
+    for (const o of i.alsoAffects ?? []) {
+      const code = NEWS_COUNTRIES.find((n) => n.slug === o.slug)?.code;
+      if (code) pulse[code] = Math.max(pulse[code] ?? 0, i.severity);
+    }
+  }
   return pulse;
 }
