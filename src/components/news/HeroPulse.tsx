@@ -17,12 +17,12 @@ const LEVEL_FILL: Record<number, string> = { 1: "#2F6DB5", 2: "#E3B934", 3: "#D9
  */
 export default function HeroPulse({ pulse }: { pulse: Pulse | null }) {
   if (!pulse) return null;
-  const { alert, rows } = pulse;
+  const { alert, rows, updates } = pulse;
   const tag = alert ? severityTag(alert) : null;
 
   return (
     <div className="dossier-slot absolute top-32 right-16 z-10 w-[420px]">
-      <div className="bg-paper text-ink px-7 pt-6 pb-5 shadow-[0_30px_70px_rgba(0,0,0,0.35)] border border-ink/5 border-b-2 border-b-burnt-orange">
+      <div className="flex flex-col min-h-[calc(100vh-14rem)] bg-paper text-ink px-7 pt-6 pb-5 shadow-[0_30px_70px_rgba(0,0,0,0.35)] border border-ink/5 border-b-2 border-b-burnt-orange">
         <div className="flex justify-between micro-copy text-[9.5px] text-ink-light">
           <span>Travel pulse</span>
           {pulse.checkedAt && <span className="text-burnt-orange">Checked {formatNewsDate(pulse.checkedAt)}</span>}
@@ -54,8 +54,8 @@ export default function HeroPulse({ pulse }: { pulse: Pulse | null }) {
             <hr className="border-0 border-t border-ink/10 my-4" />
             <p className="micro-copy text-[9.5px] text-ink-light mb-1">US advisory levels</p>
             <ul>
-              {rows.map((r) => (
-                <li key={r.code}>
+              {rows.map((r, i) => (
+                <li key={r.code} className={i >= 4 ? "hidden [@media(min-height:860px)]:block" : undefined}>
                   <Link
                     href={`/news/${r.slug}`}
                     onClick={() => track("hero_pulse_row_clicked", { country: r.code })}
@@ -74,10 +74,34 @@ export default function HeroPulse({ pulse }: { pulse: Pulse | null }) {
           </>
         )}
 
+        {updates.length > 0 && (
+          <div className="hidden [@media(min-height:860px)]:block">
+            <hr className="border-0 border-t border-ink/10 my-4" />
+            <p className="micro-copy text-[9.5px] text-ink-light mb-1">Latest updates</p>
+            <ul>
+              {updates.map((u) => (
+                <li key={u.id}>
+                  <Link
+                    href={`/news/${u.countrySlug}`}
+                    onClick={() => track("hero_pulse_update_clicked", { country: u.countryCode })}
+                    className="flex items-start gap-3 py-2.5 border-b border-ink/5 last:border-b-0 hover:text-burnt-orange transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange"
+                  >
+                    <Flag code={u.countryCode} className="mt-1.5" />
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-serif italic font-bold text-[16px] leading-tight">{u.countryName}: {displayTitle(u)}</span>
+                      <span className="block font-sans text-[11px] text-ink-light mt-0.5">{formatNewsDate(u.publishedAt)}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <Link
           href="/news"
           onClick={() => track("hero_pulse_all_clicked")}
-          className="mt-3 micro-copy text-[10px] inline-flex items-center gap-1.5 py-2 hover:text-burnt-orange transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange"
+          className="mt-auto pt-3 micro-copy text-[10px] inline-flex items-center gap-1.5 py-2 hover:text-burnt-orange transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange"
         >
           See all travel news <ArrowRight size={12} strokeWidth={1.5} />
         </Link>

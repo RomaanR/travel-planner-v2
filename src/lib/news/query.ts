@@ -138,7 +138,7 @@ export async function getCountryPulse(): Promise<Record<string, number>> {
 }
 
 export type PulseRow = { code: string; name: string; slug: string; level: number };
-export type Pulse = { alert: NewsView | null; rows: PulseRow[]; checkedAt?: string };
+export type Pulse = { alert: NewsView | null; rows: PulseRow[]; updates: NewsView[]; checkedAt?: string };
 
 /** Home hero card: the most serious current alert plus four destinations with their State Dept level. */
 export async function getPulse(): Promise<Pulse | null> {
@@ -148,7 +148,7 @@ export async function getPulse(): Promise<Pulse | null> {
       prisma.advisoryLevel.findMany({ where: { source: "state" } }),
       getFeedChecks(),
     ]);
-    const { alerts } = splitNews(news);
+    const { alerts, latest } = splitNews(news);
     const rows: PulseRow[] = [];
     for (const l of levels) {
       const c = countryByCode(l.countryCode);
@@ -157,9 +157,9 @@ export async function getPulse(): Promise<Pulse | null> {
     const order = (code: string) => NEWS_COUNTRIES.findIndex((c) => c.code === code);
     // Highest level first, then launch-country order: stable, so the card does not reshuffle.
     rows.sort((a, b) => b.level - a.level || order(a.code) - order(b.code));
-    const top = rows.slice(0, 4);
+    const top = rows.slice(0, 6); // the card shows 4, or 6 on tall screens
     if (!alerts[0] && top.length === 0) return null;
-    return { alert: alerts[0] ?? null, rows: top, checkedAt: checks.state ?? checks.fcdo };
+    return { alert: alerts[0] ?? null, rows: top, updates: latest.slice(0, 2), checkedAt: checks.state ?? checks.fcdo };
   } catch (err) {
     console.error("[news] getPulse failed:", err);
     return null;
