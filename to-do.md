@@ -6,6 +6,12 @@ Target architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md) · Decisions: [`docs/a
 
 Work on feature branches from clean `main`; never `git add .` in this worktree.
 
+## Bucket list — remaining (2026-11-02)
+Suggested order: security audit → Stripe → wording (so money flows on a hardened site, and the final copy covers pricing/checkout).
+1. [ ] **Security audit** — auth + ownership on every route/server action; Stripe webhook signature; cron secrets; rate limits and generation cost; input validation / prompt injection; secrets (local `.env.local` points at the production DB); headers; the 4 known Next.js 14 CVEs (blocked on Clerk + Next 15); the new news pages, feeds, search and photo files. Output: ranked findings, fixed / needs decision / accepted.
+2. [ ] **Stripe integration** — checkout, portal, webhook and mirror tables are built (`docs/stripe-setup.md`); NOT yet run end-to-end. Run the test plan in test mode with the Stripe CLI (purchase, renewal, failed payment, cancel, refund, dispute, duplicate subscription), fix what breaks, enable the Premium button, then switch to live keys. Needs a Stripe account, test keys, product/price and the webhook endpoint. Paid launch also needs Vercel Pro (Hobby is non-commercial).
+3. [ ] **Site wording consistency** — one voice and spelling (British "travellers"), no leftover "Seek Wander" / "AI" in user-facing copy, consistent button labels, pricing / FAQ / terms / privacy text, the news pages. Output: a before/after list to approve.
+
 ## Phase 0 foundations (from ARCHITECTURE.md §11)
 - [ ] Review ADRs 0002–0012 and accept / amend each
 - [ ] Hosting (ADR-0003): confirm Vercel Pro + function limits; Supabase Pro; co-locate regions; staging DB for previews
@@ -140,18 +146,31 @@ Root cause today: generation is one 60–120 s streaming request owned by the pa
 - [ ] Add real user quotes once there are users (unsupported claims replaced 2026-10-19)
 - [ ] _Parked:_ daily travel news — revisit later as a small "Travel briefing" strip using the same agent workflow
 
-## 6b. Travel news (ADR-0013) — Phase 1 built 2026-10-28, branch feat/travel-news
-- [x] Official feeds ingested daily: UK FCDO (OGL v3), US State Dept levels, GDACS Orange/Red alerts — 10 launch countries
-- [x] /news (country + topic filters), /news/[country] hubs, home "Travel briefing" strip, nav + sitemap links, "Plan a trip" CTAs
-- [ ] Apply the news tables (`NewsItem`, `AdvisoryLevel`, `NewsFeedState`) and run the first ingest; set `CRON_SECRET` in Vercel (already used by cleanup)
+## 6b. Travel news (ADR-0013) — live on travalbee.com (main 858f31f, 2026-11-02)
+**Done**
+- [x] Daily cron `/api/cron/news` (05:30 UTC): UK FCDO written updates for 208 countries (bounded concurrency, ETags; first run ~55 s, steady ~17 s), US State Dept levels for 213 countries, Canada's levels for 211 (Open Government Licence – Canada), GDACS Orange/Red alerts for every country
+- [x] Tables applied: `NewsItem`, `AdvisoryLevel`, `NewsFeedState`, `AdvisoryChange`; `NEWS_DISABLED_SOURCES` switches a source off
+- [x] `/news`: US-level world map (169 clickable countries), search across all countries, popular-country chips (open the country page), topic chips, Current alerts (red/orange, merged per event, "also affecting"), expired alerts, "What does this mean for travellers?" (rule-based, source-labelled), error + empty states
+- [x] `/news/[country]` for 213 countries: US level, UK latest update, Canada's advice, level history, current alerts; Level 4 pages have no "Plan a trip" button
+- [x] Home: Travel Pulse hero card (top alert + 2 US, 2 UK, 2 Canada rows from popular destinations); mobile strip
+- [x] Flags (213, self-hosted PNG); landmark thumbnails on cards for 13 countries (always full colour); red/orange alert styling
+- [x] UK items are informational only (severity 0): their summaries are regional and often negated, so text matching mislabelled countries
+- [x] Not covered, with reasons: Australia (Smartraveller blocks non-browser requests), Singapore (no feed), the US itself (State Dept does not rate it)
+
+**Open**
+- [ ] **Landmark photos for the other ~200 countries** — Unsplash API job (demo key 50 req/h, ~25 countries/h; apply for production access to speed up). Script lives in the session scratchpad: move it into the repo (e.g. `scripts/fetch-country-photos.js`). Review picks on a contact sheet, fix bad ones, regenerate `docs/country-photo-credits.md` from `src/content/countryPhotos.json`, then commit `public/country-photos`
+- [ ] **Smartraveller (Australia)**: email DFAT for access to their documented public API (`/destinations-export`) / confirm reuse terms
+- [ ] Shorten GDACS card summaries (they repeat the alert level and country shown in the tag and flag line); needs a stored-summary refresh
+- [ ] Canada: level-change history and "raised" alerts (levels only so far)
 - [ ] Confirm reuse terms with GDACS and the US State Dept (we only publish constructed facts until then)
-- [ ] Legal review of the disclaimer/attribution wording
+- [ ] Legal review of the disclaimer / attribution wording
 - [ ] Alert when a feed has not succeeded for >3 days (NewsFeedState.lastSuccessAt)
+- [ ] Tiny territories are not in the 110 m map outlines (e.g. Singapore, Malta, Maldives) — their pages work but they are not clickable on the map
 - [ ] Phase 2: weather forecasts + best-time-to-visit (MET Norway licence check first; Open-Meteo free tier is non-commercial)
 - [ ] Phase 3: editorial briefs with approval (ADR-0012) + email digest via Resend
 - [ ] Phase 4: alerts when the advisory changes for a saved trip's destination
-- [ ] More countries (one row each in src/lib/news/countries.ts); Smartraveller/Canada feeds need another route
 - [ ] Hourly refresh needs the Vercel Pro plan (Hobby cron = once a day)
+- [ ] Older images still use the grayscale-until-hover look (home sample card, timeline cards, bento): switch to full colour if wanted — new photos are always full colour
 
 ## 7. Content agent (approval workflow)
 - [ ] Vercel cron runs weekly (Trip Ideas) / monthly (seasonal strip)
