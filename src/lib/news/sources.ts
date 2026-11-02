@@ -177,7 +177,7 @@ export function parseCanada(json: unknown): ParsedCanada[] {
     out.push({
       country,
       level,
-      label: row["has-regional-advisory"] ? `${text} · some regions differ` : text,
+      label: text, // Canada's own wording already says "(with regional advisories)" where it applies
       url: `https://travel.gc.ca/destinations/${slug}`,
       publishedAt: new Date(published),
     });
