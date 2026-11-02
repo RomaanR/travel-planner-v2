@@ -1,5 +1,7 @@
 # CLAUDE.md — Curated Roam V1.0
 
+> **Status note (2026-11-02):** the product is now **TravalBee** (travalbee.com). Sections 1–25 below describe the app as it stood in mid-2026 and still use the old name in places. The newest work is in the changelog at the end of this file (latest: *Travel News*). For the current architecture and decisions see [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`docs/adr/`](docs/adr/README.md); for open work see [`to-do.md`](to-do.md); for billing see [`docs/stripe-setup.md`](docs/stripe-setup.md).
+
 > **Permanent project memory and engineering specification. This is the single source of truth for all future development. Update whenever architecture decisions change.**
 
 ---
@@ -3338,3 +3340,53 @@ configuration must still be verified separately when diagnosing production.
 
 - "Begin Your Journey" and "View Sample Itinerary" restyled: solid fills (burnt-orange and a custom darker beige `#DED4BC` respectively) with 2px cross-colored borders (`border-paper` on the burnt-orange button, `border-burnt-orange` on the beige one), replacing the previous transparent/white-overlay look on the sample button.
 - Unrelated bug fixed in the same file: the hero background photo was chosen via `Math.random()` inside a `useState` initializer, which runs once during server render and again during client hydration — producing a different random order in each environment and a React hydration-mismatch warning on the image `alt`/`src`. Fixed by rendering the deterministic, unshuffled image order on first paint (identical on server and client) and moving the actual shuffle into a `useEffect` that only runs after mount, client-side only.
+
+---
+
+### Monday, November 2, 2026 — Travel News, Country Pages & Travel Pulse (ADR-0013)
+
+**Status:** Built, tested on desktop and phone, and live on travalbee.com (`main` 858f31f). Decision record: [`docs/adr/0013-travel-news.md`](docs/adr/0013-travel-news.md). Open work: [`to-do.md`](to-do.md) §6b.
+
+#### What it is
+A news section built **only from official government sources**: advisory levels, entry-requirement changes and disaster alerts. No AI writes or rewrites any of it, and nothing is scraped. It follows the Zero-Latency rule: pages read from our own database; the only live call is the world map, which fetches the US feed with a 6-hour cache.
+
+#### Data pipeline
+- **Cron:** `GET /api/cron/news` (Bearer `CRON_SECRET`, `maxDuration` 60) runs daily at 05:30 UTC (`vercel.json`). It revalidates `/news`, the popular country pages and `/`. Source: `src/lib/news/ingest.ts`; pure parsers (no network or DB) in `src/lib/news/sources.ts`.
+- **Isolation:** every feed runs on its own; a failure is recorded in `NewsFeedState` (ETag/Last-Modified, status, error), sent to Sentry, and never blocks the others. `NEWS_DISABLED_SOURCES` (`fcdo,state,gdacs,canada`) switches a source off without a deploy. Fetches use conditional GET and bounded concurrency (12). First full run ~55 s, steady state ~17 s.
+- **Sources and reuse rules**
+  - **UK FCDO** — Atom feed per country, 208 of 213 countries (slugs matched to GOV.UK's own index, stored as `fcdo` in `worldCountries.json`). Open Government Licence v3.0: wording is shown with attribution. **UK items are informational (severity 0):** their summaries are regional and often negated ("no longer advises against all travel to volcanoes"), so text matching mislabelled countries. Severity comes only from the US State Dept and GDACS.
+  - **US State Dept** — one RSS for 213 countries; level stored in `AdvisoryLevel` (source `state`). We show our own sentences, never their text (reuse terms unconfirmed).
+  - **GDACS** — Orange and Red alerts only (Green is routine noise), every country, one row per event and country. Titles/summaries are constructed; event-wide figures such as affected area (km²) are deliberately omitted because they describe the whole event, not one country.
+  - **Canada** (Global Affairs Canada open data JSON, 211 countries, levels 0–3) — Open Government Licence – Canada, so their level wording is shown verbatim; stored in `AdvisoryLevel` (source `canada`); no news items or change alerts yet.
+- **Not covered:** Australia (Smartraveller blocks non-browser requests; DFAT documents a public API, so ask for access), Singapore (web pages only), the US itself (the State Dept does not rate it).
+- **Tables (additive, applied with `prisma db execute`):** `NewsItem`, `AdvisoryLevel` (`@@id([source, countryCode])`), `NewsFeedState`, `AdvisoryChange` (every US level change, for history and "raised" alerts).
+- **State level changes:** popular countries get a news item for every update; other countries only when raised to Level 3 or 4. A first sighting records the level and creates no news.
+
+#### Rules that define what users see
+- **Current alert** = severity ≥ 3 and recent: 14 days (GDACS), 30 days (US level change), 60 days (other). A newer update from the same source for the same country **supersedes** an older one. Expired alerts go to a collapsed "Expired alerts" list; routine low-level notes are not shown on `/news`.
+- **One event, one card:** GDACS rows are merged per event with an "Also affecting" list (first 6, "and N more").
+- **Dates:** "Updated" (UK, GDACS) or "Published" (US) comes from the source; "Checked" is our last successful run (median feed time for multi-feed sources), never a human review.
+- **Severity wording stays each authority's own.** Tags: red = solid `red-700`, white text; orange = solid `orange-600`, white text; with icon and the authority name for screen readers.
+- **"What does this mean for travellers?"** (`src/lib/news/implications.ts`) is rule-based. Each line is labelled "From the official update" or "General guidance"; it never claims flights, borders or plans are affected unless the official text says so.
+- **Safety of content:** plain text only, http(s)-only URLs, external links `rel="noopener noreferrer"`. Level 4 country pages carry no "Plan a trip" button.
+
+#### Pages and components
+- **`/news`** (force-dynamic): US-level world map (`AdvisoryMap`, static outlines in `src/content/worldMapPaths.json` from Natural Earth 110m, level filters, every country with a level is clickable), search across all countries (`DestinationFilter`), popular-country chips that open each country's page, topic chips (Safety & advisories, Entry & visas, Weather & disasters, Health, Transport & other), Current alerts, Expired alerts, error and empty states. `?country=` links redirect to the country page.
+- **`/news/[slug]`** for 213 countries: US level, UK latest update, Canada's advice (up to three cards), level history, current alerts. Popular countries are pre-built; the rest render on first visit and cache (revalidate 3600).
+- **Home:** `HeroPulse` ("Travel pulse", wide screens only) replaced the Paris dossier card: the top current alert plus two US levels, two UK updates and two Canada levels, all from the popular destinations. `BriefingStrip` ("Before you go") sits below the hero.
+- **Shared pieces:** `NewsCard` (variants alert / regular / history, landmark thumbnail top-right), `CardColumns` (two independent columns so expanding a card leaves no gap), `Implications`, `Flag`, `SourceLink`, `NewsNote`, `FadeIn`.
+- **Libraries (`src/lib/news/`):** `countries.ts` (10 popular `NEWS_COUNTRIES`, all-country list from `src/content/worldCountries.json`, name matching incl. GDACS spellings), `types.ts` (shared types, severity tags, `splitNews`, `displayTitle`, disclaimer/attribution text), `query.ts` (all reads; each falls back to an empty value so a news problem cannot break the site), `world.ts`, `implications.ts`, `countryPhotos.ts`, `plan.ts`.
+
+#### Images
+- **Flags:** 213 self-hosted PNGs (`public/flags/xx.png`, 80 px, ~355 KB in total).
+- **Landmark photos:** `public/country-photos/xx.jpg` (240 px, Unsplash licence), listed with photographer in `src/content/countryPhotos.json`; 13 countries live, ~200 in progress through a resumable Unsplash API job (50 requests/hour on a demo key). Credits: `docs/country-photo-credits.md`.
+- **Rule:** photos are always full colour. The old "grayscale until hover" effect is **not** used for new images (older images such as the home sample card and timeline cards still have it).
+
+#### Decisions worth remembering
+- Photos per event were rejected: a stock photo beside an official alert can show the wrong place or event. A landmark per country is decorative only.
+- Level-change "alerts" for permanent Level 4 countries were rejected as noise: alerts are only real, recent things.
+- "Latest updates" was removed from `/news` because it repeated what the map and country pages already show.
+- Every government keeps its own scale; scales are never mapped onto each other.
+
+#### Known limits
+Tiny territories are missing from the 110 m outlines (their pages work, but they are not clickable on the map). GDACS card summaries repeat the alert level and country shown elsewhere on the card. Canada has no level history yet. See [`to-do.md`](to-do.md) §6b for the full list.
