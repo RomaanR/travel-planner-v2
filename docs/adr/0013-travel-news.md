@@ -58,3 +58,8 @@ Do **2 now** and keep 3 for a later phase.
 - **UK updates are informational (severity 0).** Their summaries are regional and often negated ("no longer advises against all travel to volcanoes"), so text matching mislabelled countries; alert levels come only from the US State Dept and GDACS.
 - The "Checked" date for a multi-feed source is the median feed time, so one broken feed does not make every card look stale.
 - Not covered: Australia's Smartraveller (blocks non-browser requests; its own site documents a public API, so ask DFAT for access) and Singapore's MFA (web pages only, no feed).
+
+## Update 2026-11-02: Canada's travel advice
+- Source: Global Affairs Canada open data, one JSON file for every country (`data.international.gc.ca/travel-voyage/index-updated.json`), ISO codes, levels 0–3. Licence: Open Government Licence – Canada (commercial reuse with attribution), so their level wording is shown verbatim; attribution added to the page note.
+- Stored in `AdvisoryLevel` with source `canada` (no schema change). Shown as a third card on country pages next to the US and UK. No news items or level-change alerts for Canada yet.
+- A regional flag in the data is shown as "some regions differ". Not mapped onto the US scale; each government keeps its own terms. `NEWS_DISABLED_SOURCES=canada` switches it off.

@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import { type NewsCountry, matchCountryList, matchCountryName } from "./countries";
+import { type NewsCountry, countryByCode, matchCountryList, matchCountryName } from "./countries";
 import { clip, safeUrl, toPlainText } from "./text";
 
 // Pure parsers for the three official feeds. No network or database access here,
@@ -152,6 +152,35 @@ export function parseStateAll(xml: string): StateLevel[] {
     const level = m ? Number(m[2]) : 0;
     if (!m || level < 1 || level > 4) continue;
     out.push({ name: m[1].trim(), level, label: clip(toPlainText(m[3]), 60) });
+  }
+  return out;
+}
+
+// ─── Canada (Global Affairs Canada open data; one JSON file for every country) ───────────────────
+// Open Government Licence – Canada: the wording may be reused with attribution, so we show their
+// own level text. Levels run 0 (normal precautions) to 3 (avoid all travel).
+
+export type ParsedCanada = { country: NewsCountry; level: number; label: string; url: string; publishedAt: Date };
+
+export function parseCanada(json: unknown): ParsedCanada[] {
+  const data = (json as { data?: Record<string, Record<string, unknown>> })?.data ?? {};
+  const out: ParsedCanada[] = [];
+  for (const [key, row] of Object.entries(data)) {
+    if (!/^[A-Z]{2}$/.test(key)) continue; // regional keys such as "PT-20"
+    const country = countryByCode(key);
+    const level = Number(row["advisory-state"]);
+    const eng = row.eng as { "advisory-text"?: string; "url-slug"?: string } | undefined;
+    const published = Date.parse(String((row["date-published"] as { asp?: string } | undefined)?.asp ?? ""));
+    const text = clip(toPlainText(eng?.["advisory-text"] ?? ""), 80);
+    const slug = (eng?.["url-slug"] ?? "").replace(/[^a-z0-9-]/gi, "");
+    if (!country || !Number.isInteger(level) || level < 0 || level > 3 || !text || !slug || !Number.isFinite(published)) continue;
+    out.push({
+      country,
+      level,
+      label: row["has-regional-advisory"] ? `${text} · some regions differ` : text,
+      url: `https://travel.gc.ca/destinations/${slug}`,
+      publishedAt: new Date(published),
+    });
   }
   return out;
 }

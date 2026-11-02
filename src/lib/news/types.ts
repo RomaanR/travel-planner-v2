@@ -21,7 +21,7 @@ export type NewsView = {
 export type AdvisoryView = { level: number; label: string; url: string; publishedAt: string };
 
 /** When our daily check last ran successfully, per source. ISO strings; missing = never. */
-export type FeedChecks = Partial<Record<NewsView["source"], string>>;
+export type FeedChecks = Partial<Record<NewsView["source"] | "canada", string>>;
 
 /** Alerts stop being "current" after this long; older ones move to history. */
 export const GDACS_ACTIVE_DAYS = 14;
@@ -123,6 +123,7 @@ export const formatNewsDate = (iso: string) => DATE_FMT.format(new Date(iso));
 
 export const NEWS_ATTRIBUTION =
   "UK travel advice contains public sector information licensed under the Open Government Licence v3.0. " +
+  "Canadian travel advice contains information licensed under the Open Government Licence – Canada. " +
   "US State Department advisory levels and GDACS alerts are linked to their official sources.";
 
 export const NEWS_DISCLAIMER =

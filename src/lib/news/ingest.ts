@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { ALL_COUNTRIES, countryByCode } from "./countries";
-import { type ParsedAdvisory, type ParsedItem, parseFcdo, parseGdacs, parseState } from "./sources";
+import { type ParsedAdvisory, type ParsedItem, parseCanada, parseFcdo, parseGdacs, parseState } from "./sources";
 
 // Daily ingest of official travel feeds into NewsItem. Called by /api/cron/news.
 // Each feed is isolated: one failing never blocks the others, and every outcome is
@@ -12,6 +12,7 @@ const FETCH_TIMEOUT_MS = 20_000;
 const FEED_CONCURRENCY = 12;
 const STATE_FEED = "https://travel.state.gov/_res/rss/TAsTWs.xml";
 const GDACS_FEED = "https://www.gdacs.org/xml/rss.xml";
+const CANADA_FEED = "https://data.international.gc.ca/travel-voyage/index-updated.json";
 const fcdoFeed = (slug: string) => `https://www.gov.uk/foreign-travel-advice/${slug}.atom`;
 
 export type FeedResult = { feed: string; status: "ok" | "not_modified" | "error"; added: number; error?: string };
@@ -154,6 +155,35 @@ function stateItem(adv: ParsedAdvisory, prevLevel: number | undefined): ParsedIt
   };
 }
 
+/** Canada's levels are stored for the country pages; they create no news items. */
+async function ingestCanada(): Promise<FeedResult> {
+  return runFeed("canada", async (state) => {
+    const res = await fetchFeed(CANADA_FEED, state);
+    if (res.kind === "not_modified") return { added: 0, notModified: true };
+
+    const rows = parseCanada(JSON.parse(res.text));
+    if (rows.length === 0) throw new Error("Canada feed parsed to zero advisories (format change?)");
+
+    const stored = new Map((await prisma.advisoryLevel.findMany({ where: { source: "canada" } })).map((r) => [r.countryCode, r]));
+    const fresh = rows.filter((r) => !stored.has(r.country.code));
+    if (fresh.length) {
+      await prisma.advisoryLevel.createMany({
+        data: fresh.map((r) => ({ source: "canada", countryCode: r.country.code, level: r.level, label: r.label, url: r.url, publishedAt: r.publishedAt })),
+        skipDuplicates: true,
+      });
+    }
+    for (const r of rows) {
+      const prev = stored.get(r.country.code);
+      if (!prev || (prev.level === r.level && prev.label === r.label && prev.publishedAt.getTime() === r.publishedAt.getTime())) continue;
+      await prisma.advisoryLevel.update({
+        where: { source_countryCode: { source: "canada", countryCode: r.country.code } },
+        data:  { level: r.level, label: r.label, url: r.url, publishedAt: r.publishedAt },
+      });
+    }
+    return { added: 0, etag: res.etag, lastModified: res.lastModified };
+  });
+}
+
 async function ingestGdacs(): Promise<FeedResult> {
   return runFeed("gdacs", async (state) => {
     const res = await fetchFeed(GDACS_FEED, state);
@@ -181,6 +211,7 @@ export async function runNewsIngest(): Promise<{ results: FeedResult[]; totalAdd
   // State Dept and GDACS are single global feeds; the UK has one feed per country (208 of them).
   if (!off.has("state")) jobs.push(ingestState);
   if (!off.has("gdacs")) jobs.push(ingestGdacs);
+  if (!off.has("canada")) jobs.push(ingestCanada);
   if (!off.has("fcdo")) for (const c of ALL_COUNTRIES) if (c.fcdoSlug) { const { fcdoSlug, code } = c; jobs.push(() => ingestFcdo(fcdoSlug, code)); }
 
   // Bounded concurrency: ~210 feeds at once would hammer GOV.UK and the database pool.

@@ -42,8 +42,9 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
   const country = countryBySlug(params.slug);
   if (!country) notFound();
 
-  const [advisory, all, checks, changes] = await Promise.all([
+  const [advisory, canada, all, checks, changes] = await Promise.all([
     getAdvisory(country.code),
+    getAdvisory(country.code, "canada"),
     getNews({ countryCode: country.code, limit: 60 }),
     getFeedChecks(),
     getLevelChanges(country.code),
@@ -72,7 +73,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
         </FadeIn>
 
         {/* At a glance */}
-        <FadeIn delay={0.1} className={`grid grid-cols-1 ${country.fcdoSlug ? "md:grid-cols-2" : ""} gap-px bg-ink/10 border border-ink/10 mb-14`}>
+        <FadeIn delay={0.1} className={`grid grid-cols-1 ${country.fcdoSlug && canada ? "md:grid-cols-3" : country.fcdoSlug || canada ? "md:grid-cols-2" : ""} gap-px bg-ink/10 border border-ink/10 mb-14`}>
           <div className="bg-paper p-6 md:p-8">
             <h2 className="micro-copy text-xs text-ink-light mb-3">US State Department advisory</h2>
             {advisory ? (
@@ -101,6 +102,17 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
             ) : (
               <p className="font-sans text-sm text-ink-light">Not available yet.</p>
             )}
+          </div>
+          )}
+          {canada && (
+          <div className="bg-paper p-6 md:p-8">
+            <h2 className="micro-copy text-xs text-ink-light mb-3">Canada&apos;s travel advice</h2>
+            <p className="font-serif italic text-3xl text-ink leading-tight mb-1">{canada.label.split(" \u00b7 ")[0]}</p>
+            <p className="font-sans text-sm text-ink-light mb-4">
+              {canada.label.includes(" \u00b7 ") ? <>{canada.label.split(" \u00b7 ").slice(1).join(" \u00b7 ")} &middot; </> : null}
+              published {formatNewsDate(canada.publishedAt)}{checks.canada ? <> &middot; checked {formatNewsDate(checks.canada)}</> : null}
+            </p>
+            <SourceLink href={canada.url} source="canada">Read the full advice</SourceLink>
           </div>
           )}
         </FadeIn>

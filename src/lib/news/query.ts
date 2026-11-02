@@ -118,9 +118,10 @@ export async function getBriefing(limit = 3): Promise<NewsView[]> {
   return [...alerts, ...latest].slice(0, limit);
 }
 
-export async function getAdvisory(countryCode: string): Promise<AdvisoryView | null> {
+/** A government's advisory level for a country. Defaults to the US; pass "canada" for Canada's. */
+export async function getAdvisory(countryCode: string, source: "state" | "canada" = "state"): Promise<AdvisoryView | null> {
   try {
-    const a = await prisma.advisoryLevel.findUnique({ where: { source_countryCode: { source: "state", countryCode } } });
+    const a = await prisma.advisoryLevel.findUnique({ where: { source_countryCode: { source, countryCode } } });
     return a ? { level: a.level, label: a.label, url: a.url, publishedAt: a.publishedAt.toISOString() } : null;
   } catch (err) {
     console.error("[news] getAdvisory failed:", err);
