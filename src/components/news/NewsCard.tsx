@@ -1,8 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
 import Flag from "./Flag";
 import Implications from "./Implications";
 import SourceLink from "./SourceLink";
+import { countryPhoto } from "@/lib/news/countryPhotos";
 import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, displayTitle, formatNewsDate, severityTag } from "@/lib/news/types";
 
 // Red and orange are reserved for serious alerts; the card itself takes the alert's colour.
@@ -31,6 +33,7 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
   const tag = severityTag(item);
   const topics = item.topics.map((t) => TOPIC_LABEL[t]).filter(Boolean);
   const source = SOURCE_LABEL[item.source];
+  const photo = variant === "history" ? null : countryPhoto(item.countryCode);
   const frame =
     variant === "alert" ? CARD[tag?.tone ?? "quiet"]
     : variant === "history" ? "border border-ink/10 bg-paper opacity-90"
@@ -40,6 +43,8 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
     // Compact cards (home strip, history) fill their cell so rows line up; full cards keep their own
     // height so expanding one section does not stretch its neighbour.
     <article className={`${compact ? "h-full" : ""} flex flex-col gap-3 p-5 md:p-6 ${frame}`}>
+      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 min-w-0">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 micro-copy text-xs text-ink-light">
         <Link href={`/news/${item.countrySlug}`} className="text-ink hover:text-burnt-orange transition-colors py-1 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-burnt-orange">
           <Flag code={item.countryCode} />
@@ -62,6 +67,15 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
       )}
 
       <h3 className={`font-serif italic font-bold text-ink leading-tight ${compact ? "text-xl md:text-[22px]" : "text-2xl"}`}>{displayTitle(item)}</h3>
+      </div>
+
+      {photo && (
+        // A landmark that represents the country (decorative, so no alt text); grayscale until hover per the design system.
+        <div className="relative shrink-0 w-20 h-20 md:w-28 md:h-28 overflow-hidden bg-ink/5">
+          <Image src={photo} alt="" fill sizes="112px" className="object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+        </div>
+      )}
+      </div>
       <p className={`font-sans text-base text-ink/85 leading-relaxed ${compact ? "line-clamp-3" : ""}`}>{item.summary}</p>
 
       {item.alsoAffects && item.alsoAffects.length > 0 && (
