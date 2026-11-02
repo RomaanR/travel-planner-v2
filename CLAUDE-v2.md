@@ -3390,3 +3390,60 @@ A news section built **only from official government sources**: advisory levels,
 
 #### Known limits
 Tiny territories are missing from the 110 m outlines (their pages work, but they are not clickable on the map). GDACS card summaries repeat the alert level and country shown elsewhere on the card. Canada has no level history yet. See [`to-do.md`](to-do.md) §6b for the full list.
+
+---
+
+### Catch-up entry — July 6 to October 19, 2026 (written November 2, 2026)
+
+**Status:** Written after the fact from the git history (`origin/main`, 15 commits in this period) and checked against the current code. The changelog above jumps from July 5 to the Travel News entry; this fills the gap. It is **append-only**: nothing above was changed. The product was renamed **TravalBee** (travalbee.com) and the sections above still use the old names. A new architecture document and decision records now exist: [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`docs/adr/`](docs/adr/README.md) (ADR-0001 to ADR-0013; ADR-0001 (record decisions) and ADR-0003 ("stay on Vercel + Supabase") are Accepted, the rest are Proposed). Open work lives in [`to-do.md`](to-do.md).
+
+#### July 6, 2026 — Booking links (`076d851`, `313efd9`)
+- The "Reserve" button used to pass the model's raw hotel name into the Booking.com/Hotellook search, which often mismatched. The name is now resolved through Google Places first and falls back to the old behaviour if the lookup fails.
+- Check-in/check-out dates are now passed through (`departureDate`/`returnDate` from `ItineraryViewer` to `StayCard`). The Hotellook redirect also needs `adults=2`: Travelpayouts silently drops the dates without it.
+
+#### October 18, 2026 — Stripe billing rebuilt (`456c7dc`)
+Replaces the "Stripe Credit System" described in section 11. Full setup and test plan: [`docs/stripe-setup.md`](docs/stripe-setup.md).
+- **Stripe is the source of truth.** Every webhook re-fetches the current subscription or invoice from the Stripe API and overwrites our mirror tables (`Subscription`, `Invoice`, `Dispute`), so delivery order cannot leave stale state. Logic in `src/lib/billing.ts`; routes under `src/app/api/stripe/{checkout,portal,webhook}`.
+- **Renewals work again:** the subscription link is read from `invoice.parent.subscription_details` (it moved in API version 2025-03-31). Each paid `subscription_create` / `subscription_cycle` invoice resets premium credits to 10, once per invoice.
+- **Events handled:** checkout completed, subscription created/updated/deleted, `invoice.paid` (covers $0 promo invoices), `invoice.payment_failed`, refunds, disputes (recorded and sent to Sentry; access unchanged). Premium = a subscription in `active`, `trialing` or `past_due`; losing it returns the user to the free allowance, not zero credits.
+- **Atomic idempotency:** the `StripeEvent` row is written in the same transaction as the event's effects, so a crash mid-processing is retried, not skipped.
+- **One Stripe customer per user**, reused for every checkout; a second checkout while subscribed returns 409 and the pricing page opens the billing portal. Stripe error details stay server-side.
+- **Admin revenue** now comes from paid invoices minus refunds, not payment-mode checkouts.
+- **Not yet done:** the end-to-end test plan has not been run, so the Premium button is still off (see `to-do.md`).
+
+#### October 18, 2026 — Credits, saving and privacy; schema (`5a9930e`)
+- **One rule set** in `src/lib/credits.ts` (free: 5 generations per rolling 30 days plus bonus credits, trips up to 3 days; premium: 10 credits a cycle) is used by generation, the dashboard, the curate page and the profile API. The dashboard no longer writes on view. Only successful generations count toward the free quota.
+- **Premium credit** is reserved atomically before generating and refunded on any incomplete generation. One generation at a time per user or guest (Redis lock) closes the concurrent-request race.
+- **Order of checks:** validation and entitlement run before the rate limit, so a bad request no longer costs a guest their daily trip, and guests get it back when generation fails on our side. Limits in `src/lib/ratelimit.ts`: signed-in 5/hour per user (10 in development), guest 1 per 24 h per IP, `/api/trips` 60/h, support 3/h, photo 120/h, static map 30/h. The client IP is taken from `x-real-ip` or the first `x-forwarded-for` entry, so photo and map limits are no longer skipped when it is missing.
+- **Signed save tokens:** generation returns a signed token (`src/lib/saveToken.ts`) and `saveTripToDb` accepts only that token, so what is stored and shared is exactly what the server produced. Saving the same generation twice returns the existing trip. Trips keep the original request (dates, party, transport, hotel).
+- **Privacy:** the Clerk `user.deleted` webhook (`src/lib/accountDeletion.ts`) removes trips and profile, detaches cost logs and cancels live subscriptions (the handler is built; the `user.deleted` event still has to be enabled on the Clerk webhook in the Clerk dashboard, an open item). Destination photos go through `/api/photo`, so `MAPS_SERVER_KEY` no longer appears in URLs sent to browsers or share metadata. `/api/trips` returns card summaries (max 100), not full itineraries.
+- **Removed:** the unused legacy `POST /api/itinerary` route and the `useItinerary` hook. Generation is only `/api/itinerary-stream` (the pipeline in section 8 describes the older route; the steps are the same).
+- **Schema:** `PlaceCache` gets Unicode-aware cache keys and weekly opening hours (the hours for each itinerary day's weekday); `CostLog` gets `model` and a Google Details call count; `Trip` gets `request`, `generationId` (unique per user) and `updatedAt`. The nightly cleanup also prunes `StripeEvent` rows older than 30 days.
+
+#### October 18, 2026 — Architecture and decision records (`f5e6f07`)
+`ARCHITECTURE.md` describes the target modular monolith, key flows, data model and migration phases; `docs/adr/` holds the decision records and `to-do.md` the refactor list. Direction agreed: the problem is attracting customers, not infrastructure, so the stack stays (Next.js, Prisma, Supabase, Clerk, Vercel).
+
+#### October 19, 2026 — Generations survive leaving the page (iOS Safari) (`1df0d41`)
+The server now owns each generation, not the HTTP connection.
+- The client sends a `requestId` (UUID kept in `sessionStorage`). Progress, the finished itinerary and its save token are kept in Redis for 24 h under that id (`src/lib/generationStore.ts`).
+- Generation runs under Vercel `waitUntil` and no longer passes the client abort signal to Anthropic, so leaving the page does not cancel a paid run.
+- Re-POSTing a known `requestId` returns 202 and attaches to the existing run: a retry, reload or double tap never starts or charges a second generation.
+- `GET /api/generations/{id}` returns the current snapshot (owner-checked for signed-in users; for guests the random id is the capability). A run with no progress for 120 s reports "stalled".
+- The client follows the live stream and switches to the snapshot when the stream drops or the page becomes visible again, replacing the old restart-from-zero retry. Adds `@vercel/functions`. Verified locally: stream cut after day 1, server finished day 2, snapshot resumed, one `CostLog` row.
+
+#### October 19, 2026 — Google Places cost cut about 60% (`8fc8972`)
+Enrichment per timeline item now lives in `src/lib/places.ts` and uses the Places API (New): a `PlaceCache` hit by name|city as before; on a miss an IDs-only Text Search (free) biased to the destination; a cached row for that place ID is reused (free); otherwise Place Details by ID with a field mask ("full" for rating, price, hours and Maps link; "basic" for nature/adventure stops) in place of legacy Text Search plus Details. Google coordinates replace the model's when within 15 km, and each call is priced at its SKU in the cost log. Live test on 8 uncached places: Google $0.392 to $0.160 (-59%), trip total $0.43 to $0.20. Also: `/api/photo` serves new-API photo names and counts fetches per day in Redis; timeline cards credit the photo author, as Google requires; autocomplete requests Basic fields only; `PlaceCache` gains lat/lng, `googleMapsUri`, photo author, `detailsLevel` and a `placeId` index.
+
+#### October 19, 2026 — Home page conversion (`8e93114`, `90c2507`, `d317210`, `d9672ac`, `60284eb`)
+- **Hero quick planner:** "TravalBee" on one line; a where-to / when / Plan my trip planner plus a sample link replace the two stacked buttons. The Google script loads after idle or first interaction; destination handling is shared with the planner form (`src/lib/placeSelection.ts`). Submitting opens `/curate` with the destination selected and dates filled, and the form starts at the next step (`src/lib/plannerLink.ts`).
+- **Conversion fixes:** a small cookie card (desktop) / slim bar (phone) that never covers the main actions, with the no-op "Decline" removed; every create button opens the planner; sample and shared pages get "Plan a Trip Like This", prefilled from the saved request or a free place-ID lookup (`src/lib/planLikeThis.ts`); unverifiable claims replaced with verifiable ones (stats strip, bento cells, loader steps, shared page).
+- **SEO and measurement:** `robots.txt`, `sitemap.xml`, `metadataBase`, canonical for the home page, a branded share image, `noindex` on shared trips; Vercel Analytics funnel events `hero_planner_submitted`, `planner_submitted`, `itinerary_ready`, `trip_saved` (custom events need Vercel Pro). The home page moved to `src/components/HomePage.tsx` so `page.tsx` can export metadata.
+- **Share image:** the edge-rendered image (with `@vercel/og` and the logo) was 1.07 MB, over the 1 MB Hobby edge limit and failing the build, so it is now rendered once and committed as `src/app/opengraph-image.png`.
+- **Hero dossier:** on screens of at least 1280x760 a card typed out a real Paris itinerary day (stored statically in `src/content/heroDossier.ts`, pure CSS animation, static under reduced motion), stepping aside when the visitor typed a destination. **It was replaced on October 30 by the Travel Pulse card** (see the Travel News entry); `HeroDossier.tsx` is kept in the repo but unused.
+- **Navbar:** the logo and bar were made smaller (desktop bar 73 px, was ~100; mobile 65 px), so "SIGN IN" no longer wraps on phones.
+
+#### October 19, 2026 — Repository clean-up (`7d3e14d`, `dd227a9`)
+An accidental "commit everything" (`7d3e14d`) tracked the whole working folder, including `Voice-Agent`, a nested git repository recorded as a gitlink with no `.gitmodules`, which broke Vercel builds. `dd227a9` untracked it and the scratch files (`output/`, `tmp/`, `scripts/mobile-screenshots/`, `.new-assets/`, loose root images, `.codex-next-dev*.log`) and added them to `.gitignore`. The files stay on disk and history was **not** rewritten. Working rule since: push a branch to main with `git push origin <branch>:main`, never `git add .`.
+
+#### Current crons (`vercel.json`)
+`/api/cron/cleanup` daily at 00:00 UTC (see section 13; now also prunes old `StripeEvent` rows) and `/api/cron/news` daily at 05:30 UTC (see the Travel News entry).
