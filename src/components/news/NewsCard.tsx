@@ -10,7 +10,7 @@ import { DATE_LABEL, type NewsView, SOURCE_LABEL, TOPIC_LABEL, displayTitle, for
 // Red and orange are reserved for serious alerts; the card itself takes the alert's colour.
 export const TONE: Record<string, string> = {
   quiet:  "border-ink/25 text-ink",
-  orange: "border-orange-500 bg-orange-500 text-ink", // dark text: white on orange fails WCAG AA contrast
+  orange: "border-orange-600 bg-orange-600 text-white",
   red:    "border-red-700 bg-red-700 text-white",
 };
 const CARD: Record<string, string> = {
