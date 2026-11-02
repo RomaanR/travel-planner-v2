@@ -156,29 +156,51 @@ export async function getCountryPulse(): Promise<Record<string, number>> {
   return pulse;
 }
 
-export type PulseRow = { code: string; name: string; slug: string; level: number };
-export type Pulse = { alert: NewsView | null; rows: PulseRow[]; updates: NewsView[]; checkedAt?: string };
+export type PulseRow = { code: string; name: string; slug: string; level: number; label: string };
+export type PulseUpdate = { code: string; name: string; slug: string; summary: string; publishedAt: string };
+export type Pulse = {
+  alert:      NewsView | null;
+  us:         PulseRow[];      // two popular destinations, highest US level first
+  canada:     PulseRow[];      // two popular destinations, highest Canadian level first
+  uk:         PulseUpdate[];   // the two most recent UK advice updates for popular destinations
+  checkedAt?: string;
+};
 
-/** Home hero card: the most serious current alert plus four destinations with their State Dept level. */
+/**
+ * Home hero card: the most serious current alert, then two US levels, two UK updates and two
+ * Canadian levels. Rows come from the popular destinations so the card reflects where travellers
+ * are going, not every conflict zone; each government keeps its own scale and wording.
+ */
 export async function getPulse(): Promise<Pulse | null> {
   try {
     const [news, levels, checks] = await Promise.all([
-      getNews({ limit: 60, sinceDays: 60 }),
-      prisma.advisoryLevel.findMany({ where: { source: "state" } }),
+      getNews({ limit: 150 }),
+      prisma.advisoryLevel.findMany({ where: { source: { in: ["state", "canada"] }, countryCode: { in: NEWS_COUNTRIES.map((c) => c.code) } } }),
       getFeedChecks(),
     ]);
-    const { alerts, latest } = splitNews(news);
-    const rows: PulseRow[] = [];
-    for (const l of levels) {
-      const c = countryByCode(l.countryCode);
-      if (c) rows.push({ code: c.code, name: c.name, slug: c.slug, level: l.level });
-    }
+    const { alerts } = splitNews(news);
     const order = (code: string) => NEWS_COUNTRIES.findIndex((c) => c.code === code);
-    // Highest level first, then launch-country order: stable, so the card does not reshuffle.
-    rows.sort((a, b) => b.level - a.level || order(a.code) - order(b.code));
-    const top = rows.slice(0, 6); // the card shows 4, or 6 on tall screens
-    if (!alerts[0] && top.length === 0) return null;
-    return { alert: alerts[0] ?? null, rows: top, updates: latest.slice(0, 2), checkedAt: checks.state ?? checks.fcdo };
+
+    const rowsFor = (source: "state" | "canada"): PulseRow[] => {
+      const rows: PulseRow[] = [];
+      for (const l of levels) {
+        const c = l.source === source ? countryByCode(l.countryCode) : undefined;
+        if (c) rows.push({ code: c.code, name: c.name, slug: c.slug, level: l.level, label: l.label });
+      }
+      // Highest level first, then launch-country order: stable, so the card does not reshuffle.
+      return rows.sort((x, y) => y.level - x.level || order(x.code) - order(y.code)).slice(0, 2);
+    };
+
+    const uk: PulseUpdate[] = news
+      .filter((i) => i.source === "fcdo" && !i.superseded && countryByCode(i.countryCode)?.popular)
+      .sort((x, y) => Date.parse(y.publishedAt) - Date.parse(x.publishedAt))
+      .slice(0, 2)
+      .map((i) => ({ code: i.countryCode, name: i.countryName, slug: i.countrySlug, summary: i.summary, publishedAt: i.publishedAt }));
+
+    const us = rowsFor("state");
+    const canada = rowsFor("canada");
+    if (!alerts[0] && us.length === 0 && canada.length === 0 && uk.length === 0) return null;
+    return { alert: alerts[0] ?? null, us, canada, uk, checkedAt: checks.state ?? checks.fcdo };
   } catch (err) {
     console.error("[news] getPulse failed:", err);
     return null;
