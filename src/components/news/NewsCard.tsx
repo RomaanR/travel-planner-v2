@@ -70,9 +70,9 @@ export default function NewsCard({ item, compact = false, variant = "regular", c
       </div>
 
       {photo && (
-        // A landmark that represents the country (decorative, so no alt text); grayscale until hover per the design system.
+        // A landmark that represents the country (decorative, so no alt text). Always full colour.
         <div className="relative shrink-0 w-20 h-20 md:w-28 md:h-28 overflow-hidden bg-ink/5">
-          <Image src={photo} alt="" fill sizes="112px" className="object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+          <Image src={photo} alt="" fill sizes="112px" className="object-cover" />
         </div>
       )}
       </div>
