@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
-import { NEWS_COUNTRIES } from "./countries";
+import { ALL_COUNTRIES, countryByCode } from "./countries";
 import { type ParsedAdvisory, type ParsedItem, parseFcdo, parseGdacs, parseState } from "./sources";
 
 // Daily ingest of official travel feeds into NewsItem. Called by /api/cron/news.
@@ -9,6 +9,7 @@ import { type ParsedAdvisory, type ParsedItem, parseFcdo, parseGdacs, parseState
 
 const USER_AGENT = "TravalBee/1.0 (+https://travalbee.com/support)";
 const FETCH_TIMEOUT_MS = 20_000;
+const FEED_CONCURRENCY = 12;
 const STATE_FEED = "https://travel.state.gov/_res/rss/TAsTWs.xml";
 const GDACS_FEED = "https://www.gdacs.org/xml/rss.xml";
 const fcdoFeed = (slug: string) => `https://www.gov.uk/foreign-travel-advice/${slug}.atom`;
@@ -82,7 +83,7 @@ async function ingestFcdo(slug: string, code: string): Promise<FeedResult> {
   return runFeed(`fcdo:${slug}`, async (state) => {
     const res = await fetchFeed(fcdoFeed(slug), state);
     if (res.kind === "not_modified") return { added: 0, notModified: true };
-    const country = NEWS_COUNTRIES.find((c) => c.code === code)!;
+    const country = countryByCode(code)!;
     const item = parseFcdo(res.text, country);
     return { added: item ? await insertItems([item]) : 0, etag: res.etag, lastModified: res.lastModified };
   });
@@ -176,12 +177,17 @@ async function ingestGdacs(): Promise<FeedResult> {
 /** Runs every enabled feed. Never throws. */
 export async function runNewsIngest(): Promise<{ results: FeedResult[]; totalAdded: number }> {
   const off = disabledSources();
-  const jobs: Promise<FeedResult>[] = [];
-  // UK written updates only for the popular countries; State Dept and GDACS cover every country.
-  if (!off.has("fcdo")) for (const c of NEWS_COUNTRIES) if (c.fcdoSlug) jobs.push(ingestFcdo(c.fcdoSlug, c.code));
-  if (!off.has("state")) jobs.push(ingestState());
-  if (!off.has("gdacs")) jobs.push(ingestGdacs());
+  const jobs: (() => Promise<FeedResult>)[] = [];
+  // State Dept and GDACS are single global feeds; the UK has one feed per country (208 of them).
+  if (!off.has("state")) jobs.push(ingestState);
+  if (!off.has("gdacs")) jobs.push(ingestGdacs);
+  if (!off.has("fcdo")) for (const c of ALL_COUNTRIES) if (c.fcdoSlug) { const { fcdoSlug, code } = c; jobs.push(() => ingestFcdo(fcdoSlug, code)); }
 
-  const results = await Promise.all(jobs);
+  // Bounded concurrency: ~210 feeds at once would hammer GOV.UK and the database pool.
+  const results: FeedResult[] = [];
+  let next = 0;
+  await Promise.all(Array.from({ length: FEED_CONCURRENCY }, async () => {
+    while (next < jobs.length) results.push(await jobs[next++]());
+  }));
   return { results, totalAdded: results.reduce((n, r) => n + r.added, 0) };
 }

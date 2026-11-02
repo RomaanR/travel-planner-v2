@@ -13,7 +13,7 @@ export type NewsCountry = {
   code:      string;    // ISO 3166-1 alpha-2
   name:      string;    // display name
   slug:      string;    // /news/[slug]
-  fcdoSlug?: string;    // GOV.UK foreign-travel-advice slug — popular countries only
+  fcdoSlug?: string;    // GOV.UK foreign-travel-advice slug (208 of 213 countries have a page)
   aliases:   string[];  // other spellings seen in feeds
   /** A city in this country with a stored Google place, for a one-tap "Plan a trip" link. */
   planCity?: "kyoto" | "lisbon" | "rome" | "marrakech" | "paris";
@@ -33,7 +33,7 @@ export const NEWS_COUNTRIES: NewsCountry[] = [
   { code: "AE", name: "United Arab Emirates", slug: "united-arab-emirates", fcdoSlug: "united-arab-emirates", aliases: ["UAE"],                                                  popular: true },
 ];
 
-type WorldRow = { code: string; name: string; slug: string; state: string[] };
+type WorldRow = { code: string; name: string; slug: string; state: string[]; fcdo?: string };
 
 const popularCodes = new Set(NEWS_COUNTRIES.map((c) => c.code));
 
@@ -41,7 +41,7 @@ export const ALL_COUNTRIES: NewsCountry[] = [
   ...NEWS_COUNTRIES,
   ...(world as WorldRow[])
     .filter((w) => !popularCodes.has(w.code))
-    .map((w): NewsCountry => ({ code: w.code, name: w.name, slug: w.slug, aliases: w.state, popular: false }))
+    .map((w): NewsCountry => ({ code: w.code, name: w.name, slug: w.slug, fcdoSlug: w.fcdo, aliases: w.state, popular: false }))
     .sort((a, b) => a.name.localeCompare(b.name)),
 ];
 

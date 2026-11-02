@@ -93,12 +93,17 @@ export async function getNewsResult(opts: NewsOpts = {}): Promise<{ items: NewsV
 export async function getFeedChecks(): Promise<FeedChecks> {
   try {
     const rows = await prisma.newsFeedState.findMany({ select: { feed: true, lastSuccessAt: true } });
-    const out: FeedChecks = {};
+    // The UK has ~200 feeds. One broken feed must not make every card look stale, so use the median
+    // time of a source's feeds: "typically checked at this time".
+    const times: Record<string, string[]> = {};
     for (const r of rows) {
       if (!r.lastSuccessAt) continue;
-      const source = r.feed.split(":")[0] as NewsView["source"];
-      const iso = r.lastSuccessAt.toISOString();
-      if (!out[source] || iso < out[source]!) out[source] = iso; // oldest feed bounds what we can claim
+      (times[r.feed.split(":")[0]] ??= []).push(r.lastSuccessAt.toISOString());
+    }
+    const out: FeedChecks = {};
+    for (const [source, list] of Object.entries(times)) {
+      list.sort();
+      out[source as NewsView["source"]] = list[Math.floor((list.length - 1) / 2)];
     }
     return out;
   } catch (err) {

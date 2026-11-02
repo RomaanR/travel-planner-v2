@@ -52,3 +52,9 @@ Do **2 now** and keep 3 for a later phase.
 - **Current alerts:** GDACS Orange/Red for any country (one card per event, listing the other countries), plus a US level raised to 3 or 4 within 30 days. "Latest updates" stays popular-only.
 - **Level 4 pages** carry no "Plan a trip" button.
 - **Not covered:** the US itself (the State Dept does not rate it), tiny territories not in the outline data, and written advisory text for non-popular countries (adding a country to the popular tier is one row plus a flag).
+
+## Update 2026-11-02: UK advice for every country
+- The UK FCDO publishes one Atom feed per country; 208 of our 213 countries have a page (matched to GOV.UK's own index of country pages). The daily ingest fetches them with bounded concurrency (12 at a time), conditional GET and per-feed state. First run ~55 s; steady state ~17 s.
+- **UK updates are informational (severity 0).** Their summaries are regional and often negated ("no longer advises against all travel to volcanoes"), so text matching mislabelled countries; alert levels come only from the US State Dept and GDACS.
+- The "Checked" date for a multi-feed source is the median feed time, so one broken feed does not make every card look stale.
+- Not covered: Australia's Smartraveller (blocks non-browser requests; its own site documents a public API, so ask DFAT for access) and Singapore's MFA (web pages only, no feed).

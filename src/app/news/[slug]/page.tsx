@@ -72,7 +72,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
         </FadeIn>
 
         {/* At a glance */}
-        <FadeIn delay={0.1} className={`grid grid-cols-1 ${country.popular ? "md:grid-cols-2" : ""} gap-px bg-ink/10 border border-ink/10 mb-14`}>
+        <FadeIn delay={0.1} className={`grid grid-cols-1 ${country.fcdoSlug ? "md:grid-cols-2" : ""} gap-px bg-ink/10 border border-ink/10 mb-14`}>
           <div className="bg-paper p-6 md:p-8">
             <h2 className="micro-copy text-xs text-ink-light mb-3">US State Department advisory</h2>
             {advisory ? (
@@ -89,7 +89,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
               <p className="font-sans text-sm text-ink-light">Not available yet.</p>
             )}
           </div>
-          {country.popular && (
+          {country.fcdoSlug && (
           <div className="bg-paper p-6 md:p-8">
             <h2 className="micro-copy text-xs text-ink-light mb-3">Latest UK travel advice update</h2>
             {latestFcdo ? (
@@ -128,15 +128,15 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
           </FadeIn>
         )}
 
-        {!country.popular && alerts.length === 0 && (
+        {alerts.length === 0 && (
           <FadeIn delay={0.2} className="mb-14">
             <p className="font-sans text-base text-ink/85 max-w-2xl">
-              No current disaster alerts for {country.name}. Written travel-advice updates are available for our most popular destinations; for {country.name}, use the official advisory above.
+              No current disaster alerts for {country.name}.
             </p>
           </FadeIn>
         )}
 
-        {(country.popular || updates.length > 0) && (
+        {updates.length > 0 && (
         <FadeIn delay={0.2}>
           <h2 className="font-sans font-bold uppercase tracking-widest text-sm text-ink mb-5">Latest updates</h2>
           {updates.length === 0 && alerts.length === 0 ? (

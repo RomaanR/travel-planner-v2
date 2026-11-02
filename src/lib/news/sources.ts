@@ -74,9 +74,13 @@ export function topicsFromText(text: string): NewsTopic[] {
   return topics.length ? topics : [];
 }
 
-function fcdoSeverity(text: string): number {
-  if (/advises?\s+against\s+all\s+travel/i.test(text)) return 4;
-  if (/advises?\s+against\s+all\s+but\s+essential\s+travel/i.test(text)) return 3;
+/**
+ * UK update summaries are about a change ("FCDO no longer advises against all travel to volcanoes",
+ * "advises against all travel within 30km of the border"). They are regional and often negated, so
+ * matching the wording would mislabel a country, or say the opposite of what the update says.
+ * UK items are therefore informational (severity 0); alert levels come from the US State Dept and GDACS.
+ */
+function fcdoSeverity(): number {
   return 0;
 }
 
@@ -102,7 +106,7 @@ export function parseFcdo(xml: string, country: NewsCountry): ParsedItem | null 
     externalId:  id,
     countryCode: country.code,
     topics:      topicsFromText(summary),
-    severity:    fcdoSeverity(summary),
+    severity:    fcdoSeverity(),
     title:       `${country.name}: UK travel advice updated`,
     summary,
     url:         safeUrl(link?.["@_href"], fallback),
