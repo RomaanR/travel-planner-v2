@@ -694,7 +694,7 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-    return Response.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
+    return Response.json({ error: "You have reached the limit for now. Please try again later." }, { status: 429 });
   }
 
   // ── One generation at a time per user / guest ────────────────────────────────

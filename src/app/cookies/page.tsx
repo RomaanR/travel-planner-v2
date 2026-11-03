@@ -59,7 +59,7 @@ export default function CookiePolicyPage() {
               <div className="space-y-6">
                 <div className="border-l-2 border-burnt-orange pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Authentication Cookies: Clerk
+                    Authentication Cookies
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Strictly
@@ -68,7 +68,7 @@ export default function CookiePolicyPage() {
                     up to 7 days
                   </p>
                   <p>
-                    When you sign in, our authentication provider (Clerk) sets
+                    When you sign in, our sign-in system sets
                     a secure, HttpOnly session cookie to keep you logged in.
                     This cookie is essential for the service to function:
                     without it, we cannot associate your saved itineraries with
@@ -84,11 +84,7 @@ export default function CookiePolicyPage() {
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Functional
-                    storage &middot;{" "}
-                    <strong className="text-ink">Key:</strong>{" "}
-                    <code className="bg-paper-dark px-1 py-0.5 text-xs">
-                      seek_wander_archive
-                    </code>
+                    storage
                   </p>
                   <p>
                     We store a local copy of your saved itineraries in your
@@ -107,11 +103,7 @@ export default function CookiePolicyPage() {
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Functional
-                    storage &middot;{" "}
-                    <strong className="text-ink">Key:</strong>{" "}
-                    <code className="bg-paper-dark px-1 py-0.5 text-xs">
-                      itineraryRequest
-                    </code>
+                    storage
                   </p>
                   <p>
                     When you submit a curation request, your form preferences
@@ -124,7 +116,7 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
-                    Analytics: Vercel Analytics
+                    Analytics
                   </p>
                   <p className="mb-1">
                     <strong className="text-ink">Type:</strong> Analytics
@@ -132,8 +124,8 @@ export default function CookiePolicyPage() {
                     <strong className="text-ink">Cookies set:</strong> None
                   </p>
                   <p>
-                    We use Vercel Analytics to understand page traffic and
-                    visitor counts. Vercel Analytics is privacy-first by design:
+                    We use a privacy-focused analytics tool to understand page traffic and
+                    visitor counts. It is privacy-first by design:
                     it does not use cookies, does not fingerprint
                     devices, and does not track users across sites. Data is
                     aggregated and anonymised. It is fully compliant with GDPR
@@ -174,20 +166,19 @@ export default function CookiePolicyPage() {
                   your browser settings, navigate to Site Data or Storage and
                   clear data for{" "}
                   <code className="bg-paper-dark px-1 py-0.5 text-xs">
-                    travel-planner-v2-pearl.vercel.app
-                  </code>{" "}
-                  (or your custom domain). This will remove the offline
+                    travalbee.com
+                  </code>. This will remove the offline
                   itinerary cache and sign you out.
                 </li>
                 <li>
                   <strong className="text-ink">Sign out:</strong> Signing out
-                  via the account menu will clear your Clerk session cookie.
+                  via the account menu will clear your session cookie.
                 </li>
                 <li>
                   <strong className="text-ink">Block cookies entirely:</strong>{" "}
                   You may configure your browser to block all cookies. Note
-                  that doing so will prevent sign-in from working, as the Clerk
-                  session cookie is required for authentication.
+                  that doing so will prevent sign-in from working, as the session
+                  cookie is required for authentication.
                 </li>
               </ul>
             </section>
@@ -197,10 +188,10 @@ export default function CookiePolicyPage() {
                 5. Third-Party Links
               </h2>
               <p>
-                Our itineraries may include affiliate links to Booking.com.
+                Our itineraries may include affiliate links to third-party booking platforms.
                 Clicking these links will take you to a third-party website
                 governed by its own cookie and privacy policies. We have no
-                control over cookies set by Booking.com or any other external
+                control over cookies set by those platforms or any other external
                 site.
               </p>
             </section>

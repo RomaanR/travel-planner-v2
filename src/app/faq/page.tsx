@@ -34,7 +34,7 @@ const FAQS = [
       },
       {
         q: "How accurate is the information?",
-        a: "Place names, coordinates, and ratings are sourced from Google Places in real time and cached for freshness. Opening hours are computed locally. That said, venues change, so we always recommend verifying reservations and hours directly before you travel. Our Terms of Service cover this in detail.",
+        a: "Place names, locations, ratings, and photos come from established third-party place data sources and are refreshed regularly. Opening hours are estimated from that data. That said, venues change, so we always recommend verifying reservations and hours directly before you travel. Our Terms of Service cover this in detail.",
       },
     ],
   },
@@ -63,7 +63,7 @@ const FAQS = [
       },
       {
         q: "How do the hotel recommendations work?",
-        a: "When you indicate you need accommodation, we recommend six hotels across three tiers: Boutique, Premium, and Luxury, each with a neighbourhood description and Booking.com affiliate link. You can filter by tier using the slider. If you already have a hotel booked, you can enter it and we'll use it as the geographic anchor for all activity clustering.",
+        a: "When you indicate you need accommodation, we recommend six hotels across three tiers: Boutique, Premium, and Luxury, each with a neighbourhood description and an affiliate booking link. You can filter by tier using the slider. If you already have a hotel booked, you can enter it and we'll use it as the geographic anchor for all activity clustering.",
       },
     ],
   },
@@ -97,15 +97,15 @@ const FAQS = [
     items: [
       {
         q: "Do you track me with cookies?",
-        a: "No. We use only a strictly necessary session cookie for authentication (Clerk) and browser localStorage for your offline itinerary cache. We do not use advertising pixels, Google Analytics, or any cross-site tracking. Our analytics provider (Vercel Analytics) is cookieless and GDPR-compliant by design.",
+        a: "No. We use only a strictly necessary session cookie for sign-in and browser storage for your offline itineraries. We do not use advertising pixels or any cross-site tracking, and our analytics are cookieless and privacy-friendly by design.",
       },
       {
         q: "Are my travel preferences shared with anyone?",
-        a: "Your preferences (destination, dates, pace, dietary needs, interests) are transmitted to our curation engine to generate your itinerary, and to Google Places to enrich venue data. They are never sold to third parties or used for advertising. See our Privacy Policy for the full picture.",
+        a: "Your preferences (destination, dates, pace, dietary needs, interests) are transmitted to our curation engine to generate your itinerary, and to place-data providers to enrich venue details. They are never sold to third parties or used for advertising. See our Privacy Policy for the full picture.",
       },
       {
         q: "Does the curation engine learn from my data?",
-        a: "No. Your data is not used to train any model. Anthropic's API terms prohibit training on API inputs by default, and we do not opt in to any such programme.",
+        a: "No. Your data is not used to train any model. Our technology providers are contractually restricted from using your inputs to train their models, and we do not opt in to any such programme.",
       },
     ],
   },

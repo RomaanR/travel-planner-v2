@@ -198,7 +198,7 @@ export default function PricingPage() {
             },
             {
               q: "Is my payment information secure?",
-              a: "Payments are handled entirely by Stripe. TravalBee never stores your card details.",
+              a: "Payments are handled entirely by our secure payment provider. TravalBee never stores your card details.",
             },
             {
               q: "Do you offer refunds?",

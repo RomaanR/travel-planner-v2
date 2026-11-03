@@ -62,9 +62,9 @@ export default function PrivacyPage() {
                 <div>
                   <p className="font-semibold text-ink mb-1">Account Information</p>
                   <ul className="list-disc pl-5 space-y-1">
-                    <li>Email address (provided via Clerk, our authentication provider)</li>
-                    <li>A unique user identifier assigned by Clerk</li>
-                    <li>If you sign in via a social provider (Google, etc.), your name and profile photo as returned by that provider</li>
+                    <li>Email address (provided through our sign-in provider)</li>
+                    <li>A unique account identifier</li>
+                    <li>If you sign in using a social login provider, your name and profile photo as returned by that provider</li>
                   </ul>
                 </div>
 
@@ -95,8 +95,8 @@ export default function PrivacyPage() {
                   <ul className="list-disc pl-5 space-y-1">
                     <li>IP address, browser type, device type, and operating system</li>
                     <li>Request timestamps and pages visited</li>
-                    <li>Anonymised usage analytics (page views, generation counts) via Vercel Analytics &mdash; no cross-site tracking</li>
-                    <li>Rate-limiting counters stored in our Redis cache, keyed by user identifier or IP address, automatically expiring after one hour</li>
+                    <li>Anonymised usage analytics (page views, generation counts) &mdash; no cross-site tracking</li>
+                    <li>Short-lived security counters, keyed by user identifier or IP address, used to prevent abuse and automatically expiring after one hour</li>
                   </ul>
                 </div>
 
@@ -105,7 +105,7 @@ export default function PrivacyPage() {
                   <ul className="list-disc pl-5 space-y-1">
                     <li>
                       We store a cached copy of your saved itineraries in your browser&apos;s
-                      local storage (key: <code className="text-xs bg-paper-dark px-1">seek_wander_archive</code>)
+                      local storage
                       to enable offline access. This data never leaves your device and is
                       cleared when you clear your browser storage.
                     </li>
@@ -139,12 +139,12 @@ export default function PrivacyPage() {
                 <li>
                   <strong className="text-ink">Legitimate interests</strong> &mdash;
                   we process technical and operational data to maintain security, prevent fraud
-                  and abuse, enforce rate limits, and improve the service. Our legitimate interests
+                  and abuse, enforce fair-use limits, and improve the service. Our legitimate interests
                   do not override your fundamental rights.
                 </li>
                 <li>
                   <strong className="text-ink">Legal obligation</strong> &mdash;
-                  we may retain certain records (such as cost logs without personal identifiers)
+                  we may retain certain records (such as usage records without personal identifiers)
                   where required by applicable law.
                 </li>
                 <li>
@@ -164,7 +164,7 @@ export default function PrivacyPage() {
                 <li>To generate personalised travel itineraries based on your stated preferences</li>
                 <li>To save and retrieve your itineraries when you are signed in</li>
                 <li>To authenticate your identity and manage your account session</li>
-                <li>To enforce rate limits and prevent abuse of the service</li>
+                <li>To enforce fair-use limits and prevent abuse of the service</li>
                 <li>To monitor service health, fix errors, and improve quality</li>
                 <li>To display anonymised analytics about overall usage trends</li>
                 <li>
@@ -219,9 +219,7 @@ export default function PrivacyPage() {
                 Where we transfer data internationally, we rely on appropriate safeguards,
                 including Standard Contractual Clauses (SCCs) approved by the European
                 Commission, the UK&apos;s International Data Transfer Agreement (IDTA), or
-                other legally recognised transfer mechanisms. Our key processors (Clerk,
-                Supabase, Vercel, Anthropic) are all subject to SCCs or equivalent
-                frameworks. You may request a copy of the relevant safeguards by contacting
+                other legally recognised transfer mechanisms. Our service providers that process data outside your region are subject to SCCs or equivalent safeguards. You may request a copy of the relevant safeguards by contacting
                 us.
               </p>
             </section>
@@ -240,20 +238,20 @@ export default function PrivacyPage() {
                   <strong className="text-ink">30 days</strong>.
                 </li>
                 <li>
-                  <strong className="text-ink">Place cache:</strong>{" "}
-                  automatically purged after 14 days via our nightly cleanup process.
+                  <strong className="text-ink">Temporary technical data:</strong>{" "}
+                  automatically deleted within 14 days.
                 </li>
                 <li>
-                  <strong className="text-ink">Rate-limiting counters:</strong>{" "}
+                  <strong className="text-ink">Security counters:</strong>{" "}
                   expire automatically after 1 hour.
                 </li>
                 <li>
-                  <strong className="text-ink">Cost logs:</strong>{" "}
+                  <strong className="text-ink">Usage records:</strong>{" "}
                   retained for internal financial record-keeping. These logs contain
                   destination names and aggregate cost figures but no other personal data.
                 </li>
                 <li>
-                  <strong className="text-ink">Infrastructure logs (Vercel, Clerk):</strong>{" "}
+                  <strong className="text-ink">Infrastructure and provider logs:</strong>{" "}
                   retained per each provider&apos;s own retention policy (typically 30–90 days).
                 </li>
               </ul>
@@ -267,7 +265,7 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>
                   <strong className="text-ink">Authentication cookies:</strong>{" "}
-                  set by Clerk to manage your login session. These are strictly necessary and
+                  set by our sign-in system to manage your login session. These are strictly necessary and
                   cannot be opted out of while signed in.
                 </li>
                 <li>
@@ -278,7 +276,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   <strong className="text-ink">Analytics:</strong>{" "}
-                  Vercel Analytics uses cookieless, privacy-preserving techniques to measure
+                  Our analytics tool uses cookieless, privacy-preserving techniques to measure
                   aggregate page performance. No cross-site tracking cookies are used.
                 </li>
               </ul>
@@ -319,7 +317,7 @@ export default function PrivacyPage() {
                     You can request the deletion of your account and all personal data we hold
                     about you. We will process this within{" "}
                     <strong className="text-ink">30 days</strong> and confirm once complete.
-                    Note that anonymised data (e.g., aggregate cost logs with no personal
+                    Note that anonymised data (e.g., aggregate usage records with no personal
                     identifiers) is not subject to erasure requests.
                   </p>
                 </div>
@@ -450,7 +448,7 @@ export default function PrivacyPage() {
                 11. Automated Decision-Making
               </h2>
               <p>
-                We use an AI model (Anthropic&apos;s Claude) to generate travel itinerary
+                We use third-party artificial intelligence technology to generate travel itinerary
                 content. This is an assistive tool — the output is a creative suggestion based
                 on your stated preferences and does not produce any legal or similarly
                 significant decision about you. No automated profiling is used to make
@@ -483,9 +481,7 @@ export default function PrivacyPage() {
                 We implement appropriate technical and organisational measures to protect your
                 personal data against unauthorised access, disclosure, alteration, or
                 destruction. These include HTTPS encryption for all data in transit,
-                encryption at rest on our database provider, strict API key separation (no
-                server-side keys are exposed to the browser), role-based access controls, and
-                rate limiting to prevent abuse. No method of transmission or storage is 100%
+                encryption at rest, strict separation of secrets and access keys, role-based access controls, and measures to prevent abuse. No method of transmission or storage is 100%
                 secure; if you have concerns about a specific security issue, please contact
                 us immediately.
               </p>

@@ -58,8 +58,7 @@ export default function TermsPage() {
               <p className="mb-3">
                 TravalBee generates personalised travel itineraries based on
                 your preferences. The Service utilises third-party artificial
-                intelligence (&quot;AI&quot;), specifically Anthropic&apos;s
-                Claude, to produce these itineraries.
+                intelligence (&quot;AI&quot;) technology to produce these itineraries.
               </p>
               <p className="mb-3">
                 <strong className="text-ink">
@@ -103,7 +102,7 @@ export default function TermsPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>Use the Service for any unlawful purpose</li>
                 <li>
-                  Attempt to circumvent rate limits, security measures, or
+                  Attempt to circumvent usage limits, security measures, or
                   access controls
                 </li>
                 <li>Scrape, crawl, or automate access to the Service</li>
@@ -114,17 +113,7 @@ export default function TermsPage() {
                 <li>
                   Submit inputs designed to generate content that is illegal,
                   violent, hateful, sexually explicit, or otherwise in
-                  violation of the usage policies of our AI providers
-                  (including{" "}
-                  <a
-                    href="https://www.anthropic.com/legal/aup"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-accent hover:text-ink transition-colors"
-                  >
-                    Anthropic&apos;s Acceptable Use Policy
-                  </a>
-                  )
+                  violation of the usage policies of our technology providers
                 </li>
                 <li>
                   Use the Service in any manner that could damage, disable,
@@ -139,7 +128,7 @@ export default function TermsPage() {
               </h2>
               <p>
                 The Service may include affiliate links to third-party booking
-                platforms (e.g. Booking.com). We may earn a commission from
+                platforms. We may earn a commission from
                 qualifying purchases made through these links. The price you
                 pay is not affected by our affiliate relationship.
               </p>

@@ -29,9 +29,11 @@ export async function GET(req: Request) {
     return NextResponse.redirect(portalSession.url);
   } catch (err) {
     console.error("[stripe/portal] Failed to create portal session:", err);
+    // Operator hint (kept out of the visitor-facing message): if this keeps failing, check that the
+    // Stripe Customer Portal is activated in the Stripe dashboard (Settings → Billing → Customer portal).
     // Return a readable error rather than crashing silently
     return NextResponse.json(
-      { error: "Could not open billing portal. Check that the Stripe Customer Portal is activated at dashboard.stripe.com → Settings → Billing → Customer portal." },
+      { error: "We could not open your billing page right now. Please try again shortly or contact support." },
       { status: 500 }
     );
   }

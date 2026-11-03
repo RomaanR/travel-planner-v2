@@ -174,7 +174,7 @@ export default function RefundPolicyPage() {
               <p className="mt-3">
                 We aim to respond within{" "}
                 <strong className="text-ink">2 business days</strong>. Approved
-                refunds are processed via Stripe and typically appear on your
+                refunds are processed through our payment provider and typically appear on your
                 statement within 5&ndash;10 business days, depending on your
                 card issuer.
               </p>
