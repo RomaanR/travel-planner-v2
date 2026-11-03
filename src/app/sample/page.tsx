@@ -70,8 +70,8 @@ export default async function SamplePage() {
       </div>
 
       {/* Header strip — kept in print for destination title context */}
-      <div className="shrink-0 pt-28 md:pt-24 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:pt-6 print:border-b print:border-black/15">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div className="shrink-0 pt-20 md:pt-24 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:pt-6 print:border-b print:border-black/15">
+        <div className="flex items-end justify-between gap-4">
           <div>
             <Link
               href="/"
@@ -80,12 +80,11 @@ export default async function SamplePage() {
               <ChevronLeft size={13} strokeWidth={1.5} />
               BACK TO HOME
             </Link>
-            <p className="micro-copy text-burnt-orange mb-1">Sample Itinerary</p>
             <h1 className="font-serif italic text-4xl md:text-6xl text-ink leading-none">
               {trip.destination}
             </h1>
           </div>
-          <ExportPdfButton />
+          <ExportPdfButton variant="icon" />
         </div>
       </div>
 
