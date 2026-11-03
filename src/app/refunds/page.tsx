@@ -157,10 +157,10 @@ export default function RefundPolicyPage() {
               <p className="mb-3">
                 Email us at{" "}
                 <a
-                  href="mailto:travalbee@outlook.com"
+                  href="mailto:contact@opsisx.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  travalbee@outlook.com
+                  contact@opsisx.com
                 </a>{" "}
                 with the subject line{" "}
                 <strong className="text-ink">&quot;Refund Request&quot;</strong>{" "}
@@ -203,10 +203,10 @@ export default function RefundPolicyPage() {
               <p>
                 For billing and refund enquiries, contact us at{" "}
                 <a
-                  href="mailto:travalbee@outlook.com"
+                  href="mailto:contact@opsisx.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  travalbee@outlook.com
+                  contact@opsisx.com
                 </a>
               </p>
             </section>

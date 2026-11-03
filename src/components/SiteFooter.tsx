@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Linkedin } from "lucide-react";
 
 const LINKS = [
   ["News", "/news"],
@@ -9,6 +10,11 @@ const LINKS = [
   ["Cookies", "/cookies"],
   ["Refunds", "/refunds"],
   ["Support", "/support"],
+] as const;
+
+const SOCIAL = [
+  ["TravalBee", "https://www.linkedin.com/company/travalbee/"],
+  ["OpsisX", "https://www.linkedin.com/company/opsisx/"],
 ] as const;
 
 /** Site-wide footer. The company line follows the usual "product of" pattern: quiet, linked, never in the nav. */
@@ -28,7 +34,7 @@ export default function SiteFooter() {
           ))}
         </nav>
       </div>
-      <div className="max-w-screen-xl mx-auto mt-8 pt-6 border-t border-ink/5">
+      <div className="max-w-screen-xl mx-auto mt-8 pt-6 border-t border-ink/5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <p className="font-sans text-sm text-ink-light">
           &copy; {new Date().getFullYear()} TravalBee. A product of{" "}
           <a
@@ -41,6 +47,22 @@ export default function SiteFooter() {
           </a>
           . All rights reserved.
         </p>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-sans text-sm text-ink-light">
+          <a href="mailto:contact@opsisx.com" className="hover:text-ink transition-colors">contact@opsisx.com</a>
+          {SOCIAL.map(([label, href]) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${label} on LinkedIn (opens in a new tab)`}
+              className="inline-flex items-center gap-1.5 hover:text-ink transition-colors"
+            >
+              <Linkedin size={16} strokeWidth={1.5} aria-hidden />
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
     </footer>
   );

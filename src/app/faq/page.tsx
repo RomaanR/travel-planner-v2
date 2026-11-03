@@ -18,7 +18,7 @@ const FAQS = [
       },
       {
         q: "Who is behind TravalBee?",
-        a: "TravalBee is a product built and operated by <a href=\"https://opsisx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-emerald-accent hover:text-ink transition-colors\">OpsisX LLC</a> (1500 N Grant St #10191, Denver, CO 80203, USA). OpsisX is the company behind the service, the data controller for your account, and the contracting party in our Terms of Service.",
+        a: "TravalBee is a product built and operated by <a href=\"https://opsisx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-emerald-accent hover:text-ink transition-colors\">OpsisX LLC</a>. OpsisX is the company behind the service, the data controller for your account, and the contracting party in our Terms of Service.",
       },
       {
         q: "How long does it take to generate an itinerary?",
@@ -88,7 +88,7 @@ const FAQS = [
       },
       {
         q: "How do I delete my account and data?",
-        a: "Email <a href=\"mailto:travalbee@outlook.com\" class=\"text-emerald-accent hover:text-ink transition-colors\">travalbee@outlook.com</a> with the subject line &ldquo;Account Deletion Request&rdquo;. All personal data and saved itineraries will be permanently removed from our database within 30 days.",
+        a: "Email <a href=\"mailto:contact@opsisx.com\" class=\"text-emerald-accent hover:text-ink transition-colors\">contact@opsisx.com</a> with the subject line &ldquo;Account Deletion Request&rdquo;. All personal data and saved itineraries will be permanently removed from our database within 30 days.",
       },
     ],
   },
@@ -161,7 +161,7 @@ export default function FaqPage() {
           <p className="font-sans text-sm text-ink-light leading-relaxed mb-10 max-w-md">
             Everything you need to know about TravalBee. Can&apos;t find your answer?{" "}
             <a
-              href="mailto:travalbee@outlook.com"
+              href="mailto:contact@opsisx.com"
               className="text-emerald-accent hover:text-ink transition-colors"
             >
               Email us
@@ -198,7 +198,7 @@ export default function FaqPage() {
               &larr; Back to TravalBee
             </Link>
             <a
-              href="mailto:travalbee@outlook.com"
+              href="mailto:contact@opsisx.com"
               className="micro-copy text-ink-light hover:text-ink transition-colors"
             >
               Contact Support

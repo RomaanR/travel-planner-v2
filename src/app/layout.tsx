@@ -33,9 +33,10 @@ const ORG_JSON_LD = JSON.stringify({
       "@id": "https://opsisx.com/#organization",
       name: "OpsisX LLC",
       url: "https://opsisx.com",
-      address: { "@type": "PostalAddress", streetAddress: "1500 N Grant St #10191", addressLocality: "Denver", addressRegion: "CO", postalCode: "80203", addressCountry: "US" },
+      sameAs: ["https://www.linkedin.com/company/opsisx/"],
+      contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: "contact@opsisx.com" },
     },
-    { "@type": "Organization", "@id": SITE_URL + "/#organization", name: "TravalBee", url: SITE_URL, parentOrganization: { "@id": "https://opsisx.com/#organization" } },
+    { "@type": "Organization", "@id": SITE_URL + "/#organization", name: "TravalBee", url: SITE_URL, parentOrganization: { "@id": "https://opsisx.com/#organization" }, sameAs: ["https://www.linkedin.com/company/travalbee/"] },
   ],
 });
 

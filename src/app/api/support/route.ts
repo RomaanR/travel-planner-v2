@@ -72,11 +72,11 @@ export async function POST(req: NextRequest) {
   //   for production delivery to any recipient.
   //
   // RESEND_TO_ADDRESS — the inbox that receives support tickets.
-  //   Defaults to travalbee@outlook.com. While in sandbox mode, this must match
+  //   Defaults to contact@opsisx.com. While in sandbox mode, this must match
   //   your Resend account email OR be added as a verified contact in the Resend
   //   dashboard (Contacts → Add Contact).
   const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "onboarding@resend.dev";
-  const TO_ADDRESS   = process.env.RESEND_TO_ADDRESS   ?? "travalbee@outlook.com";
+  const TO_ADDRESS   = process.env.RESEND_TO_ADDRESS   ?? "contact@opsisx.com";
 
   if (!process.env.RESEND_API_KEY) {
     console.error("[support] RESEND_API_KEY is not set — email will not be sent. Ticket saved to DB.");

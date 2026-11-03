@@ -27,7 +27,7 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              TravalBee is a product of OpsisX LLC (1500 N Grant St #10191, Denver, CO 80203, USA). In this policy, &quot;we&quot;, &quot;us&quot; and &quot;our&quot; mean OpsisX LLC, which is committed to
+              TravalBee is a product of OpsisX LLC. In this policy, &quot;we&quot;, &quot;us&quot; and &quot;our&quot; mean OpsisX LLC, which is committed to
               protecting your personal data and respecting your privacy. This policy explains
               exactly what information we collect, why we collect it, how we use and protect it,
               how long we keep it, and your rights under applicable privacy laws — including the
@@ -40,10 +40,10 @@ export default function PrivacyPage() {
               data you provide to us. If you have any questions about this policy or wish to
               exercise your rights, contact us at{" "}
               <a
-                href="mailto:travalbee@outlook.com"
+                href="mailto:contact@opsisx.com"
                 className="text-emerald-accent hover:text-ink transition-colors"
               >
-                travalbee@outlook.com
+                contact@opsisx.com
               </a>
               .
             </p>
@@ -410,10 +410,10 @@ export default function PrivacyPage() {
               </p>
               <p className="mb-3">
                 <a
-                  href="mailto:travalbee@outlook.com"
+                  href="mailto:contact@opsisx.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  travalbee@outlook.com
+                  contact@opsisx.com
                 </a>
               </p>
               <p className="mb-3">
@@ -475,7 +475,7 @@ export default function PrivacyPage() {
               </ul>
               <p className="mt-3">
                 We ask that you contact us first at{" "}
-                <a href="mailto:travalbee@outlook.com" className="text-emerald-accent hover:text-ink transition-colors">travalbee@outlook.com</a>{" "}
+                <a href="mailto:contact@opsisx.com" className="text-emerald-accent hover:text-ink transition-colors">contact@opsisx.com</a>{" "}
                 so that we have an opportunity to resolve your concern directly.
               </p>
             </section>
@@ -505,7 +505,7 @@ export default function PrivacyPage() {
                 or under <strong className="text-ink">16</strong> in the EEA and UK. If you
                 believe a child has provided us with personal information, please contact us
                 at{" "}
-                <a href="mailto:travalbee@outlook.com" className="text-emerald-accent hover:text-ink transition-colors">travalbee@outlook.com</a>{" "}
+                <a href="mailto:contact@opsisx.com" className="text-emerald-accent hover:text-ink transition-colors">contact@opsisx.com</a>{" "}
                 and we will delete it promptly.
               </p>
             </section>
@@ -552,10 +552,10 @@ export default function PrivacyPage() {
               <p>
                 <strong className="text-ink">Email:</strong>{" "}
                 <a
-                  href="mailto:travalbee@outlook.com"
+                  href="mailto:contact@opsisx.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  travalbee@outlook.com
+                  contact@opsisx.com
                 </a>
               </p>
               <p className="mt-3 text-xs text-ink-light">

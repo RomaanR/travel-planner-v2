@@ -37,7 +37,7 @@ export default function TermsPage() {
             </p>
 
             <p>
-              TravalBee is a product operated by OpsisX LLC, 1500 N Grant St #10191, Denver, CO 80203, USA (&quot;OpsisX&quot;, &quot;we&quot;, &quot;us&quot;). These Terms are an agreement between you and OpsisX.
+              TravalBee is a product operated by OpsisX LLC (&quot;OpsisX&quot;, &quot;we&quot;, &quot;us&quot;). These Terms are an agreement between you and OpsisX.
             </p>
 
             <section>
@@ -193,10 +193,10 @@ export default function TermsPage() {
               <p>
                 For questions about these Terms, email us at{" "}
                 <a
-                  href="mailto:travalbee@outlook.com"
+                  href="mailto:contact@opsisx.com"
                   className="text-emerald-accent hover:text-ink transition-colors"
                 >
-                  travalbee@outlook.com
+                  contact@opsisx.com
                 </a>
               </p>
             </section>
@@ -208,10 +208,10 @@ export default function TermsPage() {
               <p>
                 These Terms of Service shall be governed by and construed in
                 accordance with the laws of the State of{" "}
-                <strong className="text-ink">New Jersey</strong>, without
+                <strong className="text-ink">Colorado</strong>, without
                 regard to its conflict of law provisions. Any disputes arising
                 under or in connection with these Terms shall be subject to the
-                exclusive jurisdiction of the courts located in New Jersey.
+                exclusive jurisdiction of the courts located in Colorado.
               </p>
             </section>
           </div>
