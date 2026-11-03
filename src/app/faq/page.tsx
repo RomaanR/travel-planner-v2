@@ -6,6 +6,7 @@ import { Plus, Minus } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import BackButton from "@/components/BackButton";
+import SiteFooter from "@/components/SiteFooter";
 
 const FAQS = [
   {
@@ -14,6 +15,10 @@ const FAQS = [
       {
         q: "What exactly is TravalBee?",
         a: "TravalBee is a bespoke travel curation service. You tell us your destination, dates, travel party, pace, budget, dietary needs, and interests, and we produce a complete, day-by-day itinerary in around 2 minutes. Each itinerary includes activities, restaurant recommendations with real GPS coordinates, transit times between stops, hotel suggestions, and a hidden gem per day that 95% of tourists never find.",
+      },
+      {
+        q: "Who is behind TravalBee?",
+        a: "TravalBee is a product built and operated by <a href=\"https://opsisx.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-emerald-accent hover:text-ink transition-colors\">OpsisX LLC</a> (1500 N Grant St #10191, Denver, CO 80203, USA). OpsisX is the company behind the service, the data controller for your account, and the contracting party in our Terms of Service.",
       },
       {
         q: "How long does it take to generate an itinerary?",
@@ -201,6 +206,7 @@ export default function FaqPage() {
           </div>
         </div>
       </main>
+    <SiteFooter />
     </>
   );
 }

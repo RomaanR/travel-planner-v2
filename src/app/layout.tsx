@@ -24,6 +24,21 @@ const dmSans = DM_Sans({
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://travalbee.com";
 
+// Tells search engines who is behind the product (schema.org). Static, no user data.
+const ORG_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://opsisx.com/#organization",
+      name: "OpsisX LLC",
+      url: "https://opsisx.com",
+      address: { "@type": "PostalAddress", streetAddress: "1500 N Grant St #10191", addressLocality: "Denver", addressRegion: "CO", postalCode: "80203", addressCountry: "US" },
+    },
+    { "@type": "Organization", "@id": SITE_URL + "/#organization", name: "TravalBee", url: SITE_URL, parentOrganization: { "@id": "https://opsisx.com/#organization" } },
+  ],
+});
+
 export function generateMetadata(): Metadata {
   return {
     // Resolves relative canonical / Open Graph URLs (incl. app/opengraph-image).
@@ -83,6 +98,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
       <body className="bg-paper text-ink antialiased overflow-x-clip print:overflow-visible print:h-auto">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ORG_JSON_LD }} />
         <div className="w-full max-w-[100vw] overflow-x-clip relative print:overflow-visible print:h-auto print:block">
         {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
           <ClerkProvider>{children}</ClerkProvider>

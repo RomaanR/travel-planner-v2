@@ -296,7 +296,7 @@ export default async function DashboardPage() {
           {/* ── Footer ── */}
           <footer className="border-t border-ink/5 pt-8">
             <p className="micro-copy text-ink-light text-center">
-              &copy; {new Date().getFullYear()} TravalBee &middot; All rights reserved.
+              &copy; {new Date().getFullYear()} TravalBee &middot; A product of OpsisX LLC &middot; All rights reserved.
             </p>
           </footer>
 

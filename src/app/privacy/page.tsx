@@ -27,7 +27,7 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              TravalBee (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is committed to
+              TravalBee is a product of OpsisX LLC (1500 N Grant St #10191, Denver, CO 80203, USA). In this policy, &quot;we&quot;, &quot;us&quot; and &quot;our&quot; mean OpsisX LLC, which is committed to
               protecting your personal data and respecting your privacy. This policy explains
               exactly what information we collect, why we collect it, how we use and protect it,
               how long we keep it, and your rights under applicable privacy laws — including the
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
             </p>
 
             <p>
-              We are the <strong className="text-ink">data controller</strong> for the personal
+              OpsisX LLC is the <strong className="text-ink">data controller</strong> for the personal
               data you provide to us. If you have any questions about this policy or wish to
               exercise your rights, contact us at{" "}
               <a

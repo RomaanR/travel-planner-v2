@@ -9,6 +9,7 @@ import AdvisoryMap from "@/components/news/AdvisoryMap";
 import DestinationFilter from "@/components/news/DestinationFilter";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
+import SiteFooter from "@/components/SiteFooter";
 import { ALL_COUNTRIES, NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { getCountryPulse, getFeedChecks, getNewsResult } from "@/lib/news/query";
 import { getWorldMap } from "@/lib/news/world";
@@ -162,6 +163,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Params 
 
         <NewsNote />
       </section>
+    <SiteFooter />
     </main>
   );
 }

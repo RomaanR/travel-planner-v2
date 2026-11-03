@@ -36,6 +36,10 @@ export default function TermsPage() {
               bound by these Terms.
             </p>
 
+            <p>
+              TravalBee is a product operated by OpsisX LLC, 1500 N Grant St #10191, Denver, CO 80203, USA (&quot;OpsisX&quot;, &quot;we&quot;, &quot;us&quot;). These Terms are an agreement between you and OpsisX.
+            </p>
+
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
                 1. Acceptance of Terms

@@ -9,6 +9,7 @@ import FadeIn from "@/components/news/FadeIn";
 import Flag from "@/components/news/Flag";
 import NewsCard from "@/components/news/NewsCard";
 import NewsNote from "@/components/news/NewsNote";
+import SiteFooter from "@/components/SiteFooter";
 import SourceLink from "@/components/news/SourceLink";
 import { NEWS_COUNTRIES, countryBySlug } from "@/lib/news/countries";
 import { planHrefFor } from "@/lib/news/plan";
@@ -179,6 +180,7 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
 
         <NewsNote />
       </section>
+    <SiteFooter />
     </main>
   );
 }

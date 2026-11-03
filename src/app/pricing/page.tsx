@@ -10,6 +10,7 @@ import { useAuth, SignInButton } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import BackButton from "@/components/BackButton";
+import SiteFooter from "@/components/SiteFooter";
 import { toast } from "sonner";
 
 const FREE_FEATURES = [
@@ -220,14 +221,7 @@ export default function PricingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-ink/5 bg-paper-dark px-8 md:px-16 py-8">
-        <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="font-serif italic text-2xl text-ink">TravalBee</p>
-          <p className="micro-copy text-ink-light">
-            &copy; {new Date().getFullYear()} TravalBee. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

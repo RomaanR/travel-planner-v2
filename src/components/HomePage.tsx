@@ -6,13 +6,13 @@
 const USE_FLOATING_UI = true;
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import BentoGrid from "@/components/BentoGrid";
 import HeroClassic from "@/components/HeroClassic";
 import HeroFloating from "@/components/HeroFloating";
 import type { SampleSummary } from "@/lib/sampleTrip";
 import BriefingStrip from "@/components/news/BriefingStrip";
+import SiteFooter from "@/components/SiteFooter";
 import type { NewsView } from "@/lib/news/types";
 import type { Pulse } from "@/lib/news/query";
 
@@ -161,47 +161,7 @@ export default function HomePage({ sample, news, pulse }: { sample: SampleSummar
       <BentoGrid />
 
       {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="border-t border-ink/5 bg-paper-dark px-8 md:px-16 py-12">
-        <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <p className="font-serif italic text-3xl text-ink mb-1">
-              TravalBee
-            </p>
-            <p className="micro-copy text-ink-light">
-              Curated Luxury Journeys
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <Link href="/news" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              News
-            </Link>
-            <Link href="/pricing" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Pricing
-            </Link>
-            <Link href="/faq" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              FAQ
-            </Link>
-            <Link href="/privacy" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Privacy
-            </Link>
-            <Link href="/terms" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Terms
-            </Link>
-            <Link href="/cookies" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Cookies
-            </Link>
-            <Link href="/refunds" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Refunds
-            </Link>
-            <Link href="/support" className="micro-copy text-ink-light hover:text-ink transition-colors">
-              Support
-            </Link>
-          </div>
-          <p className="micro-copy text-ink-light">
-            &copy; {new Date().getFullYear()} TravalBee. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
 
       </div>{/* end below-hero opaque wrapper */}
     </main>
