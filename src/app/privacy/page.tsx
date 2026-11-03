@@ -180,69 +180,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 4. Third-Party Services & Data Processors ── */}
+            {/* ── 4. International Data Transfers ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                4. Third-Party Services &amp; Data Processors
-              </h2>
-              <p className="mb-3">
-                We share limited data with the following processors, solely to operate the
-                service:
-              </p>
-              <ul className="list-disc pl-5 space-y-4">
-                <li>
-                  <strong className="text-ink">Anthropic</strong> &mdash; powers itinerary
-                  generation. Your travel preferences (destination, dates, pace, dietary needs,
-                  interests) are transmitted to Anthropic&apos;s API solely to generate your
-                  itinerary.{" "}
-                  <strong className="text-ink">
-                    Anthropic does not use API inputs to train its public models by default,
-                  </strong>{" "}
-                  per its API usage policy.
-                </li>
-                <li>
-                  <strong className="text-ink">Clerk</strong> &mdash; handles user
-                  authentication. Clerk stores your email address and manages session tokens.
-                  Clerk is SOC 2 Type II certified. Subject to{" "}
-                  <a href="https://clerk.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Clerk&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Supabase</strong> &mdash; hosts our PostgreSQL
-                  database where your saved itineraries are stored. Data is encrypted at rest
-                  and in transit. Subject to{" "}
-                  <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Supabase&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Vercel</strong> &mdash; hosts the application
-                  and processes request logs and anonymised analytics. Subject to{" "}
-                  <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Vercel&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Google (Maps &amp; Places)</strong> &mdash;
-                  we use Google&apos;s Maps and Places APIs server-side to enrich place data
-                  (photos, ratings, opening hours). Your search preferences may be transmitted
-                  to Google. Subject to{" "}
-                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Google&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Upstash (Redis)</strong> &mdash; stores
-                  short-lived rate-limiting counters keyed by user identifier or IP. Data
-                  expires automatically within one hour and is never used for any other purpose.
-                </li>
-                <li>
-                  <strong className="text-ink">Booking.com (Affiliate Programme)</strong> &mdash;
-                  hotel recommendation links use our affiliate ID. If you click through and book,
-                  we earn a commission. No personal data from our platform is shared with
-                  Booking.com beyond the standard HTTP referrer. Subject to{" "}
-                  <a href="https://www.booking.com/content/privacy.html" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Booking.com&apos;s Privacy Policy</a>.
-                </li>
-              </ul>
-            </section>
-
-            {/* ── 5. International Data Transfers ── */}
-            <section>
-              <h2 className="font-serif italic text-2xl text-ink mb-3">
-                5. International Data Transfers
+                4. International Data Transfers
               </h2>
               <p>
                 TravalBee operates globally and uses service providers based in the
@@ -262,10 +203,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 6. Data Retention ── */}
+            {/* ── 5. Data Retention ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                6. Data Retention
+                5. Data Retention
               </h2>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
@@ -295,10 +236,10 @@ export default function PrivacyPage() {
               </ul>
             </section>
 
-            {/* ── 7. Cookies & Local Storage ── */}
+            {/* ── 6. Cookies & Local Storage ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                7. Cookies &amp; Local Storage
+                6. Cookies &amp; Local Storage
               </h2>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
@@ -324,10 +265,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 8. Your Rights ── */}
+            {/* ── 7. Your Rights ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                8. Your Rights
+                7. Your Rights
               </h2>
               <p className="mb-3">
                 Depending on where you live, you have the following rights regarding your
@@ -399,10 +340,10 @@ export default function PrivacyPage() {
               </div>
             </section>
 
-            {/* ── 9. How to Exercise Your Rights ── */}
+            {/* ── 8. How to Exercise Your Rights ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                9. How to Exercise Your Rights
+                8. How to Exercise Your Rights
               </h2>
               <p className="mb-3">
                 To exercise any of the rights listed above — including requesting deletion of
@@ -431,10 +372,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 10. Supervisory Authority & Complaints ── */}
+            {/* ── 9. Supervisory Authority & Complaints ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                10. Supervisory Authority &amp; Complaints
+                9. Supervisory Authority &amp; Complaints
               </h2>
               <p className="mb-3">
                 If you believe we have not handled your personal data in accordance with
@@ -480,10 +421,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 11. Automated Decision-Making ── */}
+            {/* ── 10. Automated Decision-Making ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                11. Automated Decision-Making
+                10. Automated Decision-Making
               </h2>
               <p>
                 We use an AI model (Anthropic&apos;s Claude) to generate travel itinerary
@@ -494,10 +435,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 12. Children's Privacy ── */}
+            {/* ── 11. Children's Privacy ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                12. Children&apos;s Privacy
+                11. Children&apos;s Privacy
               </h2>
               <p>
                 TravalBee is not directed at children. We do not knowingly collect personal
@@ -510,10 +451,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 13. Security ── */}
+            {/* ── 12. Security ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                13. Security
+                12. Security
               </h2>
               <p>
                 We implement appropriate technical and organisational measures to protect your
@@ -527,10 +468,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 14. Changes ── */}
+            {/* ── 13. Changes ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                14. Changes to This Policy
+                13. Changes to This Policy
               </h2>
               <p>
                 We may update this Privacy Policy from time to time. The &quot;Last
@@ -541,10 +482,10 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 15. Contact ── */}
+            {/* ── 14. Contact ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                15. Contact Us
+                14. Contact Us
               </h2>
               <p className="mb-2">
                 For any privacy-related questions, data access requests, or deletion requests:
