@@ -84,7 +84,10 @@ export default async function SamplePage() {
               {trip.destination}
             </h1>
           </div>
-          <ExportPdfButton variant="icon" />
+          <div className="flex items-center gap-2">
+            <MobileMapBanner center={mapCenter} points={mapPoints} placement="header" />
+            <ExportPdfButton variant="icon" />
+          </div>
         </div>
       </div>
 
@@ -93,9 +96,6 @@ export default async function SamplePage() {
 
         {/* LEFT: scrollable timeline — full width in print */}
         <div className="w-full md:w-[55%] overflow-y-auto overflow-x-clip print:w-full print:overflow-visible print:h-auto">
-
-          {/* Mobile map banner — hidden in print */}
-          <MobileMapBanner center={mapCenter} points={mapPoints} />
 
           <div className="px-6 md:px-10 py-8 w-full min-w-0 print:px-0 print:py-6">
             <ItineraryViewer
