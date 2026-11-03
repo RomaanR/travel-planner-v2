@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ChevronLeft, Sparkles } from "lucide-react";
+import { BACK_PILL } from "@/lib/ui";
 import { useRouter } from "next/navigation";
 import { track } from "@vercel/analytics";
 import Navbar from "@/components/Navbar";
@@ -59,7 +60,7 @@ export default function CurateClient({ credits }: { credits?: number }) {
         >
           <Link
             href="/"
-            className="micro-copy inline-flex items-center gap-1 text-ink-light hover:text-ink transition-colors duration-200"
+            className={BACK_PILL}
           >
             <ChevronLeft size={14} strokeWidth={2} />
             Back to Home

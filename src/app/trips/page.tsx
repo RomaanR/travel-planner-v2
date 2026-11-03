@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { BACK_PILL } from "@/lib/ui";
 import Navbar from "@/components/Navbar";
 import TripsClient from "@/components/TripsClient";
 import UnauthenticatedState from "@/components/UnauthenticatedState";
@@ -30,7 +31,7 @@ export default async function TripsPage() {
           {/* Back to home */}
           <Link
             href="/"
-            className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-6"
+            className={`${BACK_PILL} mb-6`}
           >
             <ChevronLeft size={13} strokeWidth={1.5} />
             BACK TO HOME

@@ -23,6 +23,7 @@ import { saveTripToDb } from "@/app/actions/saveTrip";
 import { cacheNewTrip } from "@/hooks/useOfflineTrips";
 import { useStreamingItinerary } from "@/hooks/useStreamingItinerary";
 import ExportPdfButton from "@/components/ExportPdfButton";
+import { BACK_PILL } from "@/lib/ui";
 import RefinePanel from "@/components/RefinePanel";
 import type { ItineraryRequest, MapPoint } from "@/types/itinerary";
 
@@ -204,7 +205,7 @@ export default function ItineraryPage() {
       <div className="shrink-0 pt-24 md:pt-20 pb-5 px-6 md:px-10 border-b border-ink/5 bg-paper-dark print:hidden">
         <button
           onClick={() => router.push("/")}
-          className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
+          className={`${BACK_PILL} mb-3`}
         >
           <ArrowLeft size={13} />
           New Destination

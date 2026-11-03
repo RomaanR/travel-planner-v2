@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { BACK_PILL } from "@/lib/ui";
 
 interface BackButtonProps {
   href?: string;
@@ -24,7 +25,7 @@ export default function BackButton({ href = "/", label = "HOME" }: BackButtonPro
   return (
     <button
       onClick={handleBack}
-      className="inline-flex items-center gap-1.5 micro-copy text-ink-light hover:text-ink transition-colors mb-8"
+      className={`${BACK_PILL} mb-8`}
     >
       <ChevronLeft size={13} strokeWidth={1.5} />
       {label}

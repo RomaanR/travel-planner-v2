@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronLeft } from "lucide-react";
+import { BACK_PILL } from "@/lib/ui";
 import { prisma } from "@/lib/db";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
@@ -196,10 +197,11 @@ export default async function TripViewPage({
           <div className="flex items-center justify-between mb-3">
             <Link
               href="/trips"
-              className="text-ink-light hover:text-ink transition-colors -ml-0.5"
+              className={BACK_PILL}
               aria-label="Back to archive"
             >
-              <ChevronLeft size={22} strokeWidth={1.5} />
+              <ChevronLeft size={14} strokeWidth={2} />
+              Archive
             </Link>
             <p className="micro-copy text-ink-light">
               Saved Journey&ensp;&middot;&ensp;{formatDate(trip.createdAt)}
@@ -217,7 +219,7 @@ export default async function TripViewPage({
         <div className="hidden md:block">
           <Link
             href="/trips"
-            className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3"
+            className={`${BACK_PILL} mb-3`}
           >
             <ArrowLeft size={13} />
             Back to Archive

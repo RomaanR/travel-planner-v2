@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { BACK_PILL } from "@/lib/ui";
 import { prisma } from "@/lib/db";
 import { computeMapPoints } from "@/lib/itineraryUtils";
 import { planLikeThisHref } from "@/lib/planLikeThis";
@@ -75,7 +76,7 @@ export default async function SamplePage() {
           <div>
             <Link
               href="/"
-              className="flex items-center gap-2 micro-copy text-ink-light hover:text-ink transition-colors mb-3 print:hidden"
+              className={`${BACK_PILL} mb-3 print:hidden`}
             >
               <ChevronLeft size={13} strokeWidth={1.5} />
               BACK TO HOME
