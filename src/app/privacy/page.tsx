@@ -180,63 +180,27 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            {/* ── 4. Third-Party Services & Data Processors ── */}
+            {/* ── 4. Service Providers & Data Recipients ── */}
             <section>
               <h2 className="font-serif italic text-2xl text-ink mb-3">
-                4. Third-Party Services &amp; Data Processors
+                4. Service Providers &amp; Data Recipients
               </h2>
-              <p className="mb-3">
-                We share limited data with the following processors, solely to operate the
-                service:
+              <p>
+                We share limited personal data with trusted service providers who help us
+                operate TravalBee. These include providers of hosting, user authentication,
+                database storage, payments, email delivery, analytics and error monitoring,
+                maps and place information, and the technology that generates your itinerary
+                from your trip preferences. They may use your data only to provide their
+                services to us, under agreements that require them to protect it and not to
+                use it for their own purposes. Where a provider has its own privacy policy,
+                that policy also applies to the data it handles.
               </p>
-              <ul className="list-disc pl-5 space-y-4">
-                <li>
-                  <strong className="text-ink">Anthropic</strong> &mdash; powers itinerary
-                  generation. Your travel preferences (destination, dates, pace, dietary needs,
-                  interests) are transmitted to Anthropic&apos;s API solely to generate your
-                  itinerary.{" "}
-                  <strong className="text-ink">
-                    Anthropic does not use API inputs to train its public models by default,
-                  </strong>{" "}
-                  per its API usage policy.
-                </li>
-                <li>
-                  <strong className="text-ink">Clerk</strong> &mdash; handles user
-                  authentication. Clerk stores your email address and manages session tokens.
-                  Clerk is SOC 2 Type II certified. Subject to{" "}
-                  <a href="https://clerk.com/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Clerk&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Supabase</strong> &mdash; hosts our PostgreSQL
-                  database where your saved itineraries are stored. Data is encrypted at rest
-                  and in transit. Subject to{" "}
-                  <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Supabase&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Vercel</strong> &mdash; hosts the application
-                  and processes request logs and anonymised analytics. Subject to{" "}
-                  <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Vercel&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Google (Maps &amp; Places)</strong> &mdash;
-                  we use Google&apos;s Maps and Places APIs server-side to enrich place data
-                  (photos, ratings, opening hours). Your search preferences may be transmitted
-                  to Google. Subject to{" "}
-                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Google&apos;s Privacy Policy</a>.
-                </li>
-                <li>
-                  <strong className="text-ink">Upstash (Redis)</strong> &mdash; stores
-                  short-lived rate-limiting counters keyed by user identifier or IP. Data
-                  expires automatically within one hour and is never used for any other purpose.
-                </li>
-                <li>
-                  <strong className="text-ink">Booking.com (Affiliate Programme)</strong> &mdash;
-                  hotel recommendation links use our affiliate ID. If you click through and book,
-                  we earn a commission. No personal data from our platform is shared with
-                  Booking.com beyond the standard HTTP referrer. Subject to{" "}
-                  <a href="https://www.booking.com/content/privacy.html" target="_blank" rel="noopener noreferrer" className="text-emerald-accent hover:text-ink transition-colors">Booking.com&apos;s Privacy Policy</a>.
-                </li>
-              </ul>
+              <p className="mt-3">
+                Some hotel links on TravalBee are affiliate links. If you book through one,
+                we may earn a commission at no extra cost to you. Booking partners receive
+                only standard browser information, such as the page you came from, and not
+                the details of your account or itinerary.
+              </p>
             </section>
 
             {/* ── 5. International Data Transfers ── */}
