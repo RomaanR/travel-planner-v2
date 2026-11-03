@@ -1,0 +1,782 @@
+{
+  "in": {
+    "id": "3UDKNMKfFss",
+    "by": "Bharath Reddy"
+  },
+  "ae": {
+    "id": "QGRe9cmc5tE",
+    "by": "alexanderafan"
+  },
+  "jp": {
+    "id": "n--CMLApjfI",
+    "by": "Manuel Cosentino"
+  },
+  "fr": {
+    "id": "nnzkZNYWHaU",
+    "by": "Chris Karidis"
+  },
+  "es": {
+    "id": "D8n_RJ3keAw",
+    "by": "Zahra Ahmadpari"
+  },
+  "it": {
+    "id": "ddawgJ7eGDA",
+    "by": "Yoal Desurmont"
+  },
+  "pt": {
+    "id": "RxVCWvDvfs4",
+    "by": "Regős Kornyei"
+  },
+  "ma": {
+    "id": "CFKksjYRSQ8",
+    "by": "Paul Macallan"
+  },
+  "gr": {
+    "id": "9NsP7Q7oBm0",
+    "by": "Héctor J. Rivas"
+  },
+  "th": {
+    "id": "0DKDTSFBXc8",
+    "by": "Anantachai Saothong"
+  },
+  "tr": {
+    "id": "PXcoEzJsW0c",
+    "by": "engin akyurt"
+  },
+  "mx": {
+    "id": "8L7mOETNgHA",
+    "by": "Alex Azabache"
+  },
+  "gt": {
+    "id": "uQ7BRkhn6gs",
+    "by": "Alexander Schimmeck"
+  },
+  "af": {
+    "id": "TLKCx6mVIHo",
+    "by": "Zabihullah Habibi"
+  },
+  "al": {
+    "id": "YOM5F7yAzrk",
+    "by": "B"
+  },
+  "dz": {
+    "id": "9qlAltK9ejs",
+    "by": "Islam Fersaoui"
+  },
+  "ad": {
+    "id": "rEr4mjCtj88",
+    "by": "Manuel Torres Garcia"
+  },
+  "ai": {
+    "id": "sWrbaVnQ5dg",
+    "by": "Steve Adams"
+  },
+  "aq": {
+    "id": "4ReskwNsh68",
+    "by": "Derek Oyen"
+  },
+  "ag": {
+    "id": "9CJTrF-HnlU",
+    "by": "Rick Jamison"
+  },
+  "am": {
+    "id": "Nmlf0gF7_mI",
+    "by": "Yuri Oparin"
+  },
+  "aw": {
+    "id": "kf9-B9XhhUw",
+    "by": "Meg von Haartman"
+  },
+  "au": {
+    "id": "JmuyB_LibRo",
+    "by": "Caleb"
+  },
+  "at": {
+    "id": "l0ZkopazDN4",
+    "by": "Ronin"
+  },
+  "az": {
+    "id": "wX_9ZhIErpg",
+    "by": "Lloyd Alozie"
+  },
+  "bs": {
+    "id": "abswTJCu1Lc",
+    "by": "Matt Benson"
+  },
+  "bh": {
+    "id": "k4JjOG5QQoY",
+    "by": "Charles-Adrien Fournier"
+  },
+  "bd": {
+    "id": "ckAf9BtbTXg",
+    "by": "Andy Bridge"
+  },
+  "bb": {
+    "id": "oq6FoIbSbCs",
+    "by": "Tom Jur"
+  },
+  "by": {
+    "id": "3Im4hCZSezs",
+    "by": "Andrey Kukharenko"
+  },
+  "be": {
+    "id": "suTr28QV4wU",
+    "by": "Stephanie LeBlanc"
+  },
+  "ao": {
+    "id": "1VQRywqoMtY",
+    "by": "Jorge Sá Pinheiro"
+  },
+  "ar": {
+    "id": "fl3fdbbtj4Q",
+    "by": "Barbara Zandoval"
+  },
+  "bz": {
+    "id": "kjt8HZ7CYWU",
+    "by": "MATHEW RUPP"
+  },
+  "bj": {
+    "id": "pam8f6ATIgI",
+    "by": "Ifeoluwa B."
+  },
+  "bm": {
+    "id": "0a17lg30MtY",
+    "by": "Kinø"
+  },
+  "bt": {
+    "id": "C3qpvuf-AUE",
+    "by": "Sudhan Chitgopkar"
+  },
+  "bo": {
+    "id": "SV89j5DzdTA",
+    "by": "Andrea Huls Pareja"
+  },
+  "ba": {
+    "id": "GZjH4cVGgCs",
+    "by": "Yu Siang Teo"
+  },
+  "br": {
+    "id": "7F65HDP0-E0",
+    "by": "Agustin Diaz Gargiulo"
+  },
+  "vg": {
+    "id": "kko4KOyHPtk",
+    "by": "Karl Callwood"
+  },
+  "bn": {
+    "id": "KNIIpxvwPaM",
+    "by": "Jimmy Whitson"
+  },
+  "bg": {
+    "id": "5Y1RQQ-ICzE",
+    "by": "Stela Horvat"
+  },
+  "bi": {
+    "id": "YlzfGexgBX0",
+    "by": "Augustine Tours"
+  },
+  "kh": {
+    "id": "o4ispOaaO48",
+    "by": "allPhoto Bangkok"
+  },
+  "cm": {
+    "id": "TdwJW7L5DXg",
+    "by": "Ariel Nathan ADA MBITA"
+  },
+  "ca": {
+    "id": "6rC8fmNW3pk",
+    "by": "Jacky Huang"
+  },
+  "cv": {
+    "id": "i010CaxDLEM",
+    "by": "Dominique Josse"
+  },
+  "ky": {
+    "id": "29TXTmsCj7A",
+    "by": "Becky Vogel"
+  },
+  "cf": {
+    "id": "m-b81gOjxv4",
+    "by": "Sovann Samedy"
+  },
+  "cl": {
+    "id": "Y9Wp5keJsn8",
+    "by": "Juan Pablo Ahumada"
+  },
+  "cn": {
+    "id": "62X3Lfvjw8Q",
+    "by": "Emma Lau"
+  },
+  "co": {
+    "id": "RzF2lyPEPZY",
+    "by": "Mykyta Kravčenko"
+  },
+  "cr": {
+    "id": "LgrGHYZzBSk",
+    "by": "Cosmic Timetraveler"
+  },
+  "ci": {
+    "id": "xs0gVDr02ag",
+    "by": "Ingeborg Korme"
+  },
+  "hr": {
+    "id": "btAXypy6664",
+    "by": "mana5280"
+  },
+  "cu": {
+    "id": "L6mKnwc6y48",
+    "by": "Alex Azabache"
+  },
+  "cw": {
+    "id": "vKRkRQ0T4Lg",
+    "by": "Alex Bello"
+  },
+  "cy": {
+    "id": "RTXYreB10KI",
+    "by": "Matěj Mikan"
+  },
+  "cz": {
+    "id": "xzGgJ7AJvZw",
+    "by": "Nick Night"
+  },
+  "dk": {
+    "id": "550qzbQKTM0",
+    "by": "Jacob Buchhave"
+  },
+  "dj": {
+    "id": "QGEqzZ7VWqs",
+    "by": "Eva Mtalii"
+  },
+  "dm": {
+    "id": "ewhYOwLdhMU",
+    "by": "Jamie Tudor"
+  },
+  "do": {
+    "id": "AzTzdURe-Bg",
+    "by": "Michael Navarro"
+  },
+  "cd": {
+    "id": "CDo6aAgMmuI",
+    "by": "Johnnathan Tshibangu"
+  },
+  "ec": {
+    "id": "KTpByahkagc",
+    "by": "Evan Wise"
+  },
+  "eg": {
+    "id": "vqRMXgVtGXM",
+    "by": "Osama Elsayed"
+  },
+  "sv": {
+    "id": "L3B_KCP58OQ",
+    "by": "Esaú Fuentes González"
+  },
+  "ee": {
+    "id": "KYfRqcCE4qE",
+    "by": "Xinyi Wen"
+  },
+  "sz": {
+    "id": "ElGi7zOr01k",
+    "by": "proudlyswazi"
+  },
+  "et": {
+    "id": "PxxCP7JwAeg",
+    "by": "Abiy Temesgen"
+  },
+  "fj": {
+    "id": "gLsAGfaSZFc",
+    "by": "Adam Young"
+  },
+  "fi": {
+    "id": "j5rs-nCPA18",
+    "by": "Tapio Haaja"
+  },
+  "gf": {
+    "id": "1f6xwCqBSTo",
+    "by": "Flow Flo"
+  },
+  "pf": {
+    "id": "rfppBUhQz2Q",
+    "by": "Tom Donders"
+  },
+  "ga": {
+    "id": "NHhgTBdUsXY",
+    "by": "JEaLiFe Pictures"
+  },
+  "gm": {
+    "id": "pI_W6zfOXvQ",
+    "by": "The Gambia"
+  },
+  "ge": {
+    "id": "xVLdFIxcDCc",
+    "by": "K T"
+  },
+  "de": {
+    "id": "1uWanmgkd5g",
+    "by": "Florian Wehde"
+  },
+  "gh": {
+    "id": "c2Q80-eoEIw",
+    "by": "Barnabas Lartey-Odoi Tetteh"
+  },
+  "gl": {
+    "id": "2KblC12ZKck",
+    "by": "ArcticDesire.com Polarreisen"
+  },
+  "gp": {
+    "id": "2T4xkaHzti4",
+    "by": "Grant Van Cleemput"
+  },
+  "gn": {
+    "id": "fzKP6Rz0Ss4",
+    "by": "Tim Oun"
+  },
+  "gw": {
+    "id": "ZuN44o80Bn0",
+    "by": "USGS"
+  },
+  "gy": {
+    "id": "d0panFt2zNU",
+    "by": "Joshua Gobin"
+  },
+  "ht": {
+    "id": "U3Sdt2phkmA",
+    "by": "Reynaldo Mirault"
+  },
+  "hn": {
+    "id": "UHuBVcWVwrQ",
+    "by": "Edgard Josue"
+  },
+  "hk": {
+    "id": "4vf1KEkD7Gc",
+    "by": "Manson"
+  },
+  "hu": {
+    "id": "sMyQb3i9bNA",
+    "by": "Ervin Lukacs"
+  },
+  "is": {
+    "id": "meOFNlRbHmY",
+    "by": "Josh Reid"
+  },
+  "id": {
+    "id": "UjJS-liCzIE",
+    "by": "Uray Zulfikar"
+  },
+  "ir": {
+    "id": "LPo30vLe9DQ",
+    "by": "Nastaran Taghipour"
+  },
+  "iq": {
+    "id": "XGAc3dU1ntM",
+    "by": "Zanyar Ibrahim"
+  },
+  "ie": {
+    "id": "8l-AK3QYFLE",
+    "by": "Mick Haupt"
+  },
+  "il": {
+    "id": "0igNSWFKK1k",
+    "by": "Damir"
+  },
+  "jm": {
+    "id": "AxeNlLIq9jA",
+    "by": "Leon Campbell"
+  },
+  "jo": {
+    "id": "eoZTnFtusDs",
+    "by": "Brian Kairuz"
+  },
+  "kz": {
+    "id": "r16_5UAwLDY",
+    "by": "Bekarys Khozhanazar"
+  },
+  "ke": {
+    "id": "R2QCr4LX0a0",
+    "by": "Zac Wolff"
+  },
+  "xk": {
+    "id": "wgYOeNDC35k",
+    "by": "Besart Ademi"
+  },
+  "kw": {
+    "id": "RvBN5Maxg5c",
+    "by": "Masrur Rahman"
+  },
+  "kg": {
+    "id": "qLchd-tax_g",
+    "by": "Oziel Gómez"
+  },
+  "la": {
+    "id": "Wy9yEJcxAbw",
+    "by": "Mon Jester"
+  },
+  "lv": {
+    "id": "F68ny2ZSgEs",
+    "by": "Martti Salmi"
+  },
+  "lb": {
+    "id": "vhAy58-Le74",
+    "by": "Hao Wu"
+  },
+  "ls": {
+    "id": "-YtkaWPrJQM",
+    "by": "Tatenda Mapigoti"
+  },
+  "lr": {
+    "id": "BikRauEWydo",
+    "by": "Jacob Kpehe"
+  },
+  "ly": {
+    "id": "edecsA5q9xM",
+    "by": "Z El Baz"
+  },
+  "li": {
+    "id": "JH2OZ097OqI",
+    "by": "Martin Krecht"
+  },
+  "lt": {
+    "id": "uWNj2YgT_-A",
+    "by": "Tadas Petrokas"
+  },
+  "lu": {
+    "id": "FPdyoYNdvaM",
+    "by": "Cedric Letsch"
+  },
+  "mo": {
+    "id": "DCrDLqatXTU",
+    "by": "Raner Pascual"
+  },
+  "mg": {
+    "id": "fLSwfzsDYeo",
+    "by": "Rafael Peier"
+  },
+  "mw": {
+    "id": "_U863FniUCw",
+    "by": "Ismail Abubakar"
+  },
+  "my": {
+    "id": "1e71PSox7m8",
+    "by": "Izuddin Helmi Adnan"
+  },
+  "mv": {
+    "id": "lT9rqfG7lcQ",
+    "by": "Jailam Rashad"
+  },
+  "mt": {
+    "id": "JaATrgEu8x8",
+    "by": "Jean Vella"
+  },
+  "mh": {
+    "id": "w4EKPUhpYn8",
+    "by": "Winston Chen"
+  },
+  "mq": {
+    "id": "UotOq7E5UKc",
+    "by": "Mini Bonz"
+  },
+  "mr": {
+    "id": "LaoYioZga00",
+    "by": "Baptiste Riethmann"
+  },
+  "mu": {
+    "id": "ByAHlRiTQjo",
+    "by": "Xavier  Coiffic"
+  },
+  "fm": {
+    "id": "WScpndZFrOM",
+    "by": "Marek Okon"
+  },
+  "md": {
+    "id": "BtcCDR9lBmg",
+    "by": "GR"
+  },
+  "mn": {
+    "id": "9vqWj6abWBs",
+    "by": "Alexander Popovkin"
+  },
+  "me": {
+    "id": "_nupO8tu6sg",
+    "by": "olga brajnovic"
+  },
+  "ms": {
+    "id": "OXDivN7Wxkk",
+    "by": "M I S S S U"
+  },
+  "mz": {
+    "id": "DeTqzV2xEpI",
+    "by": "Mister Paps"
+  },
+  "mm": {
+    "id": "w5rdBSRhphc",
+    "by": "Yves Alarie"
+  },
+  "na": {
+    "id": "3VsrKO72rVw",
+    "by": "Anika De Klerk"
+  },
+  "np": {
+    "id": "xyE1p1rG04U",
+    "by": "Giuseppe Mondì"
+  },
+  "nl": {
+    "id": "o9PO6FyAZU0",
+    "by": "Pourya Gohari"
+  },
+  "nz": {
+    "id": "2v_mADUUWeU",
+    "by": "K8"
+  },
+  "ni": {
+    "id": "gYSHbklASZQ",
+    "by": "Sara Obando"
+  },
+  "ng": {
+    "id": "FdvErEs2yCk",
+    "by": "Praise Godwin"
+  },
+  "kp": {
+    "id": "3dSv5LXts8A",
+    "by": "Thomas Evans"
+  },
+  "mk": {
+    "id": "DwGGQLAG8zw",
+    "by": "Albert Hyseni"
+  },
+  "no": {
+    "id": "83YzZsHHUvU",
+    "by": "Vidar Nordli-Mathisen"
+  },
+  "om": {
+    "id": "0VxDlR2igPk",
+    "by": "ahmed nasser"
+  },
+  "pk": {
+    "id": "NDw1gxtfglY",
+    "by": "Syed Bilal Javaid"
+  },
+  "pw": {
+    "id": "dByh7WxrjIk",
+    "by": "tommao wang"
+  },
+  "pa": {
+    "id": "cAwhBR-5t_8",
+    "by": "Karol Chomka"
+  },
+  "pg": {
+    "id": "n1LrwXzsnuU",
+    "by": "Asso Myron"
+  },
+  "py": {
+    "id": "8ADef9yHnVk",
+    "by": "Moth"
+  },
+  "pe": {
+    "id": "hjanvZlqoB8",
+    "by": "McKayla Crump"
+  },
+  "ph": {
+    "id": "Z5xHpUH9o8Y",
+    "by": "Camille San Vicente"
+  },
+  "pl": {
+    "id": "t-SSPRyqo7c",
+    "by": "Kevin Perez Camacho"
+  },
+  "qa": {
+    "id": "a-kdjff86zE",
+    "by": "Radoslaw Prekurat"
+  },
+  "cg": {
+    "id": "d7LtSnVGmoY",
+    "by": "Florian Kibangou"
+  },
+  "ro": {
+    "id": "DE7I5KDnJic",
+    "by": "Reanimated Man X"
+  },
+  "ru": {
+    "id": "jaH3QF46gAY",
+    "by": "Nikolay Vorobyev"
+  },
+  "rw": {
+    "id": "b-HnOOPRfTI",
+    "by": "Jean Claude Akarikumutima"
+  },
+  "bl": {
+    "id": "E2oidfEHbjk",
+    "by": "Thomas Dorgler"
+  },
+  "kn": {
+    "id": "jLm5Rk4Puuc",
+    "by": "Omar Martin"
+  },
+  "lc": {
+    "id": "G2Ne9ir0E4U",
+    "by": "Karl Moore"
+  },
+  "mf": {
+    "id": "L9XMq91arG8",
+    "by": "Kuriakose John"
+  },
+  "vc": {
+    "id": "DoPuczr3Rw8",
+    "by": "George Apodaca"
+  },
+  "sa": {
+    "id": "qbvAboqHkBg",
+    "by": "Yasmine Arfaoui"
+  },
+  "sn": {
+    "id": "MPmevL5ujsU",
+    "by": "Eyelit Studio"
+  },
+  "rs": {
+    "id": "uw8RQjLmc9A",
+    "by": "Borys Jarzcuk"
+  },
+  "sc": {
+    "id": "jPmurJKSL_0",
+    "by": "Christian Cacciamani"
+  },
+  "sl": {
+    "id": "pcNIJPMPY9M",
+    "by": "Bunting Kargbo"
+  },
+  "sg": {
+    "id": "__cBlRzLSTg",
+    "by": "Hu Chen"
+  },
+  "sk": {
+    "id": "o8pR2dQr9L0",
+    "by": "Ivan Benets"
+  },
+  "si": {
+    "id": "d1r3uE2KxLc",
+    "by": "Klaudia Borowiec"
+  },
+  "sb": {
+    "id": "oJY_b38fyNw",
+    "by": "Gilly Tanabose"
+  },
+  "so": {
+    "id": "xg9PeO_h5BE",
+    "by": "Shamsudin Abdullah"
+  },
+  "za": {
+    "id": "1GgWbP74phY",
+    "by": "Tobias Reich"
+  },
+  "kr": {
+    "id": "ku9Ftte6Ymo",
+    "by": "Robson Hatsukami Morgan"
+  },
+  "ss": {
+    "id": "7MXH1282qaM",
+    "by": "chetan sharma"
+  },
+  "lk": {
+    "id": "smUAKwMT8XA",
+    "by": "Dylan Shaw"
+  },
+  "sd": {
+    "id": "ce3qgc3EcRg",
+    "by": "Steve King"
+  },
+  "se": {
+    "id": "TuC7aPGTgEU",
+    "by": "Carl Malmer"
+  },
+  "ch": {
+    "id": "58uZCE8zrdk",
+    "by": "Ricardo Gomez Angel"
+  },
+  "sy": {
+    "id": "wMUzleDWMxc",
+    "by": "abd sarakbi"
+  },
+  "tw": {
+    "id": "9-JFZIORoRw",
+    "by": "Timo Volz"
+  },
+  "tj": {
+    "id": "idAT19_sPZs",
+    "by": "Aleksander Stypczynski"
+  },
+  "tz": {
+    "id": "B8QoatPKAJg",
+    "by": "MARIOLA GROBELSKA"
+  },
+  "tl": {
+    "id": "Hn4o3xF-gWc",
+    "by": "Jaime Gusmao"
+  },
+  "tg": {
+    "id": "A1cGd-omvzI",
+    "by": "Ingeborg Korme"
+  },
+  "tt": {
+    "id": "NJlO2ffk298",
+    "by": "Kenrick Baksh"
+  },
+  "tn": {
+    "id": "E2vjL529H4Q",
+    "by": "Brahim Guedich"
+  },
+  "tm": {
+    "id": "N_DVjHfpf1k",
+    "by": "Nikolai Kolosov"
+  },
+  "tc": {
+    "id": "9qnAP4Mfpa8",
+    "by": "Rosemary Media"
+  },
+  "tv": {
+    "id": "j52XUOKIaNg",
+    "by": "Winston Chen"
+  },
+  "ug": {
+    "id": "lii0uaz8Ieo",
+    "by": "Keith Kasaija"
+  },
+  "ua": {
+    "id": "4aHWCy-qJQY",
+    "by": "Glib Albovsky"
+  },
+  "gb": {
+    "id": "ImoVrhUBeFs",
+    "by": "Susan Q Yin"
+  },
+  "uy": {
+    "id": "B9YoUi7RYiE",
+    "by": "Guilherme Hellwinkel"
+  },
+  "uz": {
+    "id": "hvLu3ABC1n0",
+    "by": "Ozodbek Erkinov"
+  },
+  "vu": {
+    "id": "JxL6t8iVri4",
+    "by": "Seiji Seiji"
+  },
+  "ve": {
+    "id": "imv-QVzssUE",
+    "by": "Edwin Mijares"
+  },
+  "vn": {
+    "id": "zhz4hyU_Cyk",
+    "by": "Ronin"
+  },
+  "ye": {
+    "id": "vNTrQ49rByg",
+    "by": "asamw"
+  },
+  "zm": {
+    "id": "yV5DbMpUANQ",
+    "by": "Ed Wingate"
+  },
+  "zw": {
+    "id": "J1V5_f3tqAs",
+    "by": "Ed Wingate"
+  }
+}
