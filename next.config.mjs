@@ -7,14 +7,26 @@ const withSerwistConfig = withSerwist({
   disable: process.env.NODE_ENV === "development",
 });
 
+// Report-only: the browser logs violations to the console but blocks nothing. Once a few days of real
+// traffic show no violations from legitimate scripts, change the header key below to
+// "Content-Security-Policy" to enforce it.
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://js.stripe.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.travalbee.com https://challenges.cloudflare.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://maps.googleapis.com https://maps.gstatic.com https://*.googleusercontent.com https://*.ggpht.com https://images.unsplash.com https://img.clerk.com",
+  "connect-src 'self' https://maps.googleapis.com https://*.clerk.accounts.dev https://*.clerk.com https://clerk.travalbee.com https://api.stripe.com https://*.ingest.us.sentry.io",
+  "frame-src https://js.stripe.com https://challenges.cloudflare.com https://*.clerk.accounts.dev https://clerk.travalbee.com",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -36,12 +48,18 @@ const nextConfig = {
         headers: [
           { key: "X-Frame-Options",        value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Content-Security-Policy-Report-Only", value: csp },
           { key: "Referrer-Policy",        value: "strict-origin-when-cross-origin" },
           {
             key:   "Permissions-Policy",
             value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
           },
         ],
+      },
+      {
+        // Private API responses must never be stored by a shared cache (photo and map proxies set their own long public caching, which saves billed Google calls).
+        source: "/api/:path((?!photo|staticmap).*)",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
     ];
   },

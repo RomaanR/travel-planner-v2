@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, RefreshCw, Feather, Zap, Flame } from "lucide-react";
-import type { ItineraryRequest } from "@/types/itinerary";
+import type { ItineraryRequest, Interest } from "@/types/itinerary";
 
 // ─── Option data — mirrors CurationForm values exactly ───────────────────────
 
@@ -97,7 +97,7 @@ export default function RefinePanel({
     JSON.stringify([...(currentRequest.interests ?? [])].sort());
 
   function handleRegenerate() {
-    onRegenerate({ ...currentRequest, budgetTier, pace, interests });
+    onRegenerate({ ...currentRequest, budgetTier, pace, interests: interests as Interest[] });
   }
 
   if (!mounted) return null;

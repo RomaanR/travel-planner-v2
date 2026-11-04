@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
+import { appBaseUrl } from "@/lib/appUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/pricing", req.url));
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
   try {
+    const baseUrl = appBaseUrl();
     const portalSession = await stripe.billingPortal.sessions.create({
       customer:   profile.stripeCustomerId,
       return_url: `${baseUrl}/dashboard`,

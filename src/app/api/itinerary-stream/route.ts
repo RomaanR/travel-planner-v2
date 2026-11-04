@@ -16,6 +16,8 @@ import {
   acquireGenerationLock,
   releaseGenerationLock,
   getClientIp,
+  withinDailyBudget,
+  DAILY_CAPS,
 } from "@/lib/ratelimit";
 import {
   FREE_MAX_DAYS,
@@ -51,8 +53,8 @@ import type { DayPlan, Coordinate, TransitInfo, ItineraryResponse } from "@/type
 const ItinerarySchema = z.object({
   destination:   z.string().min(1).max(100),
   placeId:       z.string().min(1).max(300),
-  lat:           z.number().finite(),
-  lng:           z.number().finite(),
+  lat:           z.number().finite().min(-90).max(90),
+  lng:           z.number().finite().min(-180).max(180),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   returnDate:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   duration:      z.number().int().min(1).max(14),
@@ -680,6 +682,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // ── Global daily ceiling (protects the AI bill from many-caller abuse) ───────
+  if (!(await withinDailyBudget("generations", DAILY_CAPS.generations))) {
+    return Response.json(
+      { error: "We're at capacity for today. Please try again tomorrow." },
+      { status: 503 }
+    );
+  }
+
   // ── Rate limit (spends quota) ────────────────────────────────────────────────
   // Signed-in: 5/hour abuse guard. Guests: 1 trip per 24 h per IP.
   const limiter = userId ? ratelimit : anonymousItineraryRatelimit;
@@ -900,7 +910,15 @@ export async function POST(req: Request) {
       }
 
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Generation failed";
+      // Only our own, deliberately worded messages reach the client. Anything else (vendor,
+      // billing, network or parser errors) is logged for us and replaced with a neutral line.
+      const rawMessage = e instanceof Error ? e.message : "Generation failed";
+      console.error("[itinerary-stream] Generation failed:", rawMessage);
+      const isOwnMessage =
+        errorTypeOverride === "max_tokens" || /^The stream completed with \d+ of \d+ days/.test(rawMessage);
+      const message = isOwnMessage
+        ? rawMessage
+        : "We couldn't finish preparing this itinerary. Please try again in a moment.";
       await persist(writer!.fail(message));
       send({ type: "error", message });
 

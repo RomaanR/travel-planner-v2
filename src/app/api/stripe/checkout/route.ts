@@ -4,6 +4,8 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import { BLOCKING_SUBSCRIPTION_STATUSES } from "@/lib/billing";
 import { freeCreditsRemaining } from "@/lib/credits";
+import { appBaseUrl } from "@/lib/appUrl";
+import { checkoutRatelimit } from "@/lib/ratelimit";
 
 const PORTAL_URL = "/api/stripe/portal";
 
@@ -42,6 +44,11 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { success: withinLimit } = await checkoutRatelimit.limit(userId);
+  if (!withinLimit) {
+    return NextResponse.json({ error: "Too many attempts. Please try again shortly." }, { status: 429 });
+  }
+
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) {
     console.error("[stripe/checkout] STRIPE_PRICE_ID is not set");
@@ -65,7 +72,7 @@ export async function POST() {
       return alreadySubscribed();
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const baseUrl = appBaseUrl();
 
     // clerkUserId is stored in session metadata AND subscription_data.metadata so it
     // flows to every subscription and invoice event.

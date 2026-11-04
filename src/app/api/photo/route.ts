@@ -10,7 +10,7 @@
 // Each fetch is a billed Place Photos call ($7 / 1,000 after 1,000 free a month),
 // counted per day in Redis (travalbee:photo-fetches:YYYY-MM-DD) for cost reporting.
 
-import { getClientIp, photoRatelimit, redis } from "@/lib/ratelimit";
+import { DAILY_CAPS, getClientIp, photoRatelimit, redis, withinDailyBudget } from "@/lib/ratelimit";
 import { PHOTO_NAME_PATTERN, photoMediaUrl } from "@/lib/places";
 
 // Legacy tokens are base64url-safe — alphanumeric + _ and -
@@ -50,6 +50,10 @@ export async function GET(req: Request): Promise<Response> {
   const googleUrl = ref && ref.length <= MAX_REF_LEN ? upstreamUrl(ref, apiKey) : null;
   if (!googleUrl) {
     return new Response(null, { status: 400 });
+  }
+  // Global daily ceiling on billed photo fetches.
+  if (!(await withinDailyBudget("photos", DAILY_CAPS.photos))) {
+    return new Response(null, { status: 503 });
   }
 
   // Proxy the bytes — avoids Next.js Image failing to follow chained redirects

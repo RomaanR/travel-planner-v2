@@ -32,12 +32,13 @@ export default function SearchBar({ onGenerate, loading }: SearchBarProps) {
     const place = autocompleteRef.current.getPlace();
     if (!place.geometry?.location || !place.place_id) return;
 
-    const data: ItineraryRequest = {
+    // Legacy component: only the place fields are known here; the rest is filled in downstream.
+    const data = {
       destination: place.formatted_address || place.name || inputValue,
       placeId: place.place_id,
       lat: place.geometry.location.lat(),
       lng: place.geometry.location.lng(),
-    };
+    } as ItineraryRequest;
     setSelectedPlace(data);
     setInputValue(place.formatted_address || place.name || inputValue);
   }

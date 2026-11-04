@@ -82,7 +82,15 @@ export async function POST(req: NextRequest) {
     console.error("[support] RESEND_API_KEY is not set — email will not be sent. Ticket saved to DB.");
   } else {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    resend.emails.send({
+    // Visitor-supplied text is escaped so it cannot inject markup or links into our inbox.
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const safeEmail   = esc(email);
+    const safeMessage = esc(message);
+    // Awaited: a serverless function can be frozen right after the response, dropping a
+    // background send. The ticket is already saved, so a failure here is logged, never surfaced.
+    try {
+    const result = await resend.emails.send({
       from:    FROM_ADDRESS,
       to:      TO_ADDRESS,
       replyTo: email,
@@ -100,13 +108,13 @@ export async function POST(req: NextRequest) {
               <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:0 0 4px;">From</td>
             </tr>
             <tr>
-              <td style="font-size:15px;padding:0 0 24px;border-bottom:1px solid rgba(10,10,10,0.1);">${email}</td>
+              <td style="font-size:15px;padding:0 0 24px;border-bottom:1px solid rgba(10,10,10,0.1);">${safeEmail}</td>
             </tr>
             <tr>
               <td style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;padding:16px 0 4px;">Message</td>
             </tr>
             <tr>
-              <td style="font-size:15px;line-height:1.7;white-space:pre-wrap;">${message}</td>
+              <td style="font-size:15px;line-height:1.7;white-space:pre-wrap;">${safeMessage}</td>
             </tr>
           </table>
           <p style="margin-top:32px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#6B6B6B;">
@@ -114,7 +122,9 @@ export async function POST(req: NextRequest) {
           </p>
         </div>
       `,
-    }).catch((err: unknown) => {
+    });
+    if (result.error) throw result.error;
+    } catch (err: unknown) {
       // Log the full Resend error so Vercel logs show exactly why delivery failed.
       // Common causes: sandbox domain sending to unverified recipient (ValidationError),
       // invalid/missing API key (AuthenticationError), or rate limit (RateLimitExceededError).
@@ -122,7 +132,7 @@ export async function POST(req: NextRequest) {
         ? `${err.name}: ${err.message}`
         : JSON.stringify(err);
       console.error(`[support] Resend delivery failed — from: ${FROM_ADDRESS}, to: ${TO_ADDRESS} — ${detail}`);
-    });
+    }
   }
 
   return Response.json({ success: true });

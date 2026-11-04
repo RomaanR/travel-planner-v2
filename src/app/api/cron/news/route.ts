@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { isValidCronRequest } from "@/lib/cronAuth";
 import { revalidatePath } from "next/cache";
 import { NEWS_COUNTRIES } from "@/lib/news/countries";
 import { runNewsIngest } from "@/lib/news/ingest";
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
     console.error("[cron/news] CRON_SECRET env var is not configured");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!isValidCronRequest(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

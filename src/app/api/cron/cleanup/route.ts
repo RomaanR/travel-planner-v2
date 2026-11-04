@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { isValidCronRequest } from "@/lib/cronAuth";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     console.error("[cron/cleanup] CRON_SECRET env var is not configured");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!isValidCronRequest(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

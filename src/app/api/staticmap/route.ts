@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientIp, staticmapRatelimit } from "@/lib/ratelimit";
+import { DAILY_CAPS, getClientIp, staticmapRatelimit, withinDailyBudget } from "@/lib/ratelimit";
 
 // Proxy for Google Static Maps API using the server-side key.
 // Accepts repeated `m=lat,lng` params — one per timeline stop.
@@ -26,6 +26,19 @@ export async function GET(req: NextRequest) {
 
   if (markers.length === 0) {
     return new NextResponse("No markers provided", { status: 400 });
+  }
+  // Each marker must be a plain "lat,lng" pair within range, and there is a sane maximum.
+  const COORD = /^-?\d{1,3}(\.\d{1,7})?,-?\d{1,3}(\.\d{1,7})?$/;
+  const validMarker = (m: string) => {
+    if (!COORD.test(m)) return false;
+    const [lat, lng] = m.split(",").map(Number);
+    return Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  };
+  if (markers.length > 40 || !markers.every(validMarker)) {
+    return new NextResponse("Invalid markers", { status: 400 });
+  }
+  if (!(await withinDailyBudget("staticmaps", DAILY_CAPS.staticMaps))) {
+    return new NextResponse("Service busy", { status: 503 });
   }
 
   const key = process.env.MAPS_SERVER_KEY;

@@ -73,7 +73,7 @@ export async function reservePremiumCredit(userId: string): Promise<boolean> {
 /** Returns a reserved premium credit after a failure on our side. */
 export async function refundPremiumCredit(userId: string): Promise<void> {
   await prisma.userProfile.updateMany({
-    where: { id: userId },
+    where: { id: userId, availableCredits: { lt: PREMIUM_MONTHLY_CREDITS } },
     data:  { availableCredits: { increment: 1 } },
   });
 }

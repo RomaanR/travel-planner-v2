@@ -1,5 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
+import { DAILY_CAPS, bookingLinkRatelimit, getClientIp, withinDailyBudget } from "@/lib/ratelimit";
+
 const HOTELLOOK_BASE_URL = "https://search.hotellook.com/hotels";
 const PLACES_API_KEY = process.env.MAPS_SERVER_KEY ?? "";
 
@@ -41,7 +44,20 @@ export async function generateBookingLink(
   checkOut?: string
 ): Promise<string> {
   const marker = process.env.TRAVELPAYOUTS_MARKER?.trim();
-  const query = await resolveHotelQuery(hotelName.trim(), city.trim());
+  // Public action: bound the input, and only spend a billed Places lookup while the caller is
+  // within the per-IP limit and the global daily budget. Over the limit we still return a working
+  // link, built from the raw name, so nobody sees a broken button.
+  const name = String(hotelName ?? "").trim().slice(0, 150);
+  const cityName = String(city ?? "").trim().slice(0, 100);
+  let query = `${name} ${cityName}`;
+  const ip = getClientIp(headers());
+  const allowed =
+    ip !== null &&
+    (await bookingLinkRatelimit.limit(ip)).success &&
+    (await withinDailyBudget("places", DAILY_CAPS.placesLookups));
+  if (allowed && name) query = await resolveHotelQuery(name, cityName);
+  if (checkIn && !/^\d{4}-\d{2}-\d{2}$/.test(checkIn)) checkIn = undefined;
+  if (checkOut && !/^\d{4}-\d{2}-\d{2}$/.test(checkOut)) checkOut = undefined;
 
   const params = new URLSearchParams({ destination: query });
   // The Travelpayouts redirect only forwards checkIn/checkOut to Booking.com
