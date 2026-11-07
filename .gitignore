@@ -56,3 +56,7 @@ public/sw.js.map
 /beelogo.png
 /travelbee-*.png
 .codex-next-dev*.log
+
+# promo video (Remotion)
+/video/node_modules
+/video/out
