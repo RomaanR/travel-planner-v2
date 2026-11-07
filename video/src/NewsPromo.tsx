@@ -17,9 +17,10 @@ const S1 = 75; // hook
 const S2 = 75; // the problem
 const S3 = 195; // the advisory map
 const S4 = 105; // a country card
+const SC = 105; // what we cover
 const S5 = 240; // current alerts
 const S6 = 90; // call to action
-export const TOTAL_FRAMES = S1 + S2 + S3 + S4 + S5 + S6;
+export const TOTAL_FRAMES = S1 + S2 + S3 + S4 + SC + S5 + S6;
 
 // Data snapshot from the live database, 2026-11-06 (US State Dept levels, Canada's advice).
 const COUNTS: Record<number, number> = { 1: 81, 2: 82, 3: 26, 4: 24 };
@@ -253,6 +254,49 @@ const CountryCard: React.FC = () => {
   );
 };
 
+// ─── Scene: what we cover ────────────────────────────────────────────────────
+// The same five topic groups as the filter chips on /news (src/lib/news/types.ts).
+const COVERAGE = [
+  ["Safety & advisories", "Official levels for 213 countries"],
+  ["Entry & visas", "Rule changes before you fly"],
+  ["Weather & disasters", "Cyclones, floods, quakes, wildfires"],
+  ["Health", "Official health notices"],
+  ["Transport & other", "Other official updates"],
+] as const;
+const FOCUS_TOPIC = "Weather & disasters";
+
+const Coverage: React.FC = () => {
+  const frame = useCurrentFrame();
+  const focus = interpolate(frame, [58, 70], [0, 1], clamp);
+  return (
+    <Scene len={SC} bg={C.paper}>
+      <div style={{ position: "absolute", top: 390, left: 90, right: 90 }}>
+        <Kicker style={{ marginBottom: 50, ...rise(frame, 0, 14, 20) }}>One page covers</Kicker>
+        {COVERAGE.map(([label, note], i) => {
+          const isFocus = label === FOCUS_TOPIC;
+          const r = rise(frame, 6 + i * 9, 16, 36);
+          const dim = isFocus ? 1 : 1 - focus * 0.75;
+          return (
+            <div
+              key={label}
+              style={{
+                display: "flex", alignItems: "stretch", gap: 30, marginBottom: 46,
+                opacity: r.opacity * dim, transform: `${r.transform} translateX(${isFocus ? focus * 24 : 0}px)`,
+              }}
+            >
+              <div style={{ width: 14, background: isFocus && focus > 0.5 ? C.orange : C.ink }} />
+              <div>
+                <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 100, lineHeight: 1.0, color: isFocus && focus > 0.5 ? C.orange : C.ink }}>{label}</div>
+                <div style={{ fontFamily: FONT_SANS, fontSize: 34, color: C.inkLight, marginTop: 10 }}>{note}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Scene>
+  );
+};
+
 // ─── Scene 5: current alerts ─────────────────────────────────────────────────
 // Real alerts from the live database, snapshot 2026-11-06: 55 active GDACS alerts in the last
 // 14 days (3 red, 52 orange). Re-pull before reposting this video later.
@@ -354,7 +398,7 @@ const Alerts: React.FC = () => {
   return (
     <Scene len={S5} bg={C.paper}>
       <div style={{ position: "absolute", top: 70, left: 0, right: 0, textAlign: "center" }}>
-        <Kicker color={C.orange} style={rise(frame, 0, 14, 20)}>And when something happens&hellip;</Kicker>
+        <Kicker color={C.orange} style={rise(frame, 0, 14, 20)}>Weather &amp; disasters, right now</Kicker>
         <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 210, lineHeight: 1, color: C.ink, marginTop: 14 }}>
           {count}
         </div>
@@ -421,7 +465,8 @@ export const NewsPromo: React.FC = () => (
     <Sequence from={S1} durationInFrames={S2}><Problem /></Sequence>
     <Sequence from={S1 + S2} durationInFrames={S3}><WorldMap /></Sequence>
     <Sequence from={S1 + S2 + S3} durationInFrames={S4}><CountryCard /></Sequence>
-    <Sequence from={S1 + S2 + S3 + S4} durationInFrames={S5}><Alerts /></Sequence>
-    <Sequence from={S1 + S2 + S3 + S4 + S5} durationInFrames={S6}><CallToAction /></Sequence>
+    <Sequence from={S1 + S2 + S3 + S4} durationInFrames={SC}><Coverage /></Sequence>
+    <Sequence from={S1 + S2 + S3 + S4 + SC} durationInFrames={S5}><Alerts /></Sequence>
+    <Sequence from={S1 + S2 + S3 + S4 + SC + S5} durationInFrames={S6}><CallToAction /></Sequence>
   </AbsoluteFill>
 );
