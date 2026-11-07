@@ -1,6 +1,7 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
   Easing,
   Img,
   Sequence,
@@ -10,6 +11,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import mapData from "./mapData.json";
+import voiceScript from "../audio/script.json";
 import { C, FONT_SANS, FONT_SERIF, LEVELS } from "./theme";
 
 // Scene lengths in frames (30 fps). 26 seconds in total.
@@ -459,8 +461,39 @@ const CallToAction: React.FC = () => {
   );
 };
 
+// ─── Sound ───────────────────────────────────────────────────────────────────
+// Voice clips come from audio/script.json (start frames there). Music and effects are generated
+// placeholders (audio/make-sound.js). Set SOUND to false to render a silent version.
+const SOUND = true;
+// Voice clips are off until a better voice is recorded; music and effects stay on.
+const VOICE = false;
+const FRAME_SFX: { at: number; file: string; volume: number }[] = [
+  // advisory map: one tick as each level lights up (map scene starts at S1 + S2)
+  ...[14, 46, 78, 108].map((f) => ({ at: S1 + S2 + f, file: "sfx-tick.wav", volume: 0.5 })),
+  { at: S1 + S2 + S3 + S4 + 58, file: "sfx-chime.wav", volume: 0.4 }, // "Weather & disasters" highlights
+  { at: S1 + S2 + S3 + S4 + SC + 62, file: "sfx-alert.wav", volume: 0.5 }, // the first red alert lands
+  { at: S1 + S2 + S3 + S4 + SC + 138, file: "sfx-tick.wav", volume: 0.5 }, // the panel opens
+];
+
+const Soundtrack: React.FC = () => (
+  <>
+    <Audio src={staticFile("audio/music.wav")} volume={0.25} />
+    {VOICE && voiceScript.map((l) => (
+      <Sequence key={l.id} from={l.start}>
+        <Audio src={staticFile(`audio/vo-${l.id}.wav`)} volume={1} />
+      </Sequence>
+    ))}
+    {FRAME_SFX.map((f) => (
+      <Sequence key={`${f.file}-${f.at}`} from={f.at}>
+        <Audio src={staticFile(`audio/${f.file}`)} volume={f.volume} />
+      </Sequence>
+    ))}
+  </>
+);
+
 export const NewsPromo: React.FC = () => (
   <AbsoluteFill style={{ background: C.ink }}>
+    {SOUND && <Soundtrack />}
     <Sequence from={0} durationInFrames={S1}><Hook /></Sequence>
     <Sequence from={S1} durationInFrames={S2}><Problem /></Sequence>
     <Sequence from={S1 + S2} durationInFrames={S3}><WorldMap /></Sequence>

@@ -1,0 +1,10 @@
+[
+  { "id": "01-hook",     "start": 4,   "text": "Is your next trip safe? Check before you book." },
+  { "id": "02-problem",  "start": 80,  "text": "Three governments. Two hundred and thirteen destinations. One page." },
+  { "id": "03-map",      "start": 202, "text": "Every country's advisory level, on one live map." },
+  { "id": "04-country",  "start": 352, "text": "Tap any country for the latest official advice." },
+  { "id": "05-coverage", "start": 456, "text": "Entry rules. Health notices. Weather and disasters." },
+  { "id": "06-alerts",   "start": 566, "text": "Active alerts are flagged in red, straight from official sources." },
+  { "id": "07-meaning",  "start": 696, "text": "And what it means for travellers." },
+  { "id": "08-cta",      "start": 800, "text": "TravalBee. Know before you go." }
+]
