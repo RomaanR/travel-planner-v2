@@ -14,6 +14,7 @@ import type { SampleSummary } from "@/lib/sampleTrip";
 import BriefingStrip from "@/components/news/BriefingStrip";
 import SiteFooter from "@/components/SiteFooter";
 import WelcomeVideoModal from "@/components/WelcomeVideoModal";
+import LazyAutoplayVideo from "@/components/LazyAutoplayVideo";
 import type { NewsView } from "@/lib/news/types";
 import type { Pulse } from "@/lib/news/query";
 
@@ -143,18 +144,12 @@ export default function HomePage({ sample, news, pulse }: { sample: SampleSummar
             className="flex-1 w-full"
           >
             <div className="max-w-5xl w-full mx-auto overflow-hidden rounded-xl border border-zinc-800 shadow-[0_32px_80px_rgba(0,0,0,0.28)] bg-zinc-950">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
+              <LazyAutoplayVideo
+                src="/how-it-works.mp4"
                 poster="/how-it-works-poster.jpg"
-                aria-label="A walkthrough of how TravalBee plans a trip: enter a destination, choose your preferences, get a day-by-day itinerary, save and share it, and check travel advisories."
+                ariaLabel="A walkthrough of how TravalBee plans a trip: enter a destination, choose your preferences, get a day-by-day itinerary, save and share it, and check travel advisories."
                 className="w-full h-auto block"
-              >
-                <source src="/how-it-works.mp4" type="video/mp4" />
-              </video>
+              />
             </div>
           </motion.div>
 

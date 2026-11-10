@@ -3468,3 +3468,9 @@ Only the itinerary text is translated; the rest of the site stays English (by de
 - **Sitemap:** async, `revalidate = 3600`; `lastModified` for /news and each country page comes from the newest published NewsItem (one grouped query; if the database is unreachable the sitemap is still served without dates).
 - **/dashboard** is `noindex, nofollow`.
 - **Known content issue (not changed):** the FAQ text is out of date against the product (says "around 2 minutes" and "1–5 days"; claims offline access while `OFFLINE_MODE_ENABLED` is false). It now also feeds the FAQ markup, so it needs a rewrite.
+
+#### November 10, 2026 — Page-speed fixes after a Lighthouse run
+A mobile Lighthouse run on the live site scored SEO 100 and accessibility 96 but performance 50 (home) and 60 (/news/japan), with LCP 12–14 s on the simulated slow phone. Two large, avoidable downloads were found and fixed:
+- **Icons:** every page downloaded `/favicon.png`, a 1254x1254 / 1.2 MB file. `layout.tsx` now links `/favicon-32.png` (2 KB), `/favicon-48.png` (4 KB) and `/favicon-192.png` (47 KB). The old large files stay in `public/` but are no longer referenced.
+- **Home video:** `LazyAutoplayVideo` (new) replaces the plain autoplay `<video>`. It attaches the source and starts playing only when within about one screen of the viewport (IntersectionObserver), so the 3.3 MB download no longer happens on page load. Verified in headless Chrome: 0 requests before scrolling, 1 request and playback after.
+- **Not done:** about 400 KB of unused JavaScript on the home page; re-run Lighthouse after deploy to measure. Note: the in-app browser pane does not deliver IntersectionObserver callbacks (even for `<body>`), so use headless Chrome to test scroll-triggered behaviour.
