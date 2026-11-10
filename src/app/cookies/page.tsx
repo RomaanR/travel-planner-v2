@@ -116,6 +116,23 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
+                    Welcome Tour Notice: localStorage
+                  </p>
+                  <p className="mb-1">
+                    <strong className="text-ink">Type:</strong> Functional
+                    storage
+                  </p>
+                  <p>
+                    The first time you visit our home page we offer a short tour
+                    video. We record in your browser&apos;s localStorage that the
+                    offer has been shown, so we do not show it again. It holds no
+                    personal information and stays on your device. You can clear
+                    it at any time by clearing your browser&apos;s site data.
+                  </p>
+                </div>
+
+                <div className="border-l-2 border-ink/20 pl-5">
+                  <p className="font-sans font-semibold text-ink mb-1">
                     Itinerary Request Cache: sessionStorage
                   </p>
                   <p className="mb-1">

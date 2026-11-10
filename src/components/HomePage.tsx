@@ -13,6 +13,7 @@ import HeroFloating from "@/components/HeroFloating";
 import type { SampleSummary } from "@/lib/sampleTrip";
 import BriefingStrip from "@/components/news/BriefingStrip";
 import SiteFooter from "@/components/SiteFooter";
+import WelcomeVideoModal from "@/components/WelcomeVideoModal";
 import type { NewsView } from "@/lib/news/types";
 import type { Pulse } from "@/lib/news/query";
 
@@ -167,6 +168,9 @@ export default function HomePage({ sample, news, pulse }: { sample: SampleSummar
       <SiteFooter />
 
       </div>{/* end below-hero opaque wrapper */}
+
+      {/* One-time invitation to watch the how-it-works tour (first-time visitors only) */}
+      <WelcomeVideoModal />
     </main>
   );
 }
