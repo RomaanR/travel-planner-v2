@@ -147,9 +147,12 @@ export default function HomePage({ sample, news, pulse }: { sample: SampleSummar
                 loop
                 muted
                 playsInline
+                preload="metadata"
+                poster="/how-it-works-poster.jpg"
+                aria-label="A walkthrough of how TravalBee plans a trip: enter a destination, choose your preferences, get a day-by-day itinerary, save and share it, and check travel advisories."
                 className="w-full h-auto block"
               >
-                <source src="/demo.mp4" type="video/mp4" />
+                <source src="/how-it-works.mp4" type="video/mp4" />
               </video>
             </div>
           </motion.div>
