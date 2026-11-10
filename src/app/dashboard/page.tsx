@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { getCreditStatus } from "@/lib/credits";
@@ -44,6 +45,12 @@ function StatCard({
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+
+// Private page: keep it out of search results.
+export const metadata: Metadata = {
+  title: "Dashboard",
+  robots: { index: false, follow: false },
+};
 
 export default async function DashboardPage() {
   const { userId } = await auth();

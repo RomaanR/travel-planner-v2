@@ -93,6 +93,7 @@ export default function HeroFloating({ sample, pulse }: { sample: SampleSummary;
             style={{ fontSize: "clamp(3.25rem, 15vw, 11rem)" }}
           >
             TravalBee
+            <span className="sr-only"> | Luxury travel itineraries, planned in minutes</span>
           </motion.h1>
 
           {/* Thin rule */}

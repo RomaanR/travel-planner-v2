@@ -45,23 +45,23 @@ export function generateMetadata(): Metadata {
     // Resolves relative canonical / Open Graph URLs (incl. app/opengraph-image).
     metadataBase: new URL(SITE_URL),
     title: {
-      default: "TravalBee | Bespoke Travel Curation",
+      default: "TravalBee | Luxury Trip Planner & Travel Advisories",
       template: "%s | TravalBee",
     },
     description:
-      "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
+      "Plan a luxury trip in about a minute: day-by-day itineraries with hidden gems, curated dining, real opening hours and a map, plus official travel advisories for 213 destinations.",
     openGraph: {
-      title: "TravalBee | Bespoke Travel Curation",
+      title: "TravalBee | Luxury Trip Planner & Travel Advisories",
       description:
-        "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
+        "Plan a luxury trip in about a minute: day-by-day itineraries with hidden gems, curated dining, real opening hours and a map, plus official travel advisories for 213 destinations.",
       type: "website",
       siteName: "TravalBee",
     },
     twitter: {
       card: "summary_large_image",
-      title: "TravalBee | Bespoke Travel Curation",
+      title: "TravalBee | Luxury Trip Planner & Travel Advisories",
       description:
-        "Bespoke travel itineraries with hidden gems, curated dining, and every detail handled for the discerning traveler.",
+        "Plan a luxury trip in about a minute: day-by-day itineraries with hidden gems, curated dining, real opening hours and a map, plus official travel advisories for 213 destinations.",
     },
     icons: {
       icon: [

@@ -23,7 +23,7 @@ export const dynamic = "force-dynamic";
 // Sample trip ID lives in src/lib/sampleTrip.ts (shared with the home page card).
 
 export const metadata: Metadata = {
-  title: "Sample Itinerary | TravalBee",
+  title: "Sample itinerary",
   description:
     "A curated luxury itinerary by TravalBee — experience the quality before you generate your own.",
 };

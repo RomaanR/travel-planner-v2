@@ -53,8 +53,20 @@ export default async function CountryNewsPage({ params }: { params: { slug: stri
   const { alerts, latest: updates, history } = splitNews(all);
   const latestFcdo = all.find((i) => i.source === "fcdo" && !i.superseded);
 
+  const origin = process.env.NEXT_PUBLIC_APP_URL || "https://travalbee.com";
+  const breadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "TravalBee", item: origin },
+      { "@type": "ListItem", position: 2, name: "Travel News", item: `${origin}/news` },
+      { "@type": "ListItem", position: 3, name: country.name, item: `${origin}/news/${country.slug}` },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-paper">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs).replace(/</g, "\\u003c") }} />
       <Navbar />
       <section className="pt-32 pb-24 px-6 md:px-16 max-w-screen-xl mx-auto">
         <BackButton href="/news" label="ALL TRAVEL NEWS" />
