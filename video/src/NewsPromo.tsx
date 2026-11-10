@@ -445,7 +445,7 @@ const CallToAction: React.FC = () => {
   return (
     <Scene len={S6} bg={C.ink}>
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center", padding: "0 90px" }}>
-        <Img src={staticFile("bee.png")} style={{ width: 170, ...rise(frame, 0, 18, 30) }} />
+        <Img src={staticFile("logo.png")} style={{ width: 250, ...rise(frame, 0, 18, 30) }} />
         <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 190, color: C.paper, marginTop: 30, ...rise(frame, 8, 20, 40) }}>
           TravalBee
         </div>

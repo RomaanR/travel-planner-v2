@@ -1,18 +1,19 @@
 import React from "react";
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { C, FONT_SANS, FONT_SERIF } from "../theme";
-import { Caption, Cursor, Fade, FRAME_H, FRAME_W, Frame, Ripple, ShotStage, clamp, inOut, rise } from "./kit";
+import { Caption, Cursor, Fade, FRAME_H, FRAME_W, Frame, Ripple, ShotStage, Zoomed, clamp, inOut, rise, useLayout } from "./kit";
 import { LEN } from "./timing";
 
 // ─── 1. Title ────────────────────────────────────────────────────────────────
 export const TitleScene: React.FC = () => {
   const frame = useCurrentFrame();
+  const { vertical } = useLayout();
   return (
     <Fade len={LEN.title} bg={C.ink}>
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-        <Img src={staticFile("bee.png")} style={{ width: 150, ...rise(frame, 0, 18, 30) }} />
-        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 250, lineHeight: 1, color: C.paper, marginTop: 20, ...rise(frame, 8, 22, 40) }}>TravalBee</div>
-        <div style={{ fontFamily: FONT_SANS, fontSize: 46, color: "rgba(245,240,232,0.78)", marginTop: 14, ...rise(frame, 24, 20, 30) }}>
+        <Img src={staticFile("logo.png")} style={{ width: vertical ? 300 : 260, ...rise(frame, 0, 18, 30) }} />
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: vertical ? 190 : 250, lineHeight: 1, color: C.paper, marginTop: 20, ...rise(frame, 8, 22, 40) }}>TravalBee</div>
+        <div style={{ fontFamily: FONT_SANS, fontSize: vertical ? 40 : 46, padding: vertical ? "0 70px" : 0, color: "rgba(245,240,232,0.78)", marginTop: 14, ...rise(frame, 24, 20, 30) }}>
           Curated luxury journeys, planned in minutes.
         </div>
         <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 28, letterSpacing: "0.3em", color: "#F07A47", marginTop: 60, ...rise(frame, 44, 18, 20) }}>HOW IT WORKS</div>
@@ -28,7 +29,7 @@ export const LandingScene: React.FC = () => (
     <Frame>
       <ShotStage
         src="home"
-        views={[[0, 0.5, 0.5, 1], [40, 0.5, 0.5, 1], [75, 0.24, 0.74, 1.85], [180, 0.24, 0.74, 1.85]]}
+        views={[[0, 0.5, 0.5, 1], [40, 0.5, 0.5, 1], [75, 0.32, 0.74, 1.55], [180, 0.32, 0.74, 1.55]]}
         cursor={[[0, 0.62, 0.3], [70, 0.62, 0.3], [95, 0.1, 0.69], [140, 0.1, 0.69], [160, 0.12, 0.79]]}
         clicks={[100]}
         callouts={[
@@ -99,6 +100,7 @@ export const FormScene: React.FC = () => {
     <Fade len={LEN.form}>
       <Caption step={2} title="Tell us about the trip." body="Who's travelling, your pace, your budget and what you love. It takes about a minute." />
       <Frame url="travalbee.com">
+        <Zoomed region={800} cx={615} cy={384}>
         <div style={{ position: "absolute", left: 0, top: 0, width: FRAME_W, height: FRAME_H, background: C.paper }}>
           <div style={{ position: "absolute", left: 0, top: -scroll, width: FRAME_W }}>
             <div style={sec("A")}>
@@ -154,6 +156,7 @@ export const FormScene: React.FC = () => {
           {clickFrames.map((c) => <Ripple key={c} x={cx} y={cy} t={interpolate(f, [c, c + 16], [0, 1], clamp)} />)}
           <Cursor x={cx} y={cy} press={clickFrames.reduce((m, c) => Math.max(m, interpolate(f, [c - 3, c, c + 5], [0, 1, 0], clamp)), 0)} />
         </div>
+        </Zoomed>
       </Frame>
     </Fade>
   );
@@ -178,11 +181,12 @@ export const GenerateScene: React.FC = () => {
     <Fade len={LEN.generate}>
       <Caption step={3} title="Your concierge gets to work." body="One request builds everything: the days, the tables, opening hours and the route between stops." />
       <Frame>
+        <Zoomed region={760} cx={615} cy={384}>
         <AbsoluteFill style={{ background: C.paper, justifyContent: "center", alignItems: "center", textAlign: "center" }}>
           <div style={{ position: "relative", width: 150, height: 150 }}>
             <div style={{ position: "absolute", inset: 0, border: "3px solid rgba(10,10,10,0.1)", borderRadius: "50%" }} />
             <div style={{ position: "absolute", inset: 0, border: "3px solid transparent", borderTopColor: "rgba(10,10,10,0.5)", borderRadius: "50%", transform: `rotate(${f * 5}deg)` }} />
-            <Img src={staticFile("bee.png")} style={{ position: "absolute", left: 38, top: 38, width: 74 }} />
+            <Img src={staticFile("logo.png")} style={{ position: "absolute", left: 38, top: 38, width: 74 }} />
           </div>
           <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 18, letterSpacing: "0.28em", color: C.inkLight, marginTop: 56 }}>YOUR CONCIERGE IS AT WORK</div>
           <div style={{ height: 120, marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 80px" }}>
@@ -191,6 +195,7 @@ export const GenerateScene: React.FC = () => {
             </div>
           </div>
         </AbsoluteFill>
+        </Zoomed>
       </Frame>
     </Fade>
   );

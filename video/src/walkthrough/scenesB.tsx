@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { C, FONT_SANS, FONT_SERIF } from "../theme";
-import { Caption, Cursor, Fade, FRAME_H, FRAME_W, Frame, Ripple, ShotStage, clamp, inOut, rise } from "./kit";
+import { Caption, Cursor, Fade, FRAME_H, FRAME_W, Frame, Ripple, ShotStage, clamp, inOut, rise, Overlay, Zoomed, useLayout } from "./kit";
 import { LEN } from "./timing";
 
 // ─── 5. The itinerary (real captures: day 1, 2, 3) ───────────────────────────
@@ -76,7 +76,7 @@ export const StaysScene: React.FC = () => {
 const Toast: React.FC<{ title: string; body: string; f: number; start: number; end: number }> = ({ title, body, f, start, end }) => {
   const t = interpolate(f, [start, start + 12, end - 10, end], [0, 1, 1, 0], clamp);
   return (
-    <div style={{ position: "absolute", right: 36, bottom: 36, width: 400, background: C.paper, border: "1.5px solid rgba(10,10,10,0.18)", padding: "20px 24px", boxShadow: "0 18px 40px rgba(10,10,10,0.18)", opacity: t, transform: `translateY(${(1 - t) * 20}px)` }}>
+    <div style={{ position: "absolute", right: 36, bottom: 150, width: 400, background: C.paper, border: "1.5px solid rgba(10,10,10,0.18)", padding: "20px 24px", boxShadow: "0 18px 40px rgba(10,10,10,0.18)", opacity: t, transform: `translateY(${(1 - t) * 20}px)` }}>
       <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 21, color: C.ink }}>{title}</div>
       <div style={{ fontFamily: FONT_SANS, fontSize: 18, color: C.inkLight, marginTop: 6, lineHeight: 1.35 }}>{body}</div>
     </div>
@@ -96,7 +96,7 @@ const Btn: React.FC<{ label: string; on?: boolean; fill?: boolean; w?: number }>
 const NAV_H = 64;
 const NavBar: React.FC<{ signedIn: boolean; hover: number }> = ({ signedIn, hover }) => (
   <div style={{ position: "absolute", left: 0, top: 0, width: FRAME_W, height: NAV_H, borderBottom: "1px solid rgba(10,10,10,0.1)", background: C.paper, display: "flex", alignItems: "center", padding: "0 28px", zIndex: 5 }}>
-    <Img src={staticFile("bee.png")} style={{ width: 40, height: 40 }} />
+    <Img src={staticFile("logo.png")} style={{ width: 40, height: 40 }} />
     <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 500, fontSize: 34, color: C.ink, marginLeft: 14 }}>TravalBee</div>
     <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 34, fontFamily: FONT_SANS, fontWeight: 700, fontSize: 14, letterSpacing: "0.2em", color: C.inkLight }}>
       <span style={{ color: hover > 0.5 ? C.orange : C.inkLight, borderBottom: hover > 0.5 ? "2px solid " + C.orange : "2px solid transparent", paddingBottom: 3 }}>MY TRIPS</span>
@@ -119,6 +119,8 @@ export const SaveScene: React.FC = () => {
   const toArchive = interpolate(f, [142, 156], [0, 1], clamp);
   const share = f > 206;
   const hoverTrips = interpolate(f, [128, 134, 150, 156], [0, 1, 1, 0], clamp);
+  // Tall layout: look at the right-hand side (nav, Save) first, then slide to the trip card.
+  const zx = interpolate(f, [0, 128, 168], [860, 860, 420], { ...clamp, easing: inOut });
   // Cursor path in frame coordinates: sign in, save, the My Trips link in the nav bar, then Share.
   const cur: [number, number, number][] = [
     [0, 900, 520], [24, 937, 178], [40, 937, 178], [58, 1027, 178], [70, 1027, 178],
@@ -132,6 +134,7 @@ export const SaveScene: React.FC = () => {
     <Fade len={LEN.save}>
       <Caption step={6} title="Keep it, share it." body="Sign in free to save the trip, send a link to your travel partner, or download a PDF." />
       <Frame url="travalbee.com">
+        <Zoomed region={760} cx={zx} cy={312}>
         <AbsoluteFill style={{ background: C.paper }}>
           <NavBar signedIn={signed} hover={hoverTrips} />
           <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, top: NAV_H }}>
@@ -169,9 +172,12 @@ export const SaveScene: React.FC = () => {
           </div>
           {saved && <Toast f={f} start={68} end={120} title="Passport Updated" body="This journey has been saved to your archive." />}
           {share && <Toast f={f} start={207} end={268} title="Link copied to clipboard" body="Anyone with the link can view this itinerary." />}
-          {clicks.map((c) => <Ripple key={c} x={cx} y={cy} t={interpolate(f, [c, c + 16], [0, 1], clamp)} />)}
-          <Cursor x={cx} y={cy} press={press} />
+          <Overlay>
+            {clicks.map((c) => <Ripple key={c} x={cx} y={cy} t={interpolate(f, [c, c + 16], [0, 1], clamp)} />)}
+            <Cursor x={cx} y={cy} press={press} />
+          </Overlay>
         </AbsoluteFill>
+        </Zoomed>
       </Frame>
     </Fade>
   );
@@ -207,7 +213,7 @@ export const NewsScene: React.FC = () => {
             clicks={[104]}
             callouts={[
               { at: 34, until: 100, px: 0.165, py: 0.293, text: "Live red alerts", dx: 330, dy: -90 },
-              { at: 108, until: 158, px: 0.205, py: 0.536, text: "What it means for travellers", dx: 330, dy: 110 },
+              { at: 108, until: 158, px: 0.205, py: 0.536, text: "What it means for travellers", dx: 330, dy: 110, v: { dx: 230, dy: -90 } },
             ]}
           />
         </AbsoluteFill>
@@ -219,13 +225,14 @@ export const NewsScene: React.FC = () => {
 // ─── 9. Close ────────────────────────────────────────────────────────────────
 export const CloseScene: React.FC = () => {
   const f = useCurrentFrame();
+  const { vertical } = useLayout();
   return (
     <Fade len={LEN.close} bg={C.ink}>
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-        <Img src={staticFile("bee.png")} style={{ width: 130, ...rise(f, 0, 16, 26) }} />
-        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 210, color: C.paper, lineHeight: 1, marginTop: 18, ...rise(f, 6, 20, 36) }}>Start planning.</div>
-        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: 80, color: "#F07A47", marginTop: 12, ...rise(f, 20, 20, 30) }}>Know before you go.</div>
-        <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 44, letterSpacing: "0.14em", color: C.paper, marginTop: 60, border: `3px solid ${C.paper}`, padding: "20px 40px", ...rise(f, 36, 16, 26) }}>travalbee.com</div>
+        <Img src={staticFile("logo.png")} style={{ width: vertical ? 280 : 240, ...rise(f, 0, 16, 26) }} />
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: vertical ? 150 : 210, color: C.paper, lineHeight: 1, marginTop: 18, ...rise(f, 6, 20, 36) }}>Start planning.</div>
+        <div style={{ fontFamily: FONT_SERIF, fontStyle: "italic", fontWeight: 600, fontSize: vertical ? 72 : 80, color: "#F07A47", marginTop: 12, ...rise(f, 20, 20, 30) }}>Know before you go.</div>
+        <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: vertical ? 40 : 44, letterSpacing: "0.14em", color: C.paper, marginTop: 60, border: `3px solid ${C.paper}`, padding: "20px 40px", ...rise(f, 36, 16, 26) }}>travalbee.com</div>
         <div style={{ fontFamily: FONT_SANS, fontSize: 26, color: "rgba(245,240,232,0.6)", marginTop: 40, ...rise(f, 50, 14, 20) }}>A product of OpsisX LLC</div>
       </AbsoluteFill>
     </Fade>
