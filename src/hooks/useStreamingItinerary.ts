@@ -42,6 +42,7 @@ function buildFingerprint(data: ItineraryRequest): string {
     isRegion: data.isRegion ?? false,
     planningMode: data.planningMode ?? "inspire",
     anchorPoints: data.anchorPoints ?? null,
+    language: data.language ?? "en",
   });
 }
 

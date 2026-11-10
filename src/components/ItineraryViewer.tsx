@@ -1,5 +1,7 @@
 "use client";
 
+import { languageOf } from "@/lib/languages";
+
 import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -91,7 +93,7 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
       <div className="flex items-start justify-between mb-4 pb-4 border-b border-ink/8 print:border-black/15">
         <div>
           <p className="micro-copy text-ink-light mb-1 print:text-black/50">Day {day.day}</p>
-          <h3 className="font-serif italic text-xl sm:text-2xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
+          <h3 dir="auto" className="font-serif italic text-xl sm:text-2xl md:text-4xl text-ink leading-tight print:text-black print:text-2xl">
             {day.theme}
           </h3>
         </div>
@@ -163,7 +165,7 @@ function DaySection({ day: rawDay, transportMode }: { day: DayPlan; transportMod
               <span className="micro-copy text-emerald-accent block mb-1 print:text-black">
                 Hidden Gem
               </span>
-              <p className="font-sans text-sm text-ink leading-relaxed print:text-black">
+              <p dir="auto" className="font-sans text-sm text-ink leading-relaxed print:text-black">
                 {day.hiddenGem}
               </p>
             </div>
@@ -187,9 +189,11 @@ interface ItineraryViewerProps {
   returnDate?: string;
   /** Total trip length while streaming — renders pending tabs for days not yet arrived. Omit on saved/shared trips (already complete). */
   totalDays?: number;
+  /** Language the itinerary text is written in (a LanguageCode). Sets the lang attribute so browsers pick the right fonts; absent = English. */
+  language?: string;
 }
 
-export default function ItineraryViewer({ itinerary, bottomSection, transportMode, departureDate, returnDate, totalDays }: ItineraryViewerProps) {
+export default function ItineraryViewer({ itinerary, bottomSection, transportMode, departureDate, returnDate, totalDays, language }: ItineraryViewerProps) {
   // null = All Days view; number = single day index
   const [activeDay, setActiveDay] = useState<number | null>(0);
   const currentDay = activeDay !== null ? itinerary.days?.[activeDay] : null;
@@ -211,7 +215,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
   }, [activeDay]);
 
   return (
-    <>
+    <div lang={languageOf(language).code} className="contents">
       {/* ── PRINT ONLY: Editorial magazine layout ── */}
       <PrintItinerary
         itinerary={itinerary}
@@ -227,7 +231,7 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
         className="mb-8 print:hidden"
       >
         <div className="w-8 h-px bg-burnt-orange mb-4 print:bg-black" />
-        <blockquote className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-relaxed print:text-black">
+        <blockquote dir="auto" className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-relaxed print:text-black">
           &quot;{itinerary.editorial}&quot;
         </blockquote>
       </motion.div>
@@ -353,6 +357,6 @@ export default function ItineraryViewer({ itinerary, bottomSection, transportMod
       <div className="print:hidden w-full min-w-0">
         {bottomSection}
       </div>
-    </>
+    </div>
   );
 }

@@ -99,6 +99,23 @@ export default function CookiePolicyPage() {
 
                 <div className="border-l-2 border-ink/20 pl-5">
                   <p className="font-sans font-semibold text-ink mb-1">
+                    Language Preference: localStorage
+                  </p>
+                  <p className="mb-1">
+                    <strong className="text-ink">Type:</strong> Functional
+                    storage
+                  </p>
+                  <p>
+                    If you choose a language for your itinerary, we remember your
+                    choice in your browser&apos;s localStorage so it is already
+                    selected next time. It stays on your device and holds no
+                    personal information. You can clear it at any time by
+                    clearing your browser&apos;s site data.
+                  </p>
+                </div>
+
+                <div className="border-l-2 border-ink/20 pl-5">
+                  <p className="font-sans font-semibold text-ink mb-1">
                     Itinerary Request Cache: sessionStorage
                   </p>
                   <p className="mb-1">

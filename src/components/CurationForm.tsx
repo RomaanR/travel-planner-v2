@@ -35,6 +35,7 @@ import {
 } from "@/lib/dateUtils";
 import { AUTOCOMPLETE_FIELDS, readSelectedDestination } from "@/lib/placeSelection";
 import { readPlannerPrefill } from "@/lib/plannerLink";
+import LanguagePicker, { useItineraryLanguage } from "@/components/LanguagePicker";
 
 const LIBRARIES: ("places")[] = ["places"];
 
@@ -143,6 +144,7 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
   const [walkingTolerance, setWalkingTolerance] = useState<"strict" | "relaxed">("strict");
   const [isRegion, setIsRegion] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [language, setLanguage] = useItineraryLanguage();
   const localToday = useMemo(getLocalToday, []);
 
   // Fetch premium status on mount to unlock 14-day calendar for subscribers
@@ -363,6 +365,8 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
       // Only send when walking — car-driver ignores this value entirely on the server.
       walkingTolerance:   transportMode === "walking-transit" ? walkingTolerance : undefined,
       isRegion,
+      // English is the default; only send a value when another language is chosen.
+      language:           language === "en" ? undefined : language,
     });
   }
 
@@ -887,6 +891,15 @@ export default function CurationForm({ onGenerate, loading, credits }: CurationF
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ── Row 7: Itinerary language ── */}
+            <div className="mb-8">
+              <p className="micro-copy text-ink-light mb-1">Itinerary Language</p>
+              <p className="font-sans text-xs text-ink-light mb-4">
+                Your itinerary will be written in this language.
+              </p>
+              <LanguagePicker value={language} onChange={setLanguage} />
             </div>
 
             {/* ── CTA ── */}

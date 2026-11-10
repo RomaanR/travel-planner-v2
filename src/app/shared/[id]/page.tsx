@@ -159,7 +159,7 @@ export default async function SharedTripPage({
           <MobileMapBanner center={mapCenter} points={mapPoints} />
 
           <div className="px-6 md:px-10 py-8">
-            <ItineraryViewer itinerary={itinerary} bottomSection={bottomCta} />
+            <ItineraryViewer itinerary={itinerary} language={(trip.request as { language?: string } | null)?.language} bottomSection={bottomCta} />
           </div>
         </div>
 

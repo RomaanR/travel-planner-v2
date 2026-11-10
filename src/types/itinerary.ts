@@ -1,3 +1,4 @@
+import type { LanguageCode } from "@/lib/languages";
 // ─── Request ──────────────────────────────────────────────────────────────────
 
 export type TravelParty = "solo" | "couple" | "family" | "group";
@@ -46,6 +47,7 @@ export type ItineraryRequest = {
   // Planning mode — added for dual-mode curate page
   planningMode?: "inspire" | "tailor"; // absent is treated as "inspire" (backward compat)
   anchorPoints?: string;               // Mode B only — free-form anchor constraints, max 2000 chars
+  language?: LanguageCode;             // language the itinerary text is written in; absent = English
 };
 
 // ─── Response ─────────────────────────────────────────────────────────────────

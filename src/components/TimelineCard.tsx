@@ -175,7 +175,7 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
         </div>
 
         {/* Title */}
-        <h4 className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
+        <h4 dir="auto" className="font-serif italic text-base sm:text-xl md:text-2xl text-ink leading-tight mb-1.5 print:text-black print:text-lg">
           {displayName}
         </h4>
 
@@ -188,13 +188,13 @@ export default function TimelineCard({ item, delay }: TimelineCardProps) {
         )}
 
         {/* Description */}
-        <p className="font-sans text-xs md:text-sm text-ink-light leading-relaxed line-clamp-3 flex-1 mb-3 print:text-black print:text-xs">
+        <p dir="auto" className="font-sans text-xs md:text-sm text-ink-light leading-relaxed line-clamp-3 flex-1 mb-3 print:text-black print:text-xs">
           {displayDesc}
         </p>
 
         {/* Dietary note */}
         {item.dietaryNote && (
-          <p className="font-sans text-xs text-emerald-accent leading-relaxed mb-2 border-l-2 border-emerald-accent/30 pl-2 print:text-black print:border-black/30">
+          <p dir="auto" className="font-sans text-xs text-emerald-accent leading-relaxed mb-2 border-l-2 border-emerald-accent/30 pl-2 print:text-black print:border-black/30">
             {item.dietaryNote}
           </p>
         )}

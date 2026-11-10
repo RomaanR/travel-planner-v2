@@ -33,6 +33,7 @@ import {
 } from "@/lib/dateUtils";
 
 import { AUTOCOMPLETE_FIELDS } from "@/lib/placeSelection";
+import LanguagePicker, { useItineraryLanguage } from "@/components/LanguagePicker";
 
 const LIBRARIES: ("places")[] = ["places"];
 
@@ -183,6 +184,7 @@ export default function TailorForm({ onGenerate, loading }: TailorFormProps) {
   const [interests,     setInterests]     = useState<Interest[]>([]);
   const [anchorPoints,  setAnchorPoints]  = useState("");
   const [isPremium,     setIsPremium]     = useState(false);
+  const [language,      setLanguage]      = useItineraryLanguage();
 
   const localToday = useMemo(getLocalToday, []);
 
@@ -327,6 +329,7 @@ export default function TailorForm({ onGenerate, loading }: TailorFormProps) {
       isRegion,
       planningMode:        "tailor",
       anchorPoints:        anchorPoints.trim(),
+      language:            language === "en" ? undefined : language,
     });
   }
 
@@ -618,6 +621,12 @@ export default function TailorForm({ onGenerate, loading }: TailorFormProps) {
                   </button>
                 ))}
               </div>
+            </Section>
+
+            {/* ── Itinerary language ──────────────────────────────────────── */}
+            <Section label="Itinerary Language" delay={0.28}>
+              <p className="font-sans text-xs text-ink-light mb-4">Your itinerary will be written in this language.</p>
+              <LanguagePicker value={language} onChange={setLanguage} />
             </Section>
 
             {/* ── CTA ─────────────────────────────────────────────────────── */}

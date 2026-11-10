@@ -254,3 +254,8 @@ body {
   .dossier-a, .dossier-page-1, .dossier-page-2 { animation: none !important; }
   .dossier-page-2, .dossier-grow { display: none; }
 }
+
+/* Arabic, Chinese and Japanese have no true italic; a slanted fallback looks broken, so show them upright. */
+:lang(ar) .italic, :lang(ar) em, :lang(ja) .italic, :lang(ja) em, :lang(zh-Hans) .italic, :lang(zh-Hans) em, :lang(zh) .italic {
+  font-style: normal;
+}

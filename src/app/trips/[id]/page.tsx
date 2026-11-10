@@ -249,7 +249,7 @@ export default async function TripViewPage({
           <MobileMapBanner center={mapCenter} points={mapPoints} />
 
           <div className="px-6 md:px-10 py-8 print:px-0 print:py-6">
-            <ItineraryViewer itinerary={itinerary} bottomSection={bottomCta} />
+            <ItineraryViewer itinerary={itinerary} language={(trip.request as { language?: string } | null)?.language} bottomSection={bottomCta} />
           </div>
         </div>
 

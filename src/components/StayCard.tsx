@@ -45,15 +45,15 @@ export default function StayCard({ name, description, neighborhood, destination,
       className="flex flex-col justify-between border border-ink/10 bg-paper p-5 group"
     >
       {/* Top: neighborhood label */}
-      <p className="micro-copy text-ink-light mb-3">{neighborhood}</p>
+      <p dir="auto" className="micro-copy text-ink-light mb-3">{neighborhood}</p>
 
       {/* Middle: hotel name */}
-      <h3 className="font-serif italic text-xl sm:text-2xl text-ink leading-tight mb-3">
+      <h3 dir="auto" className="font-serif italic text-xl sm:text-2xl text-ink leading-tight mb-3">
         {name}
       </h3>
 
       {/* Body: editorial pitch */}
-      <p className="font-sans text-sm text-ink-light leading-relaxed flex-1 mb-4">
+      <p dir="auto" className="font-sans text-sm text-ink-light leading-relaxed flex-1 mb-4">
         {description}
       </p>
 

@@ -52,8 +52,10 @@ const StoredRequestSchema = z.object({
   isRegion:            z.boolean().optional(),
   planningMode:        z.enum(["inspire", "tailor"]).optional(),
   anchorPoints:        z.string().max(2000).optional(),
+  language:            z.enum(LANGUAGE_CODES).optional(),
 });
 import { computeMapPoints } from "@/lib/itineraryUtils";
+import { LANGUAGE_CODES } from "@/lib/languages";
 import Navbar from "@/components/Navbar";
 import ItineraryMap from "@/components/ItineraryMap";
 import MobileMapBanner from "@/components/MobileMapBanner";
@@ -392,6 +394,7 @@ export default function ItineraryPage() {
             {itinerary && (
               <ItineraryViewer
                 itinerary={itinerary}
+                language={storedRequest?.language}
                 transportMode={transportMode}
                 departureDate={departureDate}
                 returnDate={returnDate}

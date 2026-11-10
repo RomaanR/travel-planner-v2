@@ -150,7 +150,7 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
           Day {day.day}
         </p>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24 }}>
-          <h2 className="font-serif" style={{ fontStyle: "italic", fontSize: 48, lineHeight: 1, color: INK, margin: 0 }}>
+          <h2 dir="auto" className="font-serif" style={{ fontStyle: "italic", fontSize: 48, lineHeight: 1, color: INK, margin: 0 }}>
             {day.theme}
           </h2>
           <span style={{ fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase", color: `rgba(10,10,10,0.3)`, flexShrink: 0, marginBottom: 4 }}>
@@ -200,7 +200,7 @@ function PrintDayPage({ rawDay, isFirst }: { rawDay: DayPlan; isFirst: boolean }
                       {isMealType(item.type) ? item.type : (item.category ?? "activity")}
                     </span>
                   </div>
-                  <p style={{ fontSize: 12, color: `rgba(10,10,10,0.6)`, lineHeight: 1.65, marginBottom: 10 }}>
+                  <p dir="auto" style={{ fontSize: 12, color: `rgba(10,10,10,0.6)`, lineHeight: 1.65, marginBottom: 10 }}>
                     {item.description}
                   </p>
                   {(item.duration || item.rating !== undefined || item.pricePoint || item.dietaryNote) && (
